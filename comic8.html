@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leitor CBZ Estável - V3.7</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+:root {
+    --bg-color: #050505;
+    --ui-color: rgba(25, 25, 25, 0.9);
+    --text-color: #f0f0f0;
+    --accent-color: #27ae60;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: system-ui, sans-serif;
+    overflow: hidden;
+    user-select: none;
+}
+
+#drop-zone {
+    height: 100vh;
+    margin: 15px;
+    border: 2px dashed #333;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+#viewer-container {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    overflow: auto;
+    background: black;
+    cursor: grab;
+    scrollbar-width: none;
+}
+#viewer-container::-webkit-scrollbar { display: none; }
+#viewer-container:active { cursor: grabbing; }
+
+#comic-img {
+    display: block;
+    margin: 0 auto;
+    width: 100%;
+    transition: width 0.1s ease-out;
+    pointer-events: none;
+}
+
+#ui-overlay {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ui-color);
+    padding: 10px 20px;
+    border-radius: 50px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    opacity: 0.4;
+}
+#ui-overlay:hover { opacity: 1; }
+
+button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #333;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+button:hover { background: var(--accent-color); }
+
+button.nav-btn {
+    width: auto;
+    padding: 0 20px;
+    border-radius: 20px;
+}
+
+.divider {
+    width: 1px;
+    height: 20px;
+    background: #444;
+}
+</style>
+</head>
+
+<body>
+
+<div id="drop-zone">
+    <h2>Leitor CBZ Acadêmico</h2>
+    <p>Arraste o arquivo ou clique</p>
+    <input type="file" id="file-input" accept=".cbz" hidden>
+</div>
+
+<div id="viewer-container">
+    <img id="comic-img">
+    <div id="ui-overlay">
+        <button onclick="zoomOut()">－</button>
+        <button onclick="zoomIn()">＋</button>
+        <button onclick="resetZoom()">回</button>
+        <div class="divider"></div>
+        <button class="nav-btn" onclick="prevPage()">◀</button>
+        <span id="page-info">---</span>
+        <button class="nav-btn" onclick="nextPage()">▶</button>
+        <div class="divider"></div>
+        <button onclick="toggleFullScreen()">⛶</button>
+        <button onclick="closeBook()">✕</button>
+    </div>
+</div>
+
+<script>
+let zip, imageFiles = [], currentIndex = 0;
+let currentObjectURL = null, currentFileName = "";
+
+/* 🔍 ZOOM REALMENTE ESCALONADO */
+let zoomLevel = 1.0;
+const ZOOM_STEP = 0.1;
+const BASE_WIDTH = 100;
+
+const container = document.getElementById("viewer-container");
+const img = document.getElementById("comic-img");
+const dropZone = document.getElementById("drop-zone");
+const fileInput = document.getElementById("file-input");
+
+/* Drag / Panning */
+let isDragging = false, startX, startY, scrollLeft, scrollTop;
+
+container.addEventListener("mousedown", e => {
+    isDragging = true;
+    startX = e.pageX;
+    startY = e.pageY;
+    scrollLeft = container.scrollLeft;
+    scrollTop = container.scrollTop;
+});
+window.addEventListener("mouseup", () => isDragging = false);
+container.addEventListener("mousemove", e => {
+    if (!isDragging) return;
+    container.scrollLeft = scrollLeft - (e.pageX - startX);
+    container.scrollTop = scrollTop - (e.pageY - startY);
+});
+
+/* Upload */
+dropZone.onclick = () => fileInput.click();
+fileInput.onchange = e => loadFile(e.target.files[0]);
+
+async function loadFile(file) {
+    currentFileName = file.name;
+    const buffer = await file.arrayBuffer();
+    zip = await JSZip.loadAsync(buffer);
+    imageFiles = Object.keys(zip.files)
+        .filter(f => /\.(png|jpe?g|webp|gif)$/i.test(f))
+        .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+
+    currentIndex = parseInt(localStorage.getItem("prog_"+file.name)) || 0;
+    dropZone.style.display = "none";
+    container.style.display = "block";
+    renderPage();
+}
+
+async function renderPage() {
+    if (currentObjectURL) URL.revokeObjectURL(currentObjectURL);
+    const blob = await zip.file(imageFiles[currentIndex]).async("blob");
+    currentObjectURL = URL.createObjectURL(blob);
+    img.src = currentObjectURL;
+    document.getElementById("page-info").textContent =
+        `${currentIndex+1} / ${imageFiles.length}`;
+    localStorage.setItem("prog_"+currentFileName, currentIndex);
+    resetZoom();
+}
+
+/* ✅ ZOOM CORRIGIDO */
+function applyZoom() {
+    img.style.width = (BASE_WIDTH * zoomLevel) + "%";
+}
+
+function zoomIn() {
+    zoomLevel += ZOOM_STEP;
+    applyZoom();
+}
+
+function zoomOut() {
+    if (zoomLevel > 0.2) {
+        zoomLevel -= ZOOM_STEP;
+        applyZoom();
+    }
+}
+
+function resetZoom() {
+    zoomLevel = 1.0;
+    img.style.width = BASE_WIDTH + "%";
+    container.scrollTop = 0;
+    container.scrollLeft = 0;
+}
+
+/* Navegação */
+function nextPage() {
+    if (currentIndex < imageFiles.length - 1) {
+        currentIndex++;
+        renderPage();
+    }
+}
+function prevPage() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        renderPage();
+    }
+}
+
+function toggleFullScreen() {
+    if (!document.fullscreenElement)
+        document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+}
+
+function closeBook() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    location.reload();
+}
+
+/* ⌨️ Atalhos de Teclado – UX preservada */
+document.addEventListener("keydown", (e) => {
+    if (!zip) return;
+
+    switch (e.key) {
+
+        /* Navegação entre páginas */
+        case "ArrowRight":
+            e.preventDefault();
+            nextPage();
+            break;
+
+        case "ArrowLeft":
+            e.preventDefault();
+            prevPage();
+            break;
+
+        /* Scroll vertical fino */
+        case "ArrowDown":
+            e.preventDefault();
+            container.scrollBy({ top: 80, behavior: "smooth" });
+            break;
+
+        case "ArrowUp":
+            e.preventDefault();
+            container.scrollBy({ top: -80, behavior: "smooth" });
+            break;
+
+        /* Zoom */
+        case "+":
+        case "=":   // necessário em teclados ABNT
+            e.preventDefault();
+            zoomIn();
+            break;
+
+        case "-":
+            e.preventDefault();
+            zoomOut();
+            break;
+    }
+});
+
+</script>
+
+</body>
+</html>
