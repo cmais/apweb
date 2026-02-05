@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leitor CBZ Estável - V3.7 (Ajuste por Altura)</title>
+<title>Leitor CBZ Estável - V3.9 (Topo Fixo)</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
@@ -49,7 +49,6 @@ html, body {
 #viewer-container::-webkit-scrollbar { display: none; }
 #viewer-container:active { cursor: grabbing; }
 
-/* --- ALTERAÇÃO PRINCIPAL AQUI --- */
 #comic-img {
     display: block;
     margin: 0 auto;
@@ -130,7 +129,7 @@ let currentObjectURL = null, currentFileName = "";
 /* 🔍 ZOOM ESCALONADO PELA ALTURA */
 let zoomLevel = 1.0;
 const ZOOM_STEP = 0.1;
-const BASE_SIZE = 100; // Alterado de BASE_WIDTH para refletir a mudança
+const BASE_SIZE = 100;
 
 const container = document.getElementById("viewer-container");
 const img = document.getElementById("comic-img");
@@ -180,14 +179,19 @@ async function renderPage() {
     document.getElementById("page-info").textContent =
         `${currentIndex+1} / ${imageFiles.length}`;
     localStorage.setItem("prog_"+currentFileName, currentIndex);
-    resetZoom();
+    
+    // ===== CORREÇÃO APLICADA AQUI =====
+    // Garante que a nova página sempre comece do topo.
+    container.scrollTop = 0;
+    // ===================================
+    
+    applyZoom();
 }
 
 /* ✅ ZOOM CORRIGIDO PARA FUNCIONAR COM ALTURA */
 function applyZoom() {
-    // Aplica o zoom na ALTURA do elemento da imagem
     img.style.height = (BASE_SIZE * zoomLevel) + "%";
-    img.style.width = 'auto'; // Garante que a largura se ajuste
+    img.style.width = 'auto';
 }
 
 function zoomIn() {
@@ -204,7 +208,6 @@ function zoomOut() {
 
 function resetZoom() {
     zoomLevel = 1.0;
-    // Reseta a ALTURA para o padrão e a largura para automática
     img.style.height = BASE_SIZE + "%";
     img.style.width = 'auto';
     container.scrollTop = 0;
