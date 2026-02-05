@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leitor CBZ Estável - V3.7</title>
+<title>Leitor CBZ Estável - V3.7 (Ajuste por Altura)</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
 :root {
     --bg-color: #050505;
-    --ui-color: rgba(25, 25, 25, 0.9);
+    --ui-color: rgba(25, 25, 25, 0.9 );
     --text-color: #f0f0f0;
     --accent-color: #27ae60;
 }
@@ -49,11 +49,13 @@ html, body {
 #viewer-container::-webkit-scrollbar { display: none; }
 #viewer-container:active { cursor: grabbing; }
 
+/* --- ALTERAÇÃO PRINCIPAL AQUI --- */
 #comic-img {
     display: block;
     margin: 0 auto;
-    width: 100%;
-    transition: width 0.1s ease-out;
+    height: 100%; /* Ajusta a imagem pela altura */
+    width: auto;   /* Largura automática para manter a proporção */
+    transition: height 0.1s ease-out; /* Animação de zoom na altura */
     pointer-events: none;
 }
 
@@ -125,10 +127,10 @@ button.nav-btn {
 let zip, imageFiles = [], currentIndex = 0;
 let currentObjectURL = null, currentFileName = "";
 
-/* 🔍 ZOOM REALMENTE ESCALONADO */
+/* 🔍 ZOOM ESCALONADO PELA ALTURA */
 let zoomLevel = 1.0;
 const ZOOM_STEP = 0.1;
-const BASE_WIDTH = 100;
+const BASE_SIZE = 100; // Alterado de BASE_WIDTH para refletir a mudança
 
 const container = document.getElementById("viewer-container");
 const img = document.getElementById("comic-img");
@@ -181,9 +183,11 @@ async function renderPage() {
     resetZoom();
 }
 
-/* ✅ ZOOM CORRIGIDO */
+/* ✅ ZOOM CORRIGIDO PARA FUNCIONAR COM ALTURA */
 function applyZoom() {
-    img.style.width = (BASE_WIDTH * zoomLevel) + "%";
+    // Aplica o zoom na ALTURA do elemento da imagem
+    img.style.height = (BASE_SIZE * zoomLevel) + "%";
+    img.style.width = 'auto'; // Garante que a largura se ajuste
 }
 
 function zoomIn() {
@@ -200,7 +204,9 @@ function zoomOut() {
 
 function resetZoom() {
     zoomLevel = 1.0;
-    img.style.width = BASE_WIDTH + "%";
+    // Reseta a ALTURA para o padrão e a largura para automática
+    img.style.height = BASE_SIZE + "%";
+    img.style.width = 'auto';
     container.scrollTop = 0;
     container.scrollLeft = 0;
 }
@@ -260,7 +266,7 @@ document.addEventListener("keydown", (e) => {
 
         /* Zoom */
         case "+":
-        case "=":   // necessário em teclados ABNT
+        case "=":
             e.preventDefault();
             zoomIn();
             break;
