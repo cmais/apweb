@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leitor CBZ Estável - V3.9 (Topo Fixo)</title>
+<title>Leitor CBZ Estável - V4.0 (Transição Suave)</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
@@ -54,8 +54,9 @@ html, body {
     margin: 0 auto;
     height: 100%; /* Ajusta a imagem pela altura */
     width: auto;   /* Largura automática para manter a proporção */
-    transition: height 0.1s ease-out; /* Animação de zoom na altura */
+    transition: height 0.1s ease-out, opacity 0.2s ease-in-out; /* Adicionada opacidade para suavidade */
     pointer-events: none;
+    opacity: 1;
 }
 
 #ui-overlay {
@@ -70,6 +71,7 @@ html, body {
     gap: 12px;
     align-items: center;
     opacity: 0.4;
+    z-index: 10;
 }
 #ui-overlay:hover { opacity: 1; }
 
@@ -172,20 +174,30 @@ async function loadFile(file) {
 }
 
 async function renderPage() {
-    if (currentObjectURL) URL.revokeObjectURL(currentObjectURL);
-    const blob = await zip.file(imageFiles[currentIndex]).async("blob");
-    currentObjectURL = URL.createObjectURL(blob);
-    img.src = currentObjectURL;
-    document.getElementById("page-info").textContent =
-        `${currentIndex+1} / ${imageFiles.length}`;
-    localStorage.setItem("prog_"+currentFileName, currentIndex);
+    // 1. Inicia um rápido fade-out para esconder a troca brusca
+    img.style.opacity = 0;
     
-    // ===== CORREÇÃO APLICADA AQUI =====
-    // Garante que a nova página sempre comece do topo.
-    container.scrollTop = 0;
-    // ===================================
-    
-    applyZoom();
+    // Pequeno atraso para permitir que a opacidade comece a mudar
+    setTimeout(async () => {
+        if (currentObjectURL) URL.revokeObjectURL(currentObjectURL);
+        const blob = await zip.file(imageFiles[currentIndex]).async("blob");
+        currentObjectURL = URL.createObjectURL(blob);
+        
+        // 2. Atualiza a imagem e reseta o scroll enquanto ela está invisível
+        img.src = currentObjectURL;
+        container.scrollTop = 0;
+        
+        document.getElementById("page-info").textContent =
+            `${currentIndex+1} / ${imageFiles.length}`;
+        localStorage.setItem("prog_"+currentFileName, currentIndex);
+        
+        applyZoom();
+        
+        // 3. Fade-in suave com a nova imagem já posicionada no topo
+        img.onload = () => {
+            img.style.opacity = 1;
+        };
+    }, 50);
 }
 
 /* ✅ ZOOM CORRIGIDO PARA FUNCIONAR COM ALTURA */
