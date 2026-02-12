@@ -117,7 +117,7 @@ let currentSubtitleBlobUrl = null;
 
 function updateStatus(message, ready = false) {
     status.textContent = message;
-    status.style.color = ready ? "#4CAF50" : "#888";
+    status.style.color = ready ? "#9aa09a" : "#888"; // verde discreto
 }
 
 /* ---------- VIDEO ---------- */
@@ -143,17 +143,46 @@ function loadVideo(file) {
     updateStatus("Vídeo carregado. Adicione legenda (opcional).");
 
     videoPlayer.onloadeddata = function() {
+
+        /* Retomar tempo */
         const savedTime = localStorage.getItem("resume-" + currentVideoKey);
         if (savedTime && videoPlayer.duration > 0) {
             videoPlayer.currentTime = parseFloat(savedTime);
             updateStatus("Retomado de onde parou.");
         }
+
+        /* Restaurar legenda automaticamente */
+        const savedSubtitle = localStorage.getItem("subtitle-" + currentVideoKey);
+
+        if (savedSubtitle) {
+
+            const blob = new Blob([savedSubtitle], { type: 'text/vtt' });
+            const url = URL.createObjectURL(blob);
+
+            currentSubtitleBlobUrl = url;
+
+            const track = document.createElement('track');
+            track.kind = "subtitles";
+            track.label = "Legenda";
+            track.srclang = "pt";
+            track.src = url;
+            track.default = true;
+
+            videoPlayer.appendChild(track);
+
+            updateStatus("Legenda restaurada automaticamente.", true);
+        }
     };
 }
 
-/* ---------- LEGENDA COM CORREÇÃO DE ENCODING ---------- */
+/* ---------- LEGENDA ---------- */
 
 function loadSubtitle(file) {
+
+    if (!currentVideoKey) {
+        updateStatus("Carregue um vídeo antes da legenda.");
+        return;
+    }
 
     if (currentSubtitleBlobUrl) {
         URL.revokeObjectURL(currentSubtitleBlobUrl);
@@ -169,11 +198,9 @@ function loadSubtitle(file) {
         let text;
 
         try {
-            // tenta UTF-8 primeiro
             const decoder = new TextDecoder("utf-8", { fatal: true });
             text = decoder.decode(buffer);
         } catch {
-            // fallback ISO-8859-1
             const decoder = new TextDecoder("iso-8859-1");
             text = decoder.decode(buffer);
         }
@@ -184,6 +211,9 @@ function loadSubtitle(file) {
 
         const vtt = "WEBVTT\n\n" +
             text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+
+        /* Salvar legenda */
+        localStorage.setItem("subtitle-" + currentVideoKey, vtt);
 
         const blob = new Blob([vtt], { type: 'text/vtt' });
         const url = URL.createObjectURL(blob);
@@ -217,22 +247,23 @@ videoPlayer.addEventListener('timeupdate', () => {
     if (!currentVideoKey || !videoPlayer.duration) return;
 
     if (videoPlayer.duration - videoPlayer.currentTime > 1) {
-
         localStorage.setItem(
             "resume-" + currentVideoKey,
             videoPlayer.currentTime
         );
-
     } else {
-
         localStorage.removeItem("resume-" + currentVideoKey);
-
+        localStorage.removeItem("subtitle-" + currentVideoKey);
     }
 });
 
 /* ---------- RESET ---------- */
 
 resetBtn.addEventListener('click', () => {
+
+    if (currentVideoKey) {
+        localStorage.removeItem("subtitle-" + currentVideoKey);
+    }
 
     videoPlayer.pause();
     videoPlayer.removeAttribute("src");
