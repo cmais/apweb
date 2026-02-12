@@ -138,25 +138,20 @@ function loadVideo(file) {
     videoPlayer.style.display = "block";
 
     currentVideoBlobUrl = videoURL;
-
-    // Chave robusta (nome + tamanho)
     currentVideoKey = file.name + "-" + file.size;
 
     updateStatus("Vídeo carregado. Adicione legenda (opcional).");
 
     videoPlayer.onloadeddata = function() {
-
         const savedTime = localStorage.getItem("resume-" + currentVideoKey);
-
         if (savedTime && videoPlayer.duration > 0) {
             videoPlayer.currentTime = parseFloat(savedTime);
             updateStatus("Retomado de onde parou.");
         }
-
     };
 }
 
-/* ---------- LEGENDA ---------- */
+/* ---------- LEGENDA COM CORREÇÃO DE ENCODING ---------- */
 
 function loadSubtitle(file) {
 
@@ -170,13 +165,25 @@ function loadSubtitle(file) {
 
     reader.onload = function(e) {
 
-        let srt = e.target.result;
+        const buffer = e.target.result;
+        let text;
+
+        try {
+            // tenta UTF-8 primeiro
+            const decoder = new TextDecoder("utf-8", { fatal: true });
+            text = decoder.decode(buffer);
+        } catch {
+            // fallback ISO-8859-1
+            const decoder = new TextDecoder("iso-8859-1");
+            text = decoder.decode(buffer);
+        }
 
         videoPlayer.querySelectorAll('track').forEach(t => t.remove());
 
-        srt = srt.replace(/\r\n/g, '\n');
+        text = text.replace(/\r\n/g, '\n');
+
         const vtt = "WEBVTT\n\n" +
-            srt.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+            text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
 
         const blob = new Blob([vtt], { type: 'text/vtt' });
         const url = URL.createObjectURL(blob);
@@ -200,10 +207,10 @@ function loadSubtitle(file) {
         updateStatus("Erro ao ler legenda.");
     };
 
-    reader.readAsText(file, "UTF-8");
+    reader.readAsArrayBuffer(file);
 }
 
-/* ---------- SALVAR POSIÇÃO (REFINADO) ---------- */
+/* ---------- SALVAR POSIÇÃO ---------- */
 
 videoPlayer.addEventListener('timeupdate', () => {
 
@@ -218,7 +225,6 @@ videoPlayer.addEventListener('timeupdate', () => {
 
     } else {
 
-        // Se terminou, remove progresso salvo
         localStorage.removeItem("resume-" + currentVideoKey);
 
     }
