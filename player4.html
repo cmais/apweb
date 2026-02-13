@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimal Video Player v2</title>
+<title>Minimal Video Player v3.3</title>
 
 <style>
     body {
@@ -53,6 +53,11 @@
         background: #2a2a2a;
     }
 
+    button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
     input[type="file"] {
         display: none;
     }
@@ -64,6 +69,25 @@
         background: black;
         display: none;
         transition: box-shadow 0.3s ease;
+    }
+
+    /* ===== TEMAS DE LEGENDA ===== */
+
+    .theme-white-1 video::cue {
+        color: #ffffff;
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    .theme-white-2 video::cue {
+        color: #ffffff;
+        background-color: transparent;
+        text-shadow: 0 0 5px rgba(0,0,0,1);
+    }
+
+    .theme-yellow video::cue {
+        color: #FFEA00;
+        background-color: transparent;
+        text-shadow: 0 0 5px rgba(0,0,0,1);
     }
 
     #status {
@@ -81,7 +105,7 @@
 
 <body>
 
-<div class="container">
+<div class="container theme-white-1" id="playerApp">
     <h1>Reprodutor de Vídeo</h1>
 
     <div class="controls">
@@ -91,6 +115,7 @@
         <label for="subtitleInput">Legenda</label>
         <input type="file" id="subtitleInput" accept=".srt">
 
+        <button id="styleBtn" disabled>Estilo: Branco 01</button>
         <button id="resetBtn">Limpar</button>
     </div>
 
@@ -107,18 +132,46 @@ const videoPlayer = document.getElementById('videoPlayer');
 const videoInput = document.getElementById('videoInput');
 const subtitleInput = document.getElementById('subtitleInput');
 const resetBtn = document.getElementById('resetBtn');
+const styleBtn = document.getElementById('styleBtn');
+const playerApp = document.getElementById('playerApp');
 const status = document.getElementById('status');
 
 let currentVideoKey = null;
 let currentVideoBlobUrl = null;
 let currentSubtitleBlobUrl = null;
 
+/* 0 = Branco 01 | 1 = Branco 02 | 2 = Amarelo */
+let subtitleStyleIndex = 0;
+
 /* ---------- STATUS ---------- */
 
 function updateStatus(message, ready = false) {
     status.textContent = message;
-    status.style.color = ready ? "#9aa09a" : "#888"; // verde discreto
+    status.style.color = ready ? "#9aa09a" : "#888";
 }
+
+/* ---------- ESTILO LEGENDA ---------- */
+
+styleBtn.addEventListener('click', () => {
+
+    subtitleStyleIndex = (subtitleStyleIndex + 1) % 3;
+
+    playerApp.classList.remove("theme-white-1", "theme-white-2", "theme-yellow");
+
+    if (subtitleStyleIndex === 0) {
+        playerApp.classList.add("theme-white-1");
+        styleBtn.textContent = "Estilo: Branco 01";
+    }
+    else if (subtitleStyleIndex === 1) {
+        playerApp.classList.add("theme-white-2");
+        styleBtn.textContent = "Estilo: Branco 02";
+    }
+    else {
+        playerApp.classList.add("theme-yellow");
+        styleBtn.textContent = "Estilo: Amarelo";
+    }
+
+});
 
 /* ---------- VIDEO ---------- */
 
@@ -141,38 +194,6 @@ function loadVideo(file) {
     currentVideoKey = file.name + "-" + file.size;
 
     updateStatus("Vídeo carregado. Adicione legenda (opcional).");
-
-    videoPlayer.onloadeddata = function() {
-
-        /* Retomar tempo */
-        const savedTime = localStorage.getItem("resume-" + currentVideoKey);
-        if (savedTime && videoPlayer.duration > 0) {
-            videoPlayer.currentTime = parseFloat(savedTime);
-            updateStatus("Retomado de onde parou.");
-        }
-
-        /* Restaurar legenda automaticamente */
-        const savedSubtitle = localStorage.getItem("subtitle-" + currentVideoKey);
-
-        if (savedSubtitle) {
-
-            const blob = new Blob([savedSubtitle], { type: 'text/vtt' });
-            const url = URL.createObjectURL(blob);
-
-            currentSubtitleBlobUrl = url;
-
-            const track = document.createElement('track');
-            track.kind = "subtitles";
-            track.label = "Legenda";
-            track.srclang = "pt";
-            track.src = url;
-            track.default = true;
-
-            videoPlayer.appendChild(track);
-
-            updateStatus("Legenda restaurada automaticamente.", true);
-        }
-    };
 }
 
 /* ---------- LEGENDA ---------- */
@@ -212,9 +233,6 @@ function loadSubtitle(file) {
         const vtt = "WEBVTT\n\n" +
             text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
 
-        /* Salvar legenda */
-        localStorage.setItem("subtitle-" + currentVideoKey, vtt);
-
         const blob = new Blob([vtt], { type: 'text/vtt' });
         const url = URL.createObjectURL(blob);
 
@@ -230,45 +248,21 @@ function loadSubtitle(file) {
         videoPlayer.appendChild(track);
         videoPlayer.classList.add("ready");
 
-        updateStatus("Legenda carregada.", true);
-    };
+        styleBtn.disabled = false;
 
-    reader.onerror = function() {
-        updateStatus("Erro ao ler legenda.");
+        updateStatus("Legenda carregada.", true);
     };
 
     reader.readAsArrayBuffer(file);
 }
 
-/* ---------- SALVAR POSIÇÃO ---------- */
-
-videoPlayer.addEventListener('timeupdate', () => {
-
-    if (!currentVideoKey || !videoPlayer.duration) return;
-
-    if (videoPlayer.duration - videoPlayer.currentTime > 1) {
-        localStorage.setItem(
-            "resume-" + currentVideoKey,
-            videoPlayer.currentTime
-        );
-    } else {
-        localStorage.removeItem("resume-" + currentVideoKey);
-        localStorage.removeItem("subtitle-" + currentVideoKey);
-    }
-});
-
 /* ---------- RESET ---------- */
 
 resetBtn.addEventListener('click', () => {
 
-    if (currentVideoKey) {
-        localStorage.removeItem("subtitle-" + currentVideoKey);
-    }
-
     videoPlayer.pause();
     videoPlayer.removeAttribute("src");
     videoPlayer.load();
-
     videoPlayer.style.display = "none";
     videoPlayer.classList.remove("ready");
 
@@ -277,7 +271,7 @@ resetBtn.addEventListener('click', () => {
     videoInput.value = "";
     subtitleInput.value = "";
 
-    currentVideoKey = null;
+    styleBtn.disabled = true;
 
     updateStatus("Arquivos removidos.");
 });
@@ -292,9 +286,18 @@ subtitleInput.addEventListener('change', e => {
     if (e.target.files[0]) loadSubtitle(e.target.files[0]);
 });
 
-window.addEventListener('beforeunload', () => {
-    if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
-    if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
+/* ---------- ATALHO DE TECLADO (L) ---------- */
+
+document.addEventListener("keydown", (event) => {
+
+    // evita interferência se usuário estiver digitando em algum campo
+    const tag = document.activeElement.tagName.toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+
+    if (event.key.toLowerCase() === "l" && !styleBtn.disabled) {
+        styleBtn.click();
+    }
+
 });
 
 </script>
