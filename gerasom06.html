@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Simulador Didático de Áudio Digital</title>
+
+<style>
+body {
+  background:#111;
+  color:#eee;
+  font-family:system-ui;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
+}
+.container {
+  max-width:540px;
+  width:95%;
+  background:#1e1e1e;
+  padding:20px;
+  border-radius:12px;
+}
+label { color:#bbb; }
+input, select, button { width:100%; margin-bottom:8px; }
+button { padding:10px; cursor:pointer; }
+canvas {
+  background:#000;
+  width:100%;
+  height:140px;
+  margin-top:8px;
+}
+.warn { color:#ffcc00; font-size:0.85rem; }
+.calc { font-size:0.8rem; color:#aaa; white-space:pre; }
+.section-title {
+  font-size:0.85rem;
+  color:#888;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h2>Simulador de DAC & Aliasing</h2>
+
+<label>Modo de Simulação</label>
+<select id="mode">
+  <option value="real">🔬 DAC REAL (alias audível)</option>
+  <option value="ideal">✅ DAC IDEAL (anti-alias)</option>
+</select>
+
+<label>Frequência: <span id="fTxt">440</span> Hz</label>
+<input type="range" id="freq" min="1" max="50000" value="440">
+
+<label>Frequência exata (Hz)</label>
+<input type="number" id="freqInput" min="1" max="50000" step="1" value="440">
+
+<label>Volume: <span id="vTxt">-12</span> dB</label>
+<input type="range" id="vol" min="-60" max="0" value="-12">
+
+<label>Onda</label>
+<select id="wave">
+  <option value="sine">Senoidal</option>
+  <option value="square">Quadrada</option>
+  <option value="sawtooth">Dente de Serra</option>
+  <option value="triangle">Triangular</option>
+</select>
+
+<button id="toggle">Tocar</button>
+
+<div class="warn" id="warn"></div>
+<div class="calc" id="calc"></div>
+
+<div class="section-title">Espectro de Frequência (FFT)</div>
+<canvas id="fft"></canvas>
+
+<div class="section-title">Forma de Onda (Domínio do Tempo)</div>
+<canvas id="waveform"></canvas>
+</div>
+
+<script>
+let ctx, osc, gain, analyser;
+let playing=false;
+
+const freq = document.getElementById('freq');
+const freqInput = document.getElementById('freqInput');
+const vol = document.getElementById('vol');
+const wave = document.getElementById('wave');
+const toggle = document.getElementById('toggle');
+const mode = document.getElementById('mode');
+const warn = document.getElementById('warn');
+const calc = document.getElementById('calc');
+const fTxt = document.getElementById('fTxt');
+const vTxt = document.getElementById('vTxt');
+
+const fftCanvas = document.getElementById('fft');
+const fftCtx = fftCanvas.getContext('2d');
+
+const waveCanvas = document.getElementById('waveform');
+const waveCtx = waveCanvas.getContext('2d');
+
+function dbToGain(db){ return Math.pow(10, db/20); }
+
+function init(){
+  if(!ctx){
+    ctx = new AudioContext();
+    gain = ctx.createGain();
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    gain.connect(analyser);
+    analyser.connect(ctx.destination);
+  }
+}
+
+function start(){
+  init();
+  osc = ctx.createOscillator();
+  osc.type = wave.value;
+  osc.frequency.value = freq.value;
+  gain.gain.value = dbToGain(vol.value);
+  osc.connect(gain);
+  osc.start();
+  draw();
+}
+
+function stop(){
+  osc.stop();
+  osc.disconnect();
+  osc=null;
+}
+
+toggle.onclick=()=>{
+  playing=!playing;
+  playing?start():stop();
+  toggle.textContent = playing?"Parar":"Tocar";
+};
+
+freq.oninput = () => {
+  freqInput.value = freq.value;
+  updateInfo();
+};
+
+freqInput.onchange = () => {
+  let value = Number(freqInput.value);
+  if (isNaN(value)) return;
+
+  value = Math.max(1, Math.min(50000, value));
+
+  freq.value = value;
+  freqInput.value = value;
+  updateInfo();
+};
+
+vol.oninput=()=>{
+  vTxt.textContent=vol.value;
+  if(gain) gain.gain.setValueAtTime(dbToGain(vol.value), ctx.currentTime);
+};
+
+wave.onchange=()=>{ if(osc) osc.type=wave.value; };
+mode.onchange=()=>updateInfo();
+
+function updateInfo(){
+  const f = +freq.value;
+  const Fs = ctx?ctx.sampleRate:44100;
+  const nyq = Fs/2;
+  fTxt.textContent=f;
+
+  warn.textContent="";
+  calc.textContent=`Fs = ${Fs} Hz\nNyquist = ${nyq} Hz`;
+
+  if(f>nyq){
+    const alias = Math.abs(f - Fs);
+    calc.textContent += `\nAlias = |${f} − ${Fs}| = ${Math.round(alias)} Hz`;
+    warn.textContent="🚫 Aliasing detectado";
+    if(mode.value==="ideal" && gain){
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+    }
+  } else {
+    if(gain) gain.gain.setValueAtTime(dbToGain(vol.value), ctx.currentTime);
+  }
+
+  if(osc) osc.frequency.setValueAtTime(f, ctx.currentTime);
+}
+
+function draw(){
+  if(!playing) return;
+  requestAnimationFrame(draw);
+  drawFFT();
+  drawWaveform();
+}
+
+function drawFFT(){
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+
+  fftCtx.fillStyle="#000";
+  fftCtx.fillRect(0,0,fftCanvas.width,fftCanvas.height);
+
+  const nyqX = fftCanvas.width/2;
+  fftCtx.strokeStyle="red";
+  fftCtx.beginPath();
+  fftCtx.moveTo(nyqX,0);
+  fftCtx.lineTo(nyqX,fftCanvas.height);
+  fftCtx.stroke();
+
+  fftCtx.strokeStyle="lime";
+  fftCtx.beginPath();
+  data.forEach((v,i)=>{
+    const x = i/data.length*fftCanvas.width;
+    const y = fftCanvas.height - v/255*fftCanvas.height;
+    fftCtx.lineTo(x,y);
+  });
+  fftCtx.stroke();
+}
+
+function drawWaveform(){
+  const data = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(data);
+
+  waveCtx.fillStyle="#000";
+  waveCtx.fillRect(0,0,waveCanvas.width,waveCanvas.height);
+
+  waveCtx.strokeStyle="#00bfff";
+  waveCtx.beginPath();
+
+  data.forEach((v,i)=>{
+    const x = i/data.length*waveCanvas.width;
+    const y = (v/255)*waveCanvas.height;
+    waveCtx.lineTo(x,y);
+  });
+
+  waveCtx.stroke();
+}
+</script>
+</body>
+</html>
+
