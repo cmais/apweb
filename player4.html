@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimal Video Player v3.3</title>
+<title>Minimal Video Player v4.0</title>
 
 <style>
     body {
@@ -150,11 +150,9 @@ function updateStatus(message, ready = false) {
     status.style.color = ready ? "#9aa09a" : "#888";
 }
 
-/* ---------- ESTILO LEGENDA ---------- */
+/* ---------- APLICAR ESTILO ---------- */
 
-styleBtn.addEventListener('click', () => {
-
-    subtitleStyleIndex = (subtitleStyleIndex + 1) % 3;
+function applySubtitleStyle() {
 
     playerApp.classList.remove("theme-white-1", "theme-white-2", "theme-yellow");
 
@@ -170,8 +168,43 @@ styleBtn.addEventListener('click', () => {
         playerApp.classList.add("theme-yellow");
         styleBtn.textContent = "Estilo: Amarelo";
     }
+}
 
-});
+/* ---------- SALVAR PROGRESSO ---------- */
+
+function saveProgress() {
+    if (!currentVideoKey) return;
+
+    localStorage.setItem(
+        "videoProgress_" + currentVideoKey,
+        JSON.stringify({
+            time: videoPlayer.currentTime,
+            style: subtitleStyleIndex
+        })
+    );
+}
+
+/* ---------- RESTAURAR PROGRESSO ---------- */
+
+function restoreProgress() {
+
+    const saved = localStorage.getItem("videoProgress_" + currentVideoKey);
+    if (!saved) return;
+
+    const data = JSON.parse(saved);
+
+    videoPlayer.addEventListener("loadedmetadata", function handler() {
+
+        if (data.time && data.time < videoPlayer.duration) {
+            videoPlayer.currentTime = data.time;
+        }
+
+        subtitleStyleIndex = data.style || 0;
+        applySubtitleStyle();
+
+        videoPlayer.removeEventListener("loadedmetadata", handler);
+    });
+}
 
 /* ---------- VIDEO ---------- */
 
@@ -181,6 +214,14 @@ function loadVideo(file) {
         updateStatus("Formato de vídeo não suportado.");
         return;
     }
+
+    // LIMPEZA ESSENCIAL: Remove legendas e reseta inputs ao trocar vídeo
+    videoPlayer.querySelectorAll('track').forEach(t => t.remove());
+    subtitleInput.value = ""; // Permite recarregar a mesma legenda se necessário
+    if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
+    currentSubtitleBlobUrl = null;
+    styleBtn.disabled = true;
+    videoPlayer.classList.remove("ready");
 
     if (currentVideoBlobUrl) {
         URL.revokeObjectURL(currentVideoBlobUrl);
@@ -193,6 +234,7 @@ function loadVideo(file) {
     currentVideoBlobUrl = videoURL;
     currentVideoKey = file.name + "-" + file.size;
 
+    restoreProgress();
     updateStatus("Vídeo carregado. Adicione legenda (opcional).");
 }
 
@@ -202,9 +244,12 @@ function loadSubtitle(file) {
 
     if (!currentVideoKey) {
         updateStatus("Carregue um vídeo antes da legenda.");
+        subtitleInput.value = ""; // Limpa o input se não houver vídeo
         return;
     }
 
+    // Limpa track anterior antes de adicionar a nova
+    videoPlayer.querySelectorAll('track').forEach(t => t.remove());
     if (currentSubtitleBlobUrl) {
         URL.revokeObjectURL(currentSubtitleBlobUrl);
     }
@@ -226,8 +271,6 @@ function loadSubtitle(file) {
             text = decoder.decode(buffer);
         }
 
-        videoPlayer.querySelectorAll('track').forEach(t => t.remove());
-
         text = text.replace(/\r\n/g, '\n');
 
         const vtt = "WEBVTT\n\n" +
@@ -246,6 +289,12 @@ function loadSubtitle(file) {
         track.default = true;
 
         videoPlayer.appendChild(track);
+        
+        // Forçar o navegador a reconhecer a nova track
+        if (videoPlayer.textTracks.length > 0) {
+            videoPlayer.textTracks[0].mode = 'showing'; 
+        }
+
         videoPlayer.classList.add("ready");
 
         styleBtn.disabled = false;
@@ -286,18 +335,35 @@ subtitleInput.addEventListener('change', e => {
     if (e.target.files[0]) loadSubtitle(e.target.files[0]);
 });
 
-/* ---------- ATALHO DE TECLADO (L) ---------- */
+styleBtn.addEventListener('click', () => {
+    subtitleStyleIndex = (subtitleStyleIndex + 1) % 3;
+    applySubtitleStyle();
+});
+
+/* ---------- SALVAMENTO AUTOMÁTICO ---------- */
+
+videoPlayer.addEventListener("timeupdate", saveProgress);
+videoPlayer.addEventListener("pause", saveProgress);
+window.addEventListener("beforeunload", saveProgress);
+
+/* ---------- APAGAR PROGRESSO AO FINAL ---------- */
+
+videoPlayer.addEventListener("ended", () => {
+    if (currentVideoKey) {
+        localStorage.removeItem("videoProgress_" + currentVideoKey);
+    }
+});
+
+/* ---------- ATALHO L ---------- */
 
 document.addEventListener("keydown", (event) => {
 
-    // evita interferência se usuário estiver digitando em algum campo
     const tag = document.activeElement.tagName.toLowerCase();
     if (tag === "input" || tag === "textarea") return;
 
     if (event.key.toLowerCase() === "l" && !styleBtn.disabled) {
         styleBtn.click();
     }
-
 });
 
 </script>
