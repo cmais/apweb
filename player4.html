@@ -3,278 +3,428 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimal Video Player v4.1</title>
+<title>Minimal Video Player v5.8 (Ícones + Feedback)</title>
 
 <style>
-    body {
-        margin: 0;
-        font-family: system-ui, -apple-system, sans-serif;
-        background: #0f0f0f;
-        color: #e5e5e5;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-    }
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #000000; /* PRETO ABSOLUTO */
+    color: #e5e5e5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
 
-    .container {
-        width: 95%;
-        max-width: 800px;
-        text-align: center;
-    }
+.container {
+    width: 95%;
+    max-width: 800px;
+    text-align: center;
+    background: #000000; /* PRETO ABSOLUTO no container */
+    padding: 20px;
+}
 
-    h1 {
-        font-size: 1.4rem;
-        font-weight: 500;
-        margin-bottom: 20px;
-        color: #ffffff;
-    }
+h1 {
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-bottom: 20px;
+    color: #ffffff;
+}
 
-    .controls {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 15px;
-    }
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
 
-    label, button {
-        background: #1f1f1f;
-        border: 1px solid #2c2c2c;
-        color: #e5e5e5;
-        padding: 8px 14px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        transition: 0.2s ease;
-    }
+label, button {
+    background: #1f1f1f;
+    border: 1px solid #2c2c2c;
+    color: #e5e5e5;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
 
-    label:hover, button:hover {
-        background: #2a2a2a;
-    }
+label:hover, button:hover {
+    background: #2a2a2a;
+}
 
-    button:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
 
-    input[type="file"] {
-        display: none;
-    }
+input[type="file"] {
+    display: none;
+}
 
-    video {
-        width: 100%;
-        max-height: 65vh;
-        border-radius: 8px;
-        background: black;
-        display: none;
-        transition: box-shadow 0.3s ease;
-    }
+video {
+    width: 100%;
+    max-height: 65vh;
+    border-radius: 8px;
+    background: black;
+    display: none;
+    transition: all 0.3s ease;
+}
 
-    .theme-white-1 video::cue {
-        color: #ffffff;
-        background-color: rgba(0, 0, 0, 0.8);
-    }
+/* Sombra SUAVE ao redor do vídeo (recomendado) */
+video.ready {
+    box-shadow: 0 0 12px rgba(80, 80, 80, 0.35); /* Cinza escuro SUAVE */
+}
 
-    .theme-white-2 video::cue {
-        color: #ffffff;
-        background-color: transparent;
-        text-shadow: 0 0 5px rgba(0,0,0,1);
-    }
+/* Modo cinema visual */
+.cinema-mode video {
+    filter:
+        contrast(1.08)
+        saturate(1.06)
+        brightness(0.97);
+    box-shadow: 0 0 15px rgba(100, 100, 100, 0.4); /* Sombra um pouco mais forte no modo cinema */
+}
 
-    .theme-yellow video::cue {
-        color: #FFEA00;
-        background-color: transparent;
-        text-shadow: 0 0 5px rgba(0,0,0,1);
-    }
+/* Legendas */
+.theme-white-1 video::cue {
+    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.8);
+}
 
-    #status {
-        font-size: 0.85rem;
-        margin-top: 10px;
-        color: #888;
-        min-height: 20px;
-    }
+.theme-white-2 video::cue {
+    color: #ffffff;
+    background-color: transparent;
+    text-shadow: 0 0 5px rgba(0,0,0,1);
+}
 
-    .ready {
-        box-shadow: 0 0 20px rgba(255,255,255,0.12);
-    }
+.theme-yellow video::cue {
+    color: #FFEA00;
+    background-color: transparent;
+    text-shadow: 0 0 5px rgba(0,0,0,1);
+}
+
+#status {
+    font-size: 0.85rem;
+    margin-top: 10px;
+    color: #888;
+    min-height: 20px;
+}
+
+/* FEEDBACK VISUAL PARA ATALHOS */
+#shortcut-feedback {
+    position: fixed;
+    bottom: 50%;
+    left: 50%;
+    transform: translate(-50%, 50%);
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 1.2rem;
+    font-weight: 500;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 1000;
+    opacity: 0;
+}
+
+/* ÍCONES DOS BOTÕES */
+.controls svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+}
 </style>
 </head>
 
 <body>
 
 <div class="container theme-white-1" id="playerApp">
-    <h1>Reprodutor de Vídeo</h1>
+<h1>Reprodutor de Vídeo</h1>
 
-    <div class="controls">
-        <label for="videoInput">Vídeo</label>
-        <input type="file" id="videoInput" accept="video/*">
+<div class="controls">
+    <label for="videoInput" title="Carregar vídeo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5 5-5-5"/>
+        </svg>
+    </label>
+    <input type="file" id="videoInput" accept="video/*">
 
-        <label for="subtitleInput">Legenda</label>
-        <input type="file" id="subtitleInput" accept=".srt">
+    <label for="subtitleInput" title="Carregar legenda">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+    </label>
+    <input type="file" id="subtitleInput" accept=".srt">
 
-        <button id="styleBtn" disabled>Estilo: Branco 01</button>
-        <button id="resetBtn">Limpar</button>
-    </div>
+    <button id="styleBtn" disabled title="Estilo de legenda (L)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 7h16M4 12h16M4 17h8" stroke-linecap="round"/>
+        </svg>
+    </button>
+    
+    <button id="cinemaBtn" disabled title="Modo Cinema (C)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="10" rx="2"/>
+            <path d="M10 12h4" stroke-linecap="round"/>
+        </svg>
+    </button>
+    
+    <button id="fullscreenBtn" title="Tela Cheia (F)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0a2 2 0 0 0-2-2h-3m0 18a2 2 0 0 0 2-2v-3m-18 0a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
+    
+    <button id="resetBtn" title="Limpar tudo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/>
+        </svg>
+    </button>
+</div>
 
-    <video id="videoPlayer" controls></video>
+<video id="videoPlayer" controls crossorigin="anonymous"></video>
 
-    <div id="status" role="status" aria-live="polite">
-        Selecione um vídeo.
-    </div>
+<div id="status" role="status" aria-live="polite">
+    Selecione um vídeo.
+</div>
+
+<!-- FEEDBACK VISUAL PARA ATALHOS -->
+<div id="shortcut-feedback" class="hidden">Atalho</div>
 </div>
 
 <script>
-
+/* ELEMENTOS DOM */
 const videoPlayer = document.getElementById('videoPlayer');
 const videoInput = document.getElementById('videoInput');
 const subtitleInput = document.getElementById('subtitleInput');
 const resetBtn = document.getElementById('resetBtn');
 const styleBtn = document.getElementById('styleBtn');
+const cinemaBtn = document.getElementById('cinemaBtn');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
 const playerApp = document.getElementById('playerApp');
 const status = document.getElementById('status');
+const shortcutFeedback = document.getElementById('shortcut-feedback');
 
+/* VARIÁVEIS DE ESTADO */
 let currentVideoKey = null;
 let currentVideoBlobUrl = null;
 let currentSubtitleBlobUrl = null;
 
 let subtitleStyleIndex = 0;
+let cinemaMode = false;
+let lastSavedTime = -1; 
 
-/* ---------- STATUS ---------- */
+/* ===== AUDIO CINEMA (WEB AUDIO API) - CORIGIDO ===== */
+let audioContext = null;
+let sourceNode = null;
+let bassFilter = null;
+let gainNode = null;
+let isAudioInitialized = false;
+
+function initAudioContext() {
+    if (isAudioInitialized) return;
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    audioContext = new AudioContext();
+    
+    // Cria o source apenas uma vez por elemento de vídeo
+    sourceNode = audioContext.createMediaElementSource(videoPlayer);
+    
+    bassFilter = audioContext.createBiquadFilter();
+    bassFilter.type = "lowshelf";
+    bassFilter.frequency.value = 200;
+    bassFilter.gain.value = 4;
+
+    gainNode = audioContext.createGain();
+    gainNode.gain.value = 1.1;
+
+    isAudioInitialized = true;
+    updateAudioRouting();
+}
+
+function updateAudioRouting() {
+    if (!isAudioInitialized) return;
+
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
+    // Desconecta tudo para reconectar limpo (evita erro de conexão múltipla)
+    try { sourceNode.disconnect(); } catch(e){}
+    try { bassFilter.disconnect(); } catch(e){}
+    try { gainNode.disconnect(); } catch(e){}
+
+    if (cinemaMode) {
+        // Modo Cinema: Video -> Bass -> Gain -> Destino
+        sourceNode.connect(bassFilter);
+        bassFilter.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+    } else {
+        // Modo Normal: Video -> Destino
+        sourceNode.connect(audioContext.destination);
+    }
+}
+
+/* ===== STATUS & UI ===== */
 
 function updateStatus(message, ready = false) {
     status.textContent = message;
     status.style.color = ready ? "#9aa09a" : "#888";
 }
 
-/* ---------- ESTILO ---------- */
-
 function applySubtitleStyle() {
     playerApp.classList.remove("theme-white-1", "theme-white-2", "theme-yellow");
-
-    if (subtitleStyleIndex === 0) {
-        playerApp.classList.add("theme-white-1");
-        styleBtn.textContent = "Estilo: Branco 01";
-    } else if (subtitleStyleIndex === 1) {
-        playerApp.classList.add("theme-white-2");
-        styleBtn.textContent = "Estilo: Branco 02";
-    } else {
-        playerApp.classList.add("theme-yellow");
-        styleBtn.textContent = "Estilo: Amarelo";
-    }
+    const labels = ["Branco 01", "Branco 02", "Amarelo"];
+    const classes = ["theme-white-1", "theme-white-2", "theme-yellow"];
+    
+    playerApp.classList.add(classes[subtitleStyleIndex]);
+    
+    // Atualiza o título do botão para acessibilidade
+    styleBtn.title = `Estilo: ${labels[subtitleStyleIndex]} (L)`;
 }
 
-/* ---------- SALVAR PROGRESSO ---------- */
+function applyCinemaMode() {
+    playerApp.classList.toggle("cinema-mode", cinemaMode);
+    cinemaBtn.title = cinemaMode ? "Modo Cinema: On (C)" : "Modo Cinema: Off (C)";
+    updateAudioRouting();
+}
+
+/* ===== FEEDBACK VISUAL PARA ATALHOS ===== */
+function showShortcutFeedback(text) {
+    shortcutFeedback.textContent = text;
+    shortcutFeedback.style.opacity = "1";
+    
+    clearTimeout(shortcutFeedback.timeout);
+    shortcutFeedback.timeout = setTimeout(() => {
+        shortcutFeedback.style.opacity = "0";
+    }, 800);
+}
+
+/* ===== PERSISTÊNCIA ===== */
 
 function saveProgress() {
     if (!currentVideoKey) return;
+    if (isNaN(videoPlayer.duration)) return;
 
     localStorage.setItem(
         "videoProgress_" + currentVideoKey,
         JSON.stringify({
             time: videoPlayer.currentTime,
-            style: subtitleStyleIndex
+            style: subtitleStyleIndex,
+            cinema: cinemaMode
         })
     );
 }
 
-/* ---------- RESTAURAR ---------- */
-
 function restoreProgress() {
+    if (!currentVideoKey) return;
 
     const saved = localStorage.getItem("videoProgress_" + currentVideoKey);
-    if (!saved) return;
+    
+    let savedTime = 0;
+    let savedStyle = 0;
+    let savedCinema = false;
 
-    const data = JSON.parse(saved);
-
-    videoPlayer.addEventListener("loadedmetadata", function handler() {
-
-        if (data.time && data.time < videoPlayer.duration) {
-            videoPlayer.currentTime = data.time;
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            savedTime = data.time || 0;
+            savedStyle = data.style ?? 0;
+            savedCinema = data.cinema ?? false;
+        } catch {
+            localStorage.removeItem("videoProgress_" + currentVideoKey);
         }
+    }
 
-        subtitleStyleIndex = data.style || 0;
-        applySubtitleStyle();
+    subtitleStyleIndex = savedStyle;
+    cinemaMode = savedCinema;
+    
+    applySubtitleStyle();
+    applyCinemaMode();
 
-        videoPlayer.removeEventListener("loadedmetadata", handler);
-    });
+    if (savedTime > 0 && savedTime < videoPlayer.duration) {
+        videoPlayer.currentTime = savedTime;
+    }
 }
 
-/* ---------- VIDEO ---------- */
+/* ===== VÍDEO - CORIGIDO ===== */
 
 function loadVideo(file) {
+    cleanupVideo(false);
 
-    if (videoPlayer.canPlayType(file.type) === '') {
-        updateStatus("Formato de vídeo não suportado.");
-        return;
-    }
+    // CORREÇÃO: Limpa o input da legenda para liberar seleção do mesmo arquivo
+    subtitleInput.value = ""; 
 
-    videoPlayer.querySelectorAll('track').forEach(t => t.remove());
-    subtitleInput.value = "";
-
-    if (currentSubtitleBlobUrl) {
-        URL.revokeObjectURL(currentSubtitleBlobUrl);
-        currentSubtitleBlobUrl = null;
-    }
-
-    styleBtn.disabled = true;
-    videoPlayer.classList.remove("ready");
-
-    if (currentVideoBlobUrl) {
-        URL.revokeObjectURL(currentVideoBlobUrl);
-    }
+    // CORREÇÃO: Reseta contador de save para evitar conflitos com vídeo anterior
+    lastSavedTime = -1;
 
     const videoURL = URL.createObjectURL(file);
     videoPlayer.src = videoURL;
     videoPlayer.style.display = "block";
 
     currentVideoBlobUrl = videoURL;
-    currentVideoKey = file.name + "-" + file.size;
+    currentVideoKey = file.name + "-" + file.size + "-" + file.lastModified;
 
-    restoreProgress();
+    cinemaBtn.disabled = false;
+    fullscreenBtn.disabled = false;
+    styleBtn.disabled = true;
+
+    // CORREÇÃO: Inicializa áudio na primeira interação com vídeo
+    initAudioContext();
+
+    videoPlayer.addEventListener("loadedmetadata", () => {
+        restoreProgress();
+        applySubtitleStyle();
+    }, { once: true });
+
     updateStatus("Vídeo carregado. Adicione legenda (opcional).");
 }
 
-/* ---------- LEGENDA ---------- */
+/* ===== LEGENDA - CORIGIDO ===== */
 
 function loadSubtitle(file) {
-
     if (!currentVideoKey) {
         updateStatus("Carregue um vídeo antes da legenda.");
         subtitleInput.value = "";
         return;
     }
 
-    videoPlayer.querySelectorAll('track').forEach(t => t.remove());
-
-    if (currentSubtitleBlobUrl) {
-        URL.revokeObjectURL(currentSubtitleBlobUrl);
-    }
-
-    updateStatus("Carregando legenda...");
+    if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
 
     const reader = new FileReader();
 
     reader.onload = function(e) {
-
-        const buffer = e.target.result;
         let text;
-
         try {
-            text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+            text = new TextDecoder("utf-8", { fatal: true }).decode(e.target.result);
         } catch {
-            text = new TextDecoder("iso-8859-1").decode(buffer);
+            try {
+                // CORREÇÃO: Adicionado Windows-1252 para legendas brasileiras
+                text = new TextDecoder("windows-1252").decode(e.target.result);
+            } catch {
+                text = new TextDecoder("iso-8859-1").decode(e.target.result);
+            }
         }
 
-        text = text.replace(/\r\n/g, '\n');
+        text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
         const vtt = "WEBVTT\n\n" +
-            text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+            text.replace(/(\d{2}:\d{2}:\d{2})[.,](\d{3})/g, '$1.$2');
 
         const blob = new Blob([vtt], { type: 'text/vtt' });
         const url = URL.createObjectURL(blob);
 
         currentSubtitleBlobUrl = url;
+
+        Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
 
         const track = document.createElement('track');
         track.kind = "subtitles";
@@ -283,53 +433,66 @@ function loadSubtitle(file) {
         track.src = url;
         track.default = true;
 
-        videoPlayer.appendChild(track);
+        track.onload = function() {
+            this.mode = "showing";
+            if(videoPlayer.textTracks[0]) videoPlayer.textTracks[0].mode = "showing";
+        };
 
+        videoPlayer.appendChild(track);
+        
         if (videoPlayer.textTracks.length > 0) {
-            videoPlayer.textTracks[0].mode = 'showing';
+             videoPlayer.textTracks[0].mode = "showing";
         }
 
         videoPlayer.classList.add("ready");
         styleBtn.disabled = false;
-
         updateStatus("Legenda carregada.", true);
     };
 
     reader.readAsArrayBuffer(file);
 }
 
-/* ---------- RESET ---------- */
+/* ===== LIMPEZA - CORIGIDO ===== */
 
-resetBtn.addEventListener('click', () => {
-
+function cleanupVideo(fullReset = true) {
     videoPlayer.pause();
-
-    if (currentVideoBlobUrl) {
-        URL.revokeObjectURL(currentVideoBlobUrl);
-        currentVideoBlobUrl = null;
+    
+    if (isAudioInitialized) {
+        cinemaMode = false;
+        updateAudioRouting();
     }
 
-    if (currentSubtitleBlobUrl) {
-        URL.revokeObjectURL(currentSubtitleBlobUrl);
-        currentSubtitleBlobUrl = null;
-    }
+    if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
+    if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
+
+    currentVideoBlobUrl = null;
+    currentSubtitleBlobUrl = null;
 
     videoPlayer.removeAttribute("src");
     videoPlayer.load();
     videoPlayer.style.display = "none";
     videoPlayer.classList.remove("ready");
 
-    videoPlayer.querySelectorAll('track').forEach(t => t.remove());
+    Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
 
-    videoInput.value = "";
-    subtitleInput.value = "";
+    if (fullReset) {
+        videoInput.value = "";
+        subtitleInput.value = "";
+        styleBtn.disabled = true;
+        cinemaBtn.disabled = true;
+        fullscreenBtn.disabled = true;
+        
+        subtitleStyleIndex = 0;
+        cinemaMode = false;
+        lastSavedTime = -1; // CORREÇÃO: Resetar contador
+        applySubtitleStyle();
+        applyCinemaMode();
+        
+        updateStatus("Arquivos removidos.");
+    }
+}
 
-    styleBtn.disabled = true;
-
-    updateStatus("Arquivos removidos.");
-});
-
-/* ---------- EVENTOS ---------- */
+/* ===== EVENTOS ===== */
 
 videoInput.addEventListener('change', e => {
     if (e.target.files[0]) loadVideo(e.target.files[0]);
@@ -342,11 +505,42 @@ subtitleInput.addEventListener('change', e => {
 styleBtn.addEventListener('click', () => {
     subtitleStyleIndex = (subtitleStyleIndex + 1) % 3;
     applySubtitleStyle();
+    saveProgress();
+    showShortcutFeedback("Estilo: " + ["Branco 01", "Branco 02", "Amarelo"][subtitleStyleIndex]);
 });
 
-/* ---------- SALVAMENTO ---------- */
+cinemaBtn.addEventListener('click', () => {
+    cinemaMode = !cinemaMode;
+    applyCinemaMode();
+    saveProgress();
+    showShortcutFeedback(cinemaMode ? "Cinema: On" : "Cinema: Off");
+});
+
+fullscreenBtn.addEventListener('click', () => {
+    if (!videoPlayer.src) return;
+    if (!document.fullscreenElement) {
+        videoPlayer.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen();
+    }
+    showShortcutFeedback(document.fullscreenElement ? "Tela Cheia" : "Janela");
+});
+
+resetBtn.addEventListener('click', () => {
+    cleanupVideo(true);
+    showShortcutFeedback("Limpo");
+});
 
 videoPlayer.addEventListener("pause", saveProgress);
+
+videoPlayer.addEventListener("timeupdate", () => {
+    const currentSecond = Math.floor(videoPlayer.currentTime);
+    if (currentSecond > 0 && currentSecond % 5 === 0 && currentSecond !== lastSavedTime) {
+        saveProgress();
+        lastSavedTime = currentSecond;
+    }
+});
+
 window.addEventListener("beforeunload", saveProgress);
 
 videoPlayer.addEventListener("ended", () => {
@@ -355,26 +549,59 @@ videoPlayer.addEventListener("ended", () => {
     }
 });
 
-/* ---------- ATALHOS ---------- */
-
+/* ===== ATALHOS DE TECLADO ===== */
 document.addEventListener("keydown", (event) => {
-
     const tag = document.activeElement.tagName.toLowerCase();
     if (tag === "input" || tag === "textarea") return;
 
-    if (event.key.toLowerCase() === "l" && !styleBtn.disabled) {
-        styleBtn.click();
-    }
+    const key = event.key.toLowerCase();
 
-    if (event.key.toLowerCase() === "f") {
-        if (!document.fullscreenElement) {
-            videoPlayer.requestFullscreen();
+    // ESPAÇO: play/pause
+    if (key === ' ') {
+        if (!videoPlayer.src) return;
+        event.preventDefault();
+        if (videoPlayer.paused) {
+            videoPlayer.play();
+            showShortcutFeedback("Play");
         } else {
-            document.exitFullscreen();
+            videoPlayer.pause();
+            showShortcutFeedback("Pause");
         }
     }
-});
 
+    // SETA ESQUERDA: -10s
+    if (key === 'arrowleft') {
+        if (!videoPlayer.src) return;
+        event.preventDefault();
+        videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
+        showShortcutFeedback("-10s");
+    }
+
+    // SETA DIREITA: +10s
+    if (key === 'arrowright') {
+        if (!videoPlayer.src || isNaN(videoPlayer.duration)) return;
+        event.preventDefault();
+        videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
+        showShortcutFeedback("+10s");
+    }
+
+    // ATALHOS EXISTENTES:
+    if (key === "l" && !styleBtn.disabled) {
+        styleBtn.click();
+        event.preventDefault();
+    }
+    
+    if (key === "c" && !cinemaBtn.disabled) {
+        cinemaBtn.click();
+        event.preventDefault();
+    }
+    
+    if (key === "f") {
+        if (!videoPlayer.src) return;
+        event.preventDefault();
+        fullscreenBtn.click();
+    }
+});
 </script>
 
 </body>
