@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> Comic Web Reader - V4.2 </title>
+<title> Comic Web Reader - V4.3 </title>
     <link rel="icon" href="/apweb/favcwr.png" type="image/png">
 
     <link rel="icon" href="/apweb/favcwr.png" type="image/png" sizes="64x64">
@@ -11,6 +11,14 @@
 
     
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- Adicionando PDF.js para suporte a PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script>
+  // Configura o worker para PDF.js
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+  }
+</script>
 
 <style>
 :root {
@@ -59,7 +67,7 @@ html, body {
     margin: 0 auto;
     height: 100%; /* Ajusta a imagem pela altura */
     width: auto;   /* Largura automática para manter a proporção */
-    transition: height 0.1s ease-out, opacity 0.2s ease-in-out; /* Adicionada opacidade para suavidade */
+    transition: height 0.1s ease-out, opacity 0.2s ease-in-out;
     pointer-events: none;
     opacity: 1;
 }
@@ -132,6 +140,21 @@ button.nav-btn {
     z-index: 100;
     max-width: 200px;
 }
+
+/* Loader de carregamento */
+#loading-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    display: none;
+    z-index: 1000;
+    font-size: 14px;
+}
 </style>
 </head>
 
@@ -140,7 +163,8 @@ button.nav-btn {
 <div id="drop-zone">
     <h2>Comic Web Reader</h2>
     <p>Arraste o arquivo ou clique</p>
-    <input type="file" id="file-input" accept=".cbz" hidden>
+    <p style="font-size: 0.8em; color: #aaa;">(CBZ ou PDF)</p>
+    <input type="file" id="file-input" accept=".cbz,.pdf" hidden>
 </div>
 
 <div id="viewer-container">
@@ -168,10 +192,132 @@ button.nav-btn {
     F: Tela Cheia<br>
     Esc: Sair
 </div>
+<div id="loading-indicator">Carregando página...</div>
 
 <script>
-let zip, imageFiles = [], currentIndex = 0;
-let currentObjectURL = null, currentFileName = "";
+// Classe abstrata para leitores de livros em quadrinhos
+class ComicBookReader {
+  static async loadFile(file) {
+    if (file.name.toLowerCase().endsWith('.cbz')) {
+      return new CBZReader(file);
+    } else if (file.name.toLowerCase().endsWith('.pdf')) {
+      return new PDFReader(file);
+    }
+    throw new Error("Formato não suportado");
+  }
+  
+  // Métodos abstratos
+  async load() { throw new Error("Método não implementado"); }
+  get pageCount() { throw new Error("Método não implementado"); }
+  async getPage(index) { throw new Error("Método não implementado"); }
+  close() { throw new Error("Método não implementado"); }
+}
+
+class CBZReader extends ComicBookReader {
+  constructor(file) {
+    super();
+    this.file = file;
+    this.zip = null;
+    this.imageFiles = [];
+  }
+  
+  async load() {
+    const buffer = await this.file.arrayBuffer();
+    this.zip = await JSZip.loadAsync(buffer);
+    
+    this.imageFiles = Object.keys(this.zip.files)
+      .filter(f => /\.(png|jpe?g|webp|gif)$/i.test(f))
+      .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+      
+    if (this.imageFiles.length === 0) {
+      throw new Error("Nenhuma imagem encontrada no arquivo CBZ");
+    }
+    
+    return this;
+  }
+  
+  get pageCount() {
+    return this.imageFiles.length;
+  }
+  
+  async getPage(index) {
+    return this.zip.file(this.imageFiles[index]).async("blob");
+  }
+  
+  close() {
+    this.zip = null;
+    this.imageFiles = [];
+  }
+}
+
+class PDFReader extends ComicBookReader {
+  constructor(file) {
+    super();
+    this.file = file;
+    this.pdfDoc = null;
+    this.canvasCache = new Map();
+  }
+  
+  async load() {
+    const typedarray = new Uint8Array(await this.file.arrayBuffer());
+    this.pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
+    return this;
+  }
+  
+  get pageCount() {
+    return this.pdfDoc.numPages;
+  }
+  
+  async getPage(index) {
+    // Verifica se já está no cache
+    if (this.canvasCache.has(index)) {
+      return new Promise(resolve => {
+        this.canvasCache.get(index).toBlob(resolve, 'image/png');
+      });
+    }
+    
+    const page = await this.pdfDoc.getPage(index + 1);
+    
+    // Configura a escala da página
+    const scale = 2.0;
+    const viewport = page.getViewport({ scale });
+    
+    // Prepara um canvas para renderizar
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    
+    // Renderiza a página no canvas
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise;
+    
+    // Armazena no cache
+    this.canvasCache.set(index, canvas);
+    
+    // Converte o canvas para blob
+    return new Promise(resolve => {
+      canvas.toBlob(resolve, 'image/png');
+    });
+  }
+  
+  close() {
+    if (this.pdfDoc) {
+      this.pdfDoc.destroy();
+      this.pdfDoc = null;
+    }
+    this.canvasCache.clear();
+  }
+}
+
+// Estado global
+let currentReader = null;
+let currentObjectURL = null;
+let currentFileName = "";
+let currentIndex = 0;
+let isPDFLoading = false;
 
 /* 🔍 ZOOM ESCALONADO PELA ALTURA */
 let zoomLevel = 1.0;
@@ -184,6 +330,7 @@ const dropZone = document.getElementById("drop-zone");
 const fileInput = document.getElementById("file-input");
 const errorMessage = document.getElementById("error-message");
 const keyboardHint = document.getElementById("keyboard-hint");
+const loadingIndicator = document.getElementById("loading-indicator");
 
 /* Drag / Panning */
 let isDragging = false, startX, startY, scrollLeft, scrollTop;
@@ -218,6 +365,10 @@ function showError(message) {
     }, 5000);
 }
 
+function showLoading(show) {
+    loadingIndicator.style.display = show ? "block" : "none";
+}
+
 function showKeyboardHint() {
     keyboardHint.style.display = "block";
     setTimeout(() => {
@@ -227,29 +378,39 @@ function showKeyboardHint() {
 
 async function loadFile(file) {
     try {
-        // Verifica se é um arquivo CBZ válido
-        if (!file.name.toLowerCase().endsWith('.cbz')) {
-            showError("Por favor, selecione um arquivo .cbz válido");
+        // Limpa estado anterior
+        if (currentReader) {
+            currentReader.close();
+            currentReader = null;
+        }
+        
+        // Verifica se é um arquivo CBZ ou PDF válido
+        if (!file.name.toLowerCase().match(/\.(cbz|pdf)$/)) {
+            showError("Por favor, selecione um arquivo .cbz ou .pdf válido");
             return;
         }
         
+        showLoading(true);
         currentFileName = file.name;
-        const buffer = await file.arrayBuffer();
-        zip = await JSZip.loadAsync(buffer);
         
-        imageFiles = Object.keys(zip.files)
-            .filter(f => /\.(png|jpe?g|webp|gif)$/i.test(f))
-            .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
-            
-        // Verifica se encontrou imagens
-        if (imageFiles.length === 0) {
-            showError("Nenhuma imagem encontrada no arquivo CBZ");
-            return;
+        try {
+            // Carrega o leitor específico para o formato
+            currentReader = await ComicBookReader.loadFile(file);
+            await currentReader.load();
+        } catch (error) {
+            // Tenta carregar PDF.js se não estiver carregado
+            if (file.name.toLowerCase().endsWith('.pdf') && typeof pdfjsLib === 'undefined') {
+                await loadPDFLib();
+                currentReader = await ComicBookReader.loadFile(file);
+                await currentReader.load();
+            } else {
+                throw error;
+            }
         }
-
+        
         currentIndex = parseInt(localStorage.getItem("prog_"+file.name)) || 0;
         // Garante que o índice está dentro dos limites
-        currentIndex = Math.max(0, Math.min(currentIndex, imageFiles.length - 1));
+        currentIndex = Math.max(0, Math.min(currentIndex, currentReader.pageCount - 1));
         
         dropZone.style.display = "none";
         container.style.display = "block";
@@ -259,13 +420,35 @@ async function loadFile(file) {
         showKeyboardHint();
     } catch (error) {
         console.error("Erro ao carregar arquivo:", error);
-        showError("Erro ao carregar arquivo. Verifique se é um CBZ válido.");
+        showError(error.message || "Erro ao carregar arquivo. Verifique se é um CBZ ou PDF válido.");
+    } finally {
+        showLoading(false);
     }
+}
+
+async function loadPDFLib() {
+    return new Promise((resolve, reject) => {
+        if (typeof pdfjsLib !== 'undefined') {
+            resolve();
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
+        script.onload = () => {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            resolve();
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
 }
 
 async function renderPage() {
     // 1. Inicia um rápido fade-out para esconder a troca brusca
     img.style.opacity = 0;
+    
+    showLoading(true);
     
     // Pequeno atraso para permitir que a opacidade comece a mudar
     setTimeout(async () => {
@@ -275,7 +458,7 @@ async function renderPage() {
                 currentObjectURL = null;
             }
             
-            const blob = await zip.file(imageFiles[currentIndex]).async("blob");
+            const blob = await currentReader.getPage(currentIndex);
             currentObjectURL = URL.createObjectURL(blob);
             
             // 2. Atualiza a imagem e reseta o scroll enquanto ela está invisível
@@ -284,12 +467,14 @@ async function renderPage() {
                 // Remove o manipulador para evitar memória vazando
                 img.onload = null;
                 img.style.opacity = 1;
+                showLoading(false);
             };
             
             img.onerror = () => {
                 img.onerror = null;
-                showError(`Erro ao carregar imagem: ${imageFiles[currentIndex]}`);
+                showError(`Erro ao carregar página: ${currentIndex + 1}`);
                 img.style.opacity = 1;
+                showLoading(false);
             };
             
             img.src = currentObjectURL;
@@ -297,7 +482,7 @@ async function renderPage() {
             container.scrollTop = 0;
             
             document.getElementById("page-info").textContent =
-                `${currentIndex+1} / ${imageFiles.length}`;
+                `${currentIndex+1} / ${currentReader.pageCount}`;
             localStorage.setItem("prog_"+currentFileName, currentIndex);
             
             applyZoom();
@@ -305,8 +490,9 @@ async function renderPage() {
             console.error("Erro ao renderizar página:", error);
             showError("Erro ao carregar página. Tente novamente.");
             img.style.opacity = 1;
+            showLoading(false);
         }
-    }, 250); // Timeout ajustado para 250ms (igual ao tempo da transição)
+    }, 50); // Timeout ajustado para 50ms (igual ao tempo da transição)
 }
 
 /* ✅ ZOOM CORRIGIDO PARA FUNCIONAR COM ALTURA */
@@ -337,7 +523,7 @@ function resetZoom() {
 
 /* Navegação */
 function nextPage() {
-    if (currentIndex < imageFiles.length - 1) {
+    if (currentIndex < currentReader.pageCount - 1) {
         currentIndex++;
         renderPage();
     }
@@ -367,12 +553,15 @@ function closeBook() {
         currentObjectURL = null;
     }
     
+    if (currentReader) {
+        currentReader.close();
+        currentReader = null;
+    }
+    
     if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {});
     }
     
-    zip = null;
-    imageFiles = [];
     currentIndex = 0;
     currentFileName = "";
     
@@ -383,7 +572,7 @@ function closeBook() {
 
 /* ⌨️ Atalhos de Teclado – UX preservada */
 document.addEventListener("keydown", (e) => {
-    if (!zip) return;
+    if (!currentReader) return;
 
     switch (e.key) {
         /* Alternar tela cheia com F/f */
