@@ -4,62 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relógio Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
     <style>
-        /* Importando a fonte Noto Sans do Google Fonts */
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --clock-font-size: min(20vw, 200px); /* 🔑 ALTERE ESTE VALOR PARA AJUSTAR A FONTE */
+        }
+
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@700&display=swap');
 
         body {
-            background-color: #000000; /* Fundo Preto */
-            color: #ffffff;            /* Texto Branco */
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
             padding: 0;
-            height: 100vh;             /* Altura total da tela */
-            display: flex;             /* Flexbox para centralizar */
-            justify-content: center;   /* Centraliza horizontalmente */
-            align-items: center;       /* Centraliza verticalmente */
-            font-family: 'Noto Sans', sans-serif; /* Fonte solicitada */
-            overflow: hidden;          /* Evita barras de rolagem */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Noto Sans', sans-serif;
+            overflow: hidden;
         }
 
         #relogio {
-            font-size: 15vw; /* Tamanho responsivo: 15% da largura da tela */
+            font-size: var(--clock-font-size); /* Usa a variável definida acima */
             font-weight: 700;
-            user-select: none; /* Impede seleção do texto ao clicar */
+            user-select: none;
             line-height: 1;
         }
     </style>
 </head>
 <body>
-
-    <div id="relogio">00:00:00</div>
+    <div id="relogio" aria-live="polite" role="timer">00:00:00</div>
 
     <script>
+        // Atualização do relógio (mantido igual)
         function atualizarRelogio() {
             const agora = new Date();
-            
-            // Pega horas, minutos e segundos
-            let horas = agora.getHours();
-            let minutos = agora.getMinutes();
-            let segundos = agora.getSeconds();
-
-            // Adiciona o zero à esquerda se for menor que 10 (ex: 9 vira 09)
-            horas = horas < 10 ? '0' + horas : horas;
-            minutos = minutos < 10 ? '0' + minutos : minutos;
-            segundos = segundos < 10 ? '0' + segundos : segundos;
-
-            // Monta a string do horário
-            const horarioAtual = `${horas}:${minutos}:${segundos}`;
-
-            // Atualiza o elemento na tela
-            document.getElementById('relogio').textContent = horarioAtual;
+            const horas = String(agora.getHours()).padStart(2, '0');
+            const minutos = String(agora.getMinutes()).padStart(2, '0');
+            const segundos = String(agora.getSeconds()).padStart(2, '0');
+            document.getElementById('relogio').textContent = `${horas}:${minutos}:${segundos}`;
         }
 
-        // Atualiza o relógio a cada 1000 milissegundos (1 segundo)
         setInterval(atualizarRelogio, 1000);
-
-        // Chama a função imediatamente para não esperar 1 segundo ao carregar
         atualizarRelogio();
-    </script>
 
+        // 🔑 NOVO: Atalho para fullscreen com tecla "F"
+        document.addEventListener('keydown', (event) => {
+          if (event.key.toLowerCase() === 'f') {
+            event.preventDefault();
+            
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen().catch(e => 
+                console.error("Erro ao entrar em fullscreen:", e)
+              );
+            } else {
+              document.exitFullscreen().catch(e => 
+                console.error("Erro ao sair do fullscreen:", e)
+              );
+            }
+          }
+        });
+    </script>
 </body>
 </html>
