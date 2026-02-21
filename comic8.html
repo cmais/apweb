@@ -3,13 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> Comic Web Reader - V4.3 </title>
+<title>Comic Web Reader - V4.4</title>
     <link rel="icon" href="/apweb/favcwr.png" type="image/png">
-
     <link rel="icon" href="/apweb/favcwr.png" type="image/png" sizes="64x64">
     <link rel="icon" href="/apweb/favcwr.ico" type="image/x-icon" sizes="16x16 32x32">
 
-    
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <!-- Adicionando PDF.js para suporte a PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -65,8 +63,8 @@ html, body {
 #comic-img {
     display: block;
     margin: 0 auto;
-    height: 100%; /* Ajusta a imagem pela altura */
-    width: auto;   /* Largura automática para manter a proporção */
+    height: 100%;
+    width: auto;
     transition: height 0.1s ease-out, opacity 0.2s ease-in-out;
     pointer-events: none;
     opacity: 1;
@@ -376,6 +374,21 @@ function showKeyboardHint() {
     }, 3000);
 }
 
+/* ✅ NOVA FUNÇÃO: Atualiza o título da aba do navegador */
+function updateTabTitle(filename) {
+    if (filename) {
+        // Remove a extensão do arquivo
+        let name = filename.replace(/\.(cbz|pdf|zip)$/i, '');
+        // Substitui underscores por espaços para melhor leitura
+        name = name.replace(/_/g, ' ');
+        // Atualiza o título da aba com formato: [Nome] - Comic Web Reader
+        document.title = `${name} - Comic Web Reader`;
+    } else {
+        // Reseta para o título padrão quando não há arquivo
+        document.title = 'Comic Web Reader - V4.4';
+    }
+}
+
 async function loadFile(file) {
     try {
         // Limpa estado anterior
@@ -415,6 +428,9 @@ async function loadFile(file) {
         dropZone.style.display = "none";
         container.style.display = "block";
         renderPage();
+        
+        // ✅ Atualiza o título da aba após carregamento bem-sucedido
+        updateTabTitle(file.name);
         
         // Mostra a dica de atalhos por 3 segundos
         showKeyboardHint();
@@ -564,6 +580,9 @@ function closeBook() {
     
     currentIndex = 0;
     currentFileName = "";
+    
+    // ✅ Reseta o título da aba ao fechar
+    updateTabTitle(null);
     
     container.style.display = "none";
     dropZone.style.display = "flex";
