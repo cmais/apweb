@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizador Escolar - EFAI & EFAF</title>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #4da6ff;
+            --border-color: #333333;
+            --success-color: #4CAF50;
+            --error-color: #f44336;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .schedule-container {
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            overflow-x: auto;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--bg-tertiary);
+            border-radius: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-right: 1px solid var(--border-color);
+            padding-right: 15px;
+        }
+
+        .toolbar-group:last-child { border-right: none; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: center;
+            position: relative;
+        }
+        
+        th {
+            background-color: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cycle-header {
+            background-color: #252525;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .time-cell {
+            width: 130px;
+            background-color: #1a1a1a;
+        }
+
+        .time-display {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .time-display:hover { background-color: var(--bg-tertiary); }
+
+        .time-edit {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            position: absolute;
+            background: var(--bg-tertiary);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            width: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .time-edit input {
+            background: #121212;
+            color: white;
+            border: 1px solid var(--border-color);
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        [contenteditable="true"] {
+            min-height: 40px;
+            outline: none;
+            transition: background 0.2s;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        [contenteditable="true"]:focus {
+            background-color: rgba(255,255,255,0.05);
+            box-shadow: inset 0 0 0 1px var(--accent-color);
+        }
+
+        button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-danger { background-color: var(--error-color); color: white; }
+        
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border-radius: 50%;
+            border: 2px solid transparent;
+        }
+
+        .color-btn.active { border-color: white; }
+
+        .action-cell {
+            width: 100px;
+            background-color: #1a1a1a;
+        }
+
+        .btn-delete {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            background-color: var(--error-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-delete:hover {
+            background-color: #d32f2f;
+            transform: scale(1.05);
+        }
+
+        .export-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Tooltip de ajuda */
+        .help-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* Estilos para o seletor de cor do ciclo */
+        .cycle-color-selector {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .cycle-color-input {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-section">
+    <h1>Organizador Escolar Inteligente</h1>
+    <p>Suporte a Ciclos (EFAI/EFAF) e Cores por Trecho</p>
+</div>
+
+<div class="schedule-container">
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <button id="add-row" class="btn-primary">+ Nova Linha</button>
+            <button id="save-data" class="btn-success">Salvar Grade</button>
+        </div>
+        
+        <div class="toolbar-group">
+            <label>Cor do Texto:</label>
+            <input type="color" id="text-color-tool" value="#4da6ff">
+            <button id="apply-color" class="btn-primary" title="Selecione um texto na célula e clique aqui">Aplicar no Selecionado</button>
+        </div>
+
+        <div class="toolbar-group">
+            <label>Cor EFAI:</label>
+            <input type="color" id="color-efai" class="cycle-color-input" value="#4da6ff">
+            <label>Cor EFAF:</label>
+            <input type="color" id="color-efaf" class="cycle-color-input" value="#ff6b6b">
+        </div>
+
+        <div class="toolbar-group">
+            <button id="export-html" style="background: #673ab7; color: white;">Exportar p/ HTML</button>
+        </div>
+        <div class="help-text">Dica: Selecione um texto dentro de qualquer célula e use o seletor de cor para destacar. Altere as cores dos ciclos para sincronizar com os horários.</div>
+    </div>
+
+    <table id="main-table">
+        <thead>
+            <tr>
+                <th colspan="2" class="cycle-header">Horários de Aula</th>
+                <th colspan="5" class="cycle-header">Dias da Semana</th>
+                <th class="cycle-header">Ação</th>
+            </tr>
+            <tr>
+                <th class="time-header">Ciclo EFAI</th>
+                <th class="time-header">Ciclo EFAF</th>
+                <th>Segunda</th>
+                <th>Terça</th>
+                <th>Quarta</th>
+                <th>Quinta</th>
+                <th>Sexta</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Linhas dinâmicas -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const tableBody = document.querySelector('#main-table tbody');
+    const colorInput = document.getElementById('text-color-tool');
+    const applyColorBtn = document.getElementById('apply-color');
+    const colorEFAIInput = document.getElementById('color-efai');
+    const colorEFAFInput = document.getElementById('color-efaf');
+
+    // Armazenar cores dos ciclos
+    let cycleColors = {
+        EFAI: '#4da6ff',
+        EFAF: '#ff6b6b'
+    };
+
+    // Função para aplicar cor apenas ao texto selecionado
+    applyColorBtn.addEventListener('click', () => {
+        const color = colorInput.value;
+        document.execCommand('foreColor', false, color);
+    });
+
+    // Sincronizar cores dos ciclos com os horários
+    colorEFAIInput.addEventListener('change', (e) => {
+        cycleColors.EFAI = e.target.value;
+        updateTimeDisplayColors();
+    });
+
+    colorEFAFInput.addEventListener('change', (e) => {
+        cycleColors.EFAF = e.target.value;
+        updateTimeDisplayColors();
+    });
+
+    function updateTimeDisplayColors() {
+        tableBody.querySelectorAll('tr').forEach((tr, index) => {
+            const timeDisplays = tr.querySelectorAll('.time-display');
+            if (timeDisplays.length >= 2) {
+                timeDisplays[0].style.color = cycleColors.EFAI;
+                timeDisplays[1].style.color = cycleColors.EFAF;
+            }
+        });
+    }
+
+    function createRow(data = null) {
+        const tr = document.createElement('tr');
+        
+        const defaultData = {
+            timeEFAI: "07:30-08:20",
+            timeEFAF: "07:30-08:15",
+            cells: ["", "", "", "", ""]
+        };
+        
+        const rowData = data || defaultData;
+
+        tr.innerHTML = `
+            <td class="time-cell">
+                <div class="time-display" style="color: ${cycleColors.EFAI};">${rowData.timeEFAI}</div>
+                <div class="time-edit">
+                    <input type="text" class="edit-val" value="${rowData.timeEFAI}">
+                    <button class="btn-success btn-sm save-time">OK</button>
+                </div>
+            </td>
+            <td class="time-cell">
+                <div class="time-display" style="color: ${cycleColors.EFAF};">${rowData.timeEFAF}</div>
+                <div class="time-edit">
+                    <input type="text" class="edit-val" value="${rowData.timeEFAF}">
+                    <button class="btn-success btn-sm save-time">OK</button>
+                </div>
+            </td>
+            ${rowData.cells.map(content => `<td contenteditable="true">${content}</td>`).join('')}
+            <td class="action-cell">
+                <button class="btn-delete">Excluir</button>
+            </td>
+        `;
+
+        // Eventos de Edição de Horário
+        tr.querySelectorAll('.time-cell').forEach(cell => {
+            const display = cell.querySelector('.time-display');
+            const editDiv = cell.querySelector('.time-edit');
+            const input = cell.querySelector('.edit-val');
+            const btn = cell.querySelector('.save-time');
+
+            display.onclick = () => {
+                display.style.display = 'none';
+                editDiv.style.display = 'flex';
+                input.focus();
+            };
+
+            btn.onclick = () => {
+                display.textContent = input.value;
+                display.style.display = 'block';
+                editDiv.style.display = 'none';
+            };
+
+            // Fechar edição ao pressionar Escape
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    display.style.display = 'block';
+                    editDiv.style.display = 'none';
+                }
+            });
+        });
+
+        // Evento do botão Excluir
+        tr.querySelector('.btn-delete').onclick = () => {
+            if(confirm('Tem certeza que deseja remover esta linha de horários?')) {
+                tr.remove();
+            }
+        };
+
+        return tr;
+    }
+
+    document.getElementById('add-row').onclick = () => {
+        tableBody.appendChild(createRow());
+    };
+
+    document.getElementById('save-data').onclick = () => {
+        const rows = [];
+        tableBody.querySelectorAll('tr').forEach(tr => {
+            const times = tr.querySelectorAll('.time-display');
+            const cells = tr.querySelectorAll('td[contenteditable="true"]');
+            rows.push({
+                timeEFAI: times[0].textContent,
+                timeEFAF: times[1].textContent,
+                cells: Array.from(cells).map(c => c.innerHTML) // Salva o HTML para manter as cores
+            });
+        });
+        localStorage.setItem('school-schedule-v2', JSON.stringify(rows));
+        alert('Grade salva com sucesso no navegador!');
+    };
+
+    // Carregar Dados
+    const saved = localStorage.getItem('school-schedule-v2');
+    if(saved) {
+        JSON.parse(saved).forEach(rowData => tableBody.appendChild(createRow(rowData)));
+    } else {
+        // Linhas iniciais padrão
+        for(let i=0; i<5; i++) tableBody.appendChild(createRow());
+    }
+
+    // Exportação enxuta - sem título, sem cabeçalhos redundantes e sem coluna de ação
+    document.getElementById('export-html').onclick = () => {
+        // Clonar a tabela para não afetar a original
+        const tabelaOriginal = document.getElementById('main-table');
+        const tabelaClonada = tabelaOriginal.cloneNode(true);
+        
+        // Remover a primeira linha de cabeçalho (linha com "Horários de Aula", "Dias da Semana", etc.)
+        const thead = tabelaClonada.querySelector('thead');
+        if (thead) {
+            const rows = thead.querySelectorAll('tr');
+            if (rows.length > 0) {
+                // Verificar se a primeira linha contém os cabeçalhos indesejados
+                const firstRow = rows[0];
+                const cells = firstRow.querySelectorAll('th, td');
+                
+                // Verificar se é a linha que queremos remover
+                let isRedundantHeader = false;
+                cells.forEach(cell => {
+                    const text = cell.textContent.trim().toLowerCase();
+                    if (text.includes('horários de aula') || 
+                        text.includes('dias da semana') || 
+                        text.includes('ação')) {
+                        isRedundantHeader = true;
+                    }
+                });
+                
+                if (isRedundantHeader) {
+                    firstRow.remove();
+                }
+            }
+        }
+        
+        // Identificar e remover a coluna "Ação"
+        const headers = tabelaClonada.querySelectorAll('thead th');
+        let actionColumnIndex = -1;
+
+        // Encontrar o índice da coluna "Ação"
+        for (let i = 0; i < headers.length; i++) {
+            if (headers[i].textContent.trim().toLowerCase() === 'ação') {
+                actionColumnIndex = i;
+                break;
+            }
+        }
+
+        // Se encontrou a coluna "Ação", removê-la
+        if (actionColumnIndex >= 0) {
+            // Remover do cabeçalho
+            const ths = tabelaClonada.querySelectorAll('thead th');
+            if (ths[actionColumnIndex]) {
+                ths[actionColumnIndex].remove();
+            }
+            
+            // Remover do corpo da tabela
+            const rows = tabelaClonada.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const tds = row.querySelectorAll('td');
+                if (tds[actionColumnIndex]) {
+                    tds[actionColumnIndex].remove();
+                }
+            });
+        }
+        
+        // Gerar o HTML para exportação
+        const tabelaHtml = tabelaClonada.outerHTML;
+        const fullHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { background: #121212; color: #e0e0e0; font-family: Arial, sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; background: #1e1e1e; }
+        th, td { border: 1px solid #333; padding: 10px; text-align: center; }
+        th { background: #2d2d2d; color: #4da6ff; font-weight: bold; }
+        .time-display { font-weight: bold; }
+        .time-edit, .toolbar, .btn-delete, .action-cell { display: none !important; }
+    </style>
+</head>
+<body>
+    ${tabelaHtml}
+</body>
+</html>`;
+
+        const blob = new Blob([fullHtml], {type: 'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'tabela01.html';
+        a.click();
+    };
+</script>
+
+</body>
+</html>
