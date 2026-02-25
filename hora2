@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relógio Analógico Minimalista</title>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: #0f1115;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+    }
+
+    .clock {
+        width: 85vw;
+        max-width: 320px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: #1a1d24;
+        position: relative;
+        box-shadow: 
+            0 0 20px rgba(0,0,0,0.6),
+            inset 0 0 15px rgba(255,255,255,0.03);
+    }
+
+    .center-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #ffffff;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10;
+    }
+
+    .hand {
+        position: absolute;
+        bottom: 50%;
+        left: 50%;
+        transform-origin: bottom;
+        transform: translateX(-50%) rotate(0deg);
+        border-radius: 6px;
+    }
+
+    .hour {
+        width: 6px;
+        height: 25%;
+        background: #ffffff;
+    }
+
+    .minute {
+        width: 4px;
+        height: 35%;
+        background: #d1d5db;
+    }
+
+    .second {
+        width: 2px;
+        height: 40%;
+        background: #ef4444;
+    }
+
+    /* Marcadores simples */
+    .marker {
+        position: absolute;
+        width: 2px;
+        height: 10px;
+        background: #888;
+        top: 5px;
+        left: 50%;
+        transform-origin: center 155px;
+    }
+
+</style>
+</head>
+<body>
+
+<div class="clock">
+    <div class="center-dot"></div>
+    <div class="hand hour" id="hour"></div>
+    <div class="hand minute" id="minute"></div>
+    <div class="hand second" id="second"></div>
+</div>
+
+<script>
+    const hourHand = document.getElementById("hour");
+    const minuteHand = document.getElementById("minute");
+    const secondHand = document.getElementById("second");
+    const clock = document.querySelector(".clock");
+
+    // Criar marcadores das horas dinamicamente
+    for (let i = 0; i < 12; i++) {
+        const marker = document.createElement("div");
+        marker.classList.add("marker");
+        marker.style.transform = `translateX(-50%) rotate(${i * 30}deg)`;
+        clock.appendChild(marker);
+    }
+
+    function updateClock() {
+        const now = new Date();
+
+        const seconds = now.getSeconds();
+        const minutes = now.getMinutes();
+        const hours = now.getHours();
+
+        const secondDeg = seconds * 6;
+        const minuteDeg = minutes * 6 + seconds * 0.1;
+        const hourDeg = (hours % 12) * 30 + minutes * 0.5;
+
+        secondHand.style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
+        minuteHand.style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+        hourHand.style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
+
+</body>
+</html>
