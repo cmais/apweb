@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organizador Escolar - EFAI & EFAF</title>
+
+<style>
+:root {
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --accent-color: #4da6ff;
+    --border-color: #333333;
+    --success-color: #4CAF50;
+    --error-color: #f44336;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.schedule-container {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 40px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    overflow-x: auto;
+}
+
+.toolbar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: var(--bg-tertiary);
+    border-radius: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-right: 1px solid var(--border-color);
+    padding-right: 15px;
+}
+
+.toolbar-group:last-child {
+    border-right: none;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px;
+}
+
+th, td {
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    text-align: center;
+    position: relative;
+}
+
+th {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.cycle-header {
+    background-color: #252525;
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.time-cell {
+    width: 130px;
+    background-color: #1a1a1a;
+}
+
+.time-display {
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.time-edit {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    position: absolute;
+    background: var(--bg-tertiary);
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    width: 140px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.time-edit input {
+    background: #121212;
+    color: white;
+    border: 1px solid var(--border-color);
+    padding: 4px;
+    border-radius: 4px;
+}
+
+[contenteditable="true"] {
+    min-height: 40px;
+    outline: none;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+[contenteditable="true"]:focus {
+    background-color: rgba(255,255,255,0.05);
+    box-shadow: inset 0 0 0 1px var(--accent-color);
+}
+
+button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-primary { background-color: var(--accent-color); color: white; }
+.btn-success { background-color: var(--success-color); color: white; }
+.btn-delete { background-color: var(--error-color); color: white; }
+
+.action-cell {
+    width: 100px;
+    background-color: #1a1a1a;
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+</style>
+</head>
+
+<body>
+
+<div class="header-section">
+<h1>Organizador Escolar Inteligente</h1>
+<p>Suporte a Ciclos (EFAI/EFAF) e Cores por Trecho</p>
+</div>
+
+<div class="schedule-container">
+
+<div class="toolbar">
+<div class="toolbar-group">
+<button id="add-row" class="btn-primary">+ Nova Linha</button>
+<button id="save-data" class="btn-success">Salvar Grade</button>
+</div>
+
+<div class="toolbar-group">
+<label>Cor do Texto:</label>
+<input type="color" id="text-color-tool" value="#4da6ff">
+<button id="apply-color" class="btn-primary">Aplicar no Selecionado</button>
+</div>
+
+<div class="toolbar-group">
+<button id="export-html" class="btn-primary">Exportar HTML</button>
+<button id="export-json" class="btn-success">Exportar JSON</button>
+<button id="import-json" class="btn-delete">Importar JSON</button>
+<input type="file" id="file-import" accept=".json" style="display:none;">
+</div>
+
+<div class="help-text">
+Selecione um texto dentro da célula para aplicar cor.
+</div>
+</div>
+
+<table id="main-table">
+<thead>
+<tr>
+<th>Ciclo EFAI</th>
+<th>Ciclo EFAF</th>
+<th>Segunda</th>
+<th>Terça</th>
+<th>Quarta</th>
+<th>Quinta</th>
+<th>Sexta</th>
+<th>Ação</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
+
+<script>
+const tableBody = document.querySelector('#main-table tbody');
+const colorInput = document.getElementById('text-color-tool');
+const fileImportInput = document.getElementById('file-import');
+
+let cycleColors = {
+    EFAI: '#4da6ff',
+    EFAF: '#ff6b6b'
+};
+
+function createRow(data = null) {
+
+    const defaultData = {
+        timeEFAI: "07:30-08:20",
+        timeEFAF: "07:30-08:15",
+        cells: ["","","","",""]
+    };
+
+    const rowData = data || defaultData;
+
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+        <td class="time-cell"><div class="time-display" style="color:${cycleColors.EFAI}">${rowData.timeEFAI}</div></td>
+        <td class="time-cell"><div class="time-display" style="color:${cycleColors.EFAF}">${rowData.timeEFAF}</div></td>
+        ${rowData.cells.map(c=>`<td contenteditable="true">${c}</td>`).join('')}
+        <td class="action-cell"><button class="btn-delete">Excluir</button></td>
+    `;
+
+    tr.querySelector('.btn-delete').onclick = () => {
+        if(confirm("Remover linha?")) tr.remove();
+    };
+
+    return tr;
+}
+
+document.getElementById('add-row').onclick = () => {
+    tableBody.appendChild(createRow());
+};
+
+document.getElementById('save-data').onclick = () => {
+    const rows = [];
+    tableBody.querySelectorAll('tr').forEach(tr=>{
+        const times = tr.querySelectorAll('.time-display');
+        const cells = tr.querySelectorAll('td[contenteditable="true"]');
+
+        rows.push({
+            timeEFAI: times[0].textContent,
+            timeEFAF: times[1].textContent,
+            cells: Array.from(cells).map(c=>c.innerHTML)
+        });
+    });
+
+    localStorage.setItem('school-schedule-v2', JSON.stringify(rows));
+    alert("Salvo com sucesso!");
+};
+
+document.getElementById('export-json').onclick = () => {
+
+    const rows = [];
+    tableBody.querySelectorAll('tr').forEach(tr=>{
+        const times = tr.querySelectorAll('.time-display');
+        const cells = tr.querySelectorAll('td[contenteditable="true"]');
+
+        rows.push({
+            timeEFAI: times[0].textContent,
+            timeEFAF: times[1].textContent,
+            cells: Array.from(cells).map(c=>c.innerHTML)
+        });
+    });
+
+    const jsonData = JSON.stringify(rows, null, 2);
+
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "grade_escolar.json";
+    a.click();
+};
+
+document.getElementById('import-json').onclick = () => {
+    fileImportInput.click();
+};
+
+fileImportInput.addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = evt=>{
+        const data = JSON.parse(evt.target.result);
+        tableBody.innerHTML = "";
+        data.forEach(row=>tableBody.appendChild(createRow(row)));
+    };
+    reader.readAsText(file);
+});
+
+document.getElementById('apply-color').onclick = ()=>{
+    document.execCommand("foreColor", false, colorInput.value);
+};
+
+const saved = localStorage.getItem('school-schedule-v2');
+if(saved){
+    JSON.parse(saved).forEach(row=>tableBody.appendChild(createRow(row)));
+}else{
+    for(let i=0;i<5;i++){
+        tableBody.appendChild(createRow());
+    }
+}
+
+document.getElementById('export-html').onclick = () => {
+
+    const tabelaOriginal = document.getElementById('main-table');
+    const tabelaClonada = tabelaOriginal.cloneNode(true);
+
+    // Remover coluna "Ação"
+    const headers = tabelaClonada.querySelectorAll('thead th');
+    let actionIndex = -1;
+
+    headers.forEach((th, index) => {
+        if (th.textContent.trim().toLowerCase() === 'ação') {
+            actionIndex = index;
+        }
+    });
+
+    if (actionIndex >= 0) {
+
+        // remover header
+        headers[actionIndex].remove();
+
+        // remover células do corpo
+        tabelaClonada.querySelectorAll('tbody tr').forEach(tr => {
+            const tds = tr.querySelectorAll('td');
+            if (tds[actionIndex]) {
+                tds[actionIndex].remove();
+            }
+        });
+    }
+
+    const htmlExport = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { background:#121212; color:#e0e0e0; font-family:Arial; padding:20px; }
+table { width:100%; border-collapse:collapse; }
+th, td { border:1px solid #333; padding:10px; text-align:center; }
+th { background:#2d2d2d; color:#4da6ff; }
+.time-display { font-weight:bold; }
+</style>
+</head>
+<body>
+${tabelaClonada.outerHTML}
+</body>
+</html>
+`;
+
+    const blob = new Blob([htmlExport], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'grade_escolar.html';
+    a.click();
+
+    URL.revokeObjectURL(url);
+};
+</script>
+
+</body>
+</html>
