@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimal Video Player v5.8 (Ícones + Feedback)</title>
+<title>Minimal Video Player v5.9</title>
     
     <link rel="icon" href="/apweb/favmvp.png" type="image/png">
-
     <link rel="icon" href="/apweb/favmvp.png" type="image/png" sizes="64x64">
     <link rel="icon" href="/apweb/favmvp.ico" type="image/x-icon" sizes="16x16 32x32">
 
@@ -14,7 +13,7 @@
 body {
     margin: 0;
     font-family: system-ui, -apple-system, sans-serif;
-    background: #000000; /* PRETO ABSOLUTO */
+    background: #000000;
     color: #e5e5e5;
     display: flex;
     justify-content: center;
@@ -26,7 +25,7 @@ body {
     width: 95%;
     max-width: 800px;
     text-align: center;
-    background: #000000; /* PRETO ABSOLUTO no container */
+    background: #000000;
     padding: 20px;
 }
 
@@ -81,18 +80,16 @@ video {
     transition: all 0.3s ease;
 }
 
-/* Sombra SUAVE ao redor do vídeo (recomendado) */
 video.ready {
-    box-shadow: 0 0 12px rgba(80, 80, 80, 0.35); /* Cinza escuro SUAVE */
+    box-shadow: 0 0 12px rgba(80, 80, 80, 0.35);
 }
 
-/* Modo cinema visual */
 .cinema-mode video {
     filter:
         contrast(1.08)
         saturate(1.06)
         brightness(0.97);
-    box-shadow: 0 0 15px rgba(100, 100, 100, 0.4); /* Sombra um pouco mais forte no modo cinema */
+    box-shadow: 0 0 15px rgba(100, 100, 100, 0.4);
 }
 
 /* Legendas */
@@ -120,7 +117,6 @@ video.ready {
     min-height: 20px;
 }
 
-/* FEEDBACK VISUAL PARA ATALHOS */
 #shortcut-feedback {
     position: fixed;
     bottom: 50%;
@@ -138,7 +134,6 @@ video.ready {
     opacity: 0;
 }
 
-/* ÍCONES DOS BOTÕES */
 .controls svg {
     width: 16px;
     height: 16px;
@@ -180,7 +175,8 @@ video.ready {
         </svg>
     </button>
     
-    <button id="fullscreenBtn" title="Tela Cheia (F)">
+    <!-- MELHORIA 8: fullscreenBtn inicia desabilitado -->
+    <button id="fullscreenBtn" disabled title="Tela Cheia (F)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0a2 2 0 0 0-2-2h-3m0 18a2 2 0 0 0 2-2v-3m-18 0a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -199,37 +195,38 @@ video.ready {
     Selecione um vídeo.
 </div>
 
-<!-- FEEDBACK VISUAL PARA ATALHOS -->
-<div id="shortcut-feedback" class="hidden">Atalho</div>
+<div id="shortcut-feedback">Atalho</div>
 </div>
 
 <script>
 /* ELEMENTOS DOM */
-const videoPlayer = document.getElementById('videoPlayer');
-const videoInput = document.getElementById('videoInput');
-const subtitleInput = document.getElementById('subtitleInput');
-const resetBtn = document.getElementById('resetBtn');
-const styleBtn = document.getElementById('styleBtn');
-const cinemaBtn = document.getElementById('cinemaBtn');
-const fullscreenBtn = document.getElementById('fullscreenBtn');
-const playerApp = document.getElementById('playerApp');
-const status = document.getElementById('status');
+const videoPlayer    = document.getElementById('videoPlayer');
+const videoInput     = document.getElementById('videoInput');
+const subtitleInput  = document.getElementById('subtitleInput');
+const resetBtn       = document.getElementById('resetBtn');
+const styleBtn       = document.getElementById('styleBtn');
+const cinemaBtn      = document.getElementById('cinemaBtn');
+const fullscreenBtn  = document.getElementById('fullscreenBtn');
+const playerApp      = document.getElementById('playerApp');
+const status         = document.getElementById('status');
 const shortcutFeedback = document.getElementById('shortcut-feedback');
 
 /* VARIÁVEIS DE ESTADO */
-let currentVideoKey = null;
-let currentVideoBlobUrl = null;
+let currentVideoKey       = null;
+let currentVideoBlobUrl   = null;
 let currentSubtitleBlobUrl = null;
+let subtitleStyleIndex    = 0;
+let cinemaMode            = false;
+let lastSavedTime         = -1;
 
-let subtitleStyleIndex = 0;
-let cinemaMode = false;
-let lastSavedTime = -1; 
+// MELHORIA 2: feedbackTimeout declarado como variável de estado, não como propriedade de DOM
+let feedbackTimeout = null;
 
-/* ===== AUDIO CINEMA (WEB AUDIO API) - CORIGIDO ===== */
-let audioContext = null;
-let sourceNode = null;
-let bassFilter = null;
-let gainNode = null;
+/* ===== AUDIO CINEMA (WEB AUDIO API) ===== */
+let audioContext      = null;
+let sourceNode        = null;
+let bassFilter        = null;
+let gainNode          = null;
 let isAudioInitialized = false;
 
 function initAudioContext() {
@@ -239,17 +236,16 @@ function initAudioContext() {
     if (!AudioContext) return;
 
     audioContext = new AudioContext();
-    
-    // Cria o source apenas uma vez por elemento de vídeo
-    sourceNode = audioContext.createMediaElementSource(videoPlayer);
-    
+    sourceNode   = audioContext.createMediaElementSource(videoPlayer);
+
     bassFilter = audioContext.createBiquadFilter();
     bassFilter.type = "lowshelf";
     bassFilter.frequency.value = 200;
     bassFilter.gain.value = 4;
 
     gainNode = audioContext.createGain();
-    gainNode.gain.value = 1.1;
+    // MELHORIA 6: ganho condicionado ao volume atual para evitar distorção
+    gainNode.gain.value = Math.min(1.0 / videoPlayer.volume, 1.1);
 
     isAudioInitialized = true;
     updateAudioRouting();
@@ -262,18 +258,17 @@ function updateAudioRouting() {
         audioContext.resume();
     }
 
-    // Desconecta tudo para reconectar limpo (evita erro de conexão múltipla)
-    try { sourceNode.disconnect(); } catch(e){}
-    try { bassFilter.disconnect(); } catch(e){}
-    try { gainNode.disconnect(); } catch(e){}
+    try { sourceNode.disconnect();  } catch(e) {}
+    try { bassFilter.disconnect();  } catch(e) {}
+    try { gainNode.disconnect();    } catch(e) {}
 
     if (cinemaMode) {
-        // Modo Cinema: Video -> Bass -> Gain -> Destino
+        // Modo Cinema: Vídeo → Bass → Gain → Destino
         sourceNode.connect(bassFilter);
         bassFilter.connect(gainNode);
         gainNode.connect(audioContext.destination);
     } else {
-        // Modo Normal: Video -> Destino
+        // Modo Normal: Vídeo → Destino
         sourceNode.connect(audioContext.destination);
     }
 }
@@ -287,12 +282,10 @@ function updateStatus(message, ready = false) {
 
 function applySubtitleStyle() {
     playerApp.classList.remove("theme-white-1", "theme-white-2", "theme-yellow");
-    const labels = ["Branco 01", "Branco 02", "Amarelo"];
+    const labels  = ["Branco 01", "Branco 02", "Amarelo"];
     const classes = ["theme-white-1", "theme-white-2", "theme-yellow"];
-    
+
     playerApp.classList.add(classes[subtitleStyleIndex]);
-    
-    // Atualiza o título do botão para acessibilidade
     styleBtn.title = `Estilo: ${labels[subtitleStyleIndex]} (L)`;
 }
 
@@ -306,52 +299,74 @@ function applyCinemaMode() {
 function showShortcutFeedback(text) {
     shortcutFeedback.textContent = text;
     shortcutFeedback.style.opacity = "1";
-    
-    clearTimeout(shortcutFeedback.timeout);
-    shortcutFeedback.timeout = setTimeout(() => {
+
+    // MELHORIA 2: usa variável de estado dedicada, sem poluir o objeto DOM
+    clearTimeout(feedbackTimeout);
+    feedbackTimeout = setTimeout(() => {
         shortcutFeedback.style.opacity = "0";
     }, 800);
 }
 
 /* ===== PERSISTÊNCIA ===== */
 
+// MELHORIA 9: limite de entradas no localStorage para evitar acúmulo indefinido
+const STORAGE_PREFIX = "videoProgress_";
+const STORAGE_MAX_ENTRIES = 20;
+
+function pruneOldProgressEntries() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(STORAGE_PREFIX)) {
+            keys.push(k);
+        }
+    }
+    // Remove as entradas mais antigas quando passa do limite
+    if (keys.length > STORAGE_MAX_ENTRIES) {
+        keys.slice(0, keys.length - STORAGE_MAX_ENTRIES)
+            .forEach(k => localStorage.removeItem(k));
+    }
+}
+
 function saveProgress() {
     if (!currentVideoKey) return;
     if (isNaN(videoPlayer.duration)) return;
 
     localStorage.setItem(
-        "videoProgress_" + currentVideoKey,
+        STORAGE_PREFIX + currentVideoKey,
         JSON.stringify({
-            time: videoPlayer.currentTime,
-            style: subtitleStyleIndex,
+            time:   videoPlayer.currentTime,
+            style:  subtitleStyleIndex,
             cinema: cinemaMode
         })
     );
+
+    pruneOldProgressEntries();
 }
 
 function restoreProgress() {
     if (!currentVideoKey) return;
 
-    const saved = localStorage.getItem("videoProgress_" + currentVideoKey);
-    
-    let savedTime = 0;
-    let savedStyle = 0;
+    const saved = localStorage.getItem(STORAGE_PREFIX + currentVideoKey);
+
+    let savedTime   = 0;
+    let savedStyle  = 0;
     let savedCinema = false;
 
     if (saved) {
         try {
-            const data = JSON.parse(saved);
-            savedTime = data.time || 0;
-            savedStyle = data.style ?? 0;
+            const data  = JSON.parse(saved);
+            savedTime   = data.time   || 0;
+            savedStyle  = data.style  ?? 0;
             savedCinema = data.cinema ?? false;
         } catch {
-            localStorage.removeItem("videoProgress_" + currentVideoKey);
+            localStorage.removeItem(STORAGE_PREFIX + currentVideoKey);
         }
     }
 
     subtitleStyleIndex = savedStyle;
-    cinemaMode = savedCinema;
-    
+    cinemaMode         = savedCinema;
+
     applySubtitleStyle();
     applyCinemaMode();
 
@@ -360,29 +375,25 @@ function restoreProgress() {
     }
 }
 
-/* ===== VÍDEO - CORIGIDO ===== */
+/* ===== VÍDEO ===== */
 
 function loadVideo(file) {
     cleanupVideo(false);
 
-    // CORREÇÃO: Limpa o input da legenda para liberar seleção do mesmo arquivo
-    subtitleInput.value = ""; 
-
-    // CORREÇÃO: Reseta contador de save para evitar conflitos com vídeo anterior
-    lastSavedTime = -1;
+    subtitleInput.value = "";
+    lastSavedTime       = -1;
 
     const videoURL = URL.createObjectURL(file);
     videoPlayer.src = videoURL;
     videoPlayer.style.display = "block";
 
     currentVideoBlobUrl = videoURL;
-    currentVideoKey = file.name + "-" + file.size + "-" + file.lastModified;
+    currentVideoKey     = file.name + "-" + file.size + "-" + file.lastModified;
 
-    cinemaBtn.disabled = false;
+    cinemaBtn.disabled    = false;
     fullscreenBtn.disabled = false;
-    styleBtn.disabled = true;
+    styleBtn.disabled     = true;
 
-    // CORREÇÃO: Inicializa áudio na primeira interação com vídeo
     initAudioContext();
 
     videoPlayer.addEventListener("loadedmetadata", () => {
@@ -393,7 +404,20 @@ function loadVideo(file) {
     updateStatus("Vídeo carregado. Adicione legenda (opcional).");
 }
 
-/* ===== LEGENDA - CORIGIDO ===== */
+/* ===== LEGENDA ===== */
+
+// MELHORIA 5: remove tags HTML comuns em arquivos SRT brasileiros antes da conversão
+function stripSrtHtmlTags(text) {
+    return text
+        .replace(/<font[^>]*>/gi, '')
+        .replace(/<\/font>/gi, '')
+        .replace(/<b>/gi, '')
+        .replace(/<\/b>/gi, '')
+        .replace(/<i>/gi, '')
+        .replace(/<\/i>/gi, '')
+        .replace(/<u>/gi, '')
+        .replace(/<\/u>/gi, '');
+}
 
 function loadSubtitle(file) {
     if (!currentVideoKey) {
@@ -412,7 +436,6 @@ function loadSubtitle(file) {
             text = new TextDecoder("utf-8", { fatal: true }).decode(e.target.result);
         } catch {
             try {
-                // CORREÇÃO: Adicionado Windows-1252 para legendas brasileiras
                 text = new TextDecoder("windows-1252").decode(e.target.result);
             } catch {
                 text = new TextDecoder("iso-8859-1").decode(e.target.result);
@@ -421,32 +444,35 @@ function loadSubtitle(file) {
 
         text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
+        // MELHORIA 5: limpa tags HTML antes de converter para VTT
+        text = stripSrtHtmlTags(text);
+
         const vtt = "WEBVTT\n\n" +
             text.replace(/(\d{2}:\d{2}:\d{2})[.,](\d{3})/g, '$1.$2');
 
         const blob = new Blob([vtt], { type: 'text/vtt' });
-        const url = URL.createObjectURL(blob);
+        const url  = URL.createObjectURL(blob);
 
         currentSubtitleBlobUrl = url;
 
         Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
 
-        const track = document.createElement('track');
-        track.kind = "subtitles";
-        track.label = "Legenda";
-        track.srclang = "pt";
-        track.src = url;
-        track.default = true;
+        const track      = document.createElement('track');
+        track.kind       = "subtitles";
+        track.label      = "Legenda";
+        track.srclang    = "pt";
+        track.src        = url;
+        track.default    = true;
 
         track.onload = function() {
             this.mode = "showing";
-            if(videoPlayer.textTracks[0]) videoPlayer.textTracks[0].mode = "showing";
+            if (videoPlayer.textTracks[0]) videoPlayer.textTracks[0].mode = "showing";
         };
 
         videoPlayer.appendChild(track);
-        
+
         if (videoPlayer.textTracks.length > 0) {
-             videoPlayer.textTracks[0].mode = "showing";
+            videoPlayer.textTracks[0].mode = "showing";
         }
 
         videoPlayer.classList.add("ready");
@@ -457,21 +483,32 @@ function loadSubtitle(file) {
     reader.readAsArrayBuffer(file);
 }
 
-/* ===== LIMPEZA - CORIGIDO ===== */
+/* ===== LIMPEZA ===== */
 
 function cleanupVideo(fullReset = true) {
     videoPlayer.pause();
-    
+
     if (isAudioInitialized) {
         cinemaMode = false;
         updateAudioRouting();
+
+        // MELHORIA 7: fecha o AudioContext no reset completo para liberar recursos
+        if (fullReset) {
+            audioContext.close();
+            audioContext       = null;
+            sourceNode         = null;
+            bassFilter         = null;
+            gainNode           = null;
+            isAudioInitialized = false;
+        }
     }
 
-    if (currentVideoBlobUrl) URL.revokeObjectURL(currentVideoBlobUrl);
+    if (currentVideoBlobUrl)   URL.revokeObjectURL(currentVideoBlobUrl);
     if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
 
-    currentVideoBlobUrl = null;
+    currentVideoBlobUrl    = null;
     currentSubtitleBlobUrl = null;
+    currentVideoKey        = null;
 
     videoPlayer.removeAttribute("src");
     videoPlayer.load();
@@ -481,18 +518,18 @@ function cleanupVideo(fullReset = true) {
     Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
 
     if (fullReset) {
-        videoInput.value = "";
+        videoInput.value    = "";
         subtitleInput.value = "";
-        styleBtn.disabled = true;
-        cinemaBtn.disabled = true;
+        styleBtn.disabled      = true;
+        cinemaBtn.disabled     = true;
         fullscreenBtn.disabled = true;
-        
+
         subtitleStyleIndex = 0;
-        cinemaMode = false;
-        lastSavedTime = -1; // CORREÇÃO: Resetar contador
+        cinemaMode         = false;
+        lastSavedTime      = -1;
         applySubtitleStyle();
         applyCinemaMode();
-        
+
         updateStatus("Arquivos removidos.");
     }
 }
@@ -522,12 +559,16 @@ cinemaBtn.addEventListener('click', () => {
 });
 
 fullscreenBtn.addEventListener('click', () => {
-    if (!videoPlayer.src) return;
+    if (!currentVideoKey) return;
     if (!document.fullscreenElement) {
         videoPlayer.requestFullscreen().catch(() => {});
     } else {
         document.exitFullscreen();
     }
+});
+
+// MELHORIA 3: feedback de tela cheia via evento fullscreenchange (estado correto, sem race condition)
+document.addEventListener('fullscreenchange', () => {
     showShortcutFeedback(document.fullscreenElement ? "Tela Cheia" : "Janela");
 });
 
@@ -550,7 +591,7 @@ window.addEventListener("beforeunload", saveProgress);
 
 videoPlayer.addEventListener("ended", () => {
     if (currentVideoKey) {
-        localStorage.removeItem("videoProgress_" + currentVideoKey);
+        localStorage.removeItem(STORAGE_PREFIX + currentVideoKey);
     }
 });
 
@@ -561,9 +602,11 @@ document.addEventListener("keydown", (event) => {
 
     const key = event.key.toLowerCase();
 
+    // MELHORIA 4: usa currentVideoKey como verificação de estado (mais confiável que videoPlayer.src)
+
     // ESPAÇO: play/pause
     if (key === ' ') {
-        if (!videoPlayer.src) return;
+        if (!currentVideoKey) return;
         event.preventDefault();
         if (videoPlayer.paused) {
             videoPlayer.play();
@@ -576,7 +619,7 @@ document.addEventListener("keydown", (event) => {
 
     // SETA ESQUERDA: -10s
     if (key === 'arrowleft') {
-        if (!videoPlayer.src) return;
+        if (!currentVideoKey) return;
         event.preventDefault();
         videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
         showShortcutFeedback("-10s");
@@ -584,25 +627,24 @@ document.addEventListener("keydown", (event) => {
 
     // SETA DIREITA: +10s
     if (key === 'arrowright') {
-        if (!videoPlayer.src || isNaN(videoPlayer.duration)) return;
+        if (!currentVideoKey || isNaN(videoPlayer.duration)) return;
         event.preventDefault();
         videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
         showShortcutFeedback("+10s");
     }
 
-    // ATALHOS EXISTENTES:
     if (key === "l" && !styleBtn.disabled) {
         styleBtn.click();
         event.preventDefault();
     }
-    
+
     if (key === "c" && !cinemaBtn.disabled) {
         cinemaBtn.click();
         event.preventDefault();
     }
-    
+
     if (key === "f") {
-        if (!videoPlayer.src) return;
+        if (!currentVideoKey) return;
         event.preventDefault();
         fullscreenBtn.click();
     }
