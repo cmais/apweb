@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organizador Escolar - EFAI & EFAF</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg-primary: #0f0f0f;
+    --bg-secondary: #181818;
+    --bg-tertiary: #222222;
+    --bg-hover: #2a2a2a;
+    --text-primary: #ececec;
+    --text-secondary: #888;
+    --text-muted: #555;
+    --accent: #4da6ff;
+    --accent-dim: rgba(77,166,255,0.12);
+    --border: #2e2e2e;
+    --border-light: #3a3a3a;
+    --success: #3ecf8e;
+    --error: #f55f5f;
+    --warning: #f5a623;
+    --efai-color: #4da6ff;
+    --efaf-color: #ff6b6b;
+    --radius: 8px;
+    --radius-lg: 14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 28px 20px;
+    min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.header-left h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+}
+
+.header-left p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 3px;
+}
+
+.cycle-badges {
+    display: flex;
+    gap: 8px;
+}
+
+.cycle-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'Space Mono', monospace;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.badge-efai {
+    background: rgba(77,166,255,0.1);
+    border-color: rgba(77,166,255,0.3);
+    color: var(--efai-color);
+}
+
+.badge-efaf {
+    background: rgba(255,107,107,0.1);
+    border-color: rgba(255,107,107,0.3);
+    color: var(--efaf-color);
+}
+
+.badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.cycle-badge input[type="color"] {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 50%;
+    padding: 0;
+}
+
+/* ── TOOLBAR ── */
+.toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.toolbar-sep {
+    width: 1px;
+    height: 28px;
+    background: var(--border);
+    flex-shrink: 0;
+}
+
+/* ── BUTTONS ── */
+button {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--accent-dim);
+    border-color: rgba(77,166,255,0.3);
+    color: var(--accent);
+}
+.btn-primary:hover { background: rgba(77,166,255,0.2); }
+
+.btn-success {
+    background: rgba(62,207,142,0.1);
+    border-color: rgba(62,207,142,0.3);
+    color: var(--success);
+}
+.btn-success:hover { background: rgba(62,207,142,0.2); }
+
+.btn-danger {
+    background: rgba(245,95,95,0.1);
+    border-color: rgba(245,95,95,0.3);
+    color: var(--error);
+}
+.btn-danger:hover { background: rgba(245,95,95,0.2); }
+
+.btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.btn-icon-sm {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+}
+
+/* ── COLOR PICKER GROUP ── */
+.color-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.color-group label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.color-group input[type="color"] {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border-light);
+    border-radius: 4px;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+/* ── TABLE CONTAINER ── */
+.table-wrapper {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+thead th {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-family: 'Space Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+}
+
+thead th:first-child { color: var(--efai-color); }
+thead th:nth-child(2) { color: var(--efaf-color); }
+
+tbody tr {
+    transition: background 0.15s;
+}
+
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+td {
+    border: 1px solid var(--border);
+    padding: 0;
+    vertical-align: middle;
+    text-align: center;
+}
+
+/* ── TIME CELLS ── */
+.time-cell {
+    width: 120px;
+    min-width: 110px;
+    background: rgba(0,0,0,0.2);
+    position: relative;
+}
+
+.time-display {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 12px 8px;
+    cursor: pointer;
+    user-select: none;
+    display: block;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.time-display:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.time-display::after {
+    content: ' ✎';
+    opacity: 0;
+    font-size: 0.65rem;
+    transition: opacity 0.15s;
+}
+
+.time-display:hover::after { opacity: 0.5; }
+
+/* ── TIME EDITOR POPUP ── */
+.time-editor {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 10px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    width: 160px;
+}
+
+.time-editor.active { display: block; }
+
+.time-editor input {
+    width: 100%;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    border-radius: 5px;
+    padding: 6px 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+}
+
+.time-editor-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* ── CONTENT CELLS ── */
+td[contenteditable="true"] {
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+    min-height: 48px;
+    outline: none;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    cursor: text;
+    transition: box-shadow 0.15s, background 0.15s;
+}
+
+td[contenteditable="true"]:focus {
+    background: rgba(77,166,255,0.04);
+    box-shadow: inset 0 0 0 1.5px rgba(77,166,255,0.4);
+}
+
+/* ── ACTION CELL ── */
+.action-cell {
+    width: 60px;
+    min-width: 60px;
+    background: rgba(0,0,0,0.15);
+}
+
+/* ── TOAST NOTIFICATIONS ── */
+#toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.toast {
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    font-size: 0.84rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: toastIn 0.25s ease forwards, toastOut 0.3s ease 2.5s forwards;
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+}
+
+.toast-success { background: rgba(62,207,142,0.15); border: 1px solid rgba(62,207,142,0.35); color: var(--success); }
+.toast-error   { background: rgba(245,95,95,0.15);  border: 1px solid rgba(245,95,95,0.35);  color: var(--error); }
+.toast-info    { background: rgba(77,166,255,0.15);  border: 1px solid rgba(77,166,255,0.35);  color: var(--accent); }
+
+@keyframes toastIn  { to { opacity:1; transform:translateY(0); } }
+@keyframes toastOut { to { opacity:0; transform:translateY(8px); } }
+
+/* ── AUTOSAVE INDICATOR ── */
+.autosave-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.autosave-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.3s;
+}
+
+.autosave-dot.saved  { background: var(--success); }
+.autosave-dot.saving { background: var(--warning); animation: pulse 0.6s infinite alternate; }
+
+@keyframes pulse { to { opacity: 0.3; } }
+
+/* ── MODAL OVERLAY ── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+}
+.modal-overlay.active { display: flex; }
+
+.modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    width: 340px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7);
+}
+
+.modal h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.modal p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* ── EMPTY STATE ── */
+.empty-hint {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    display: none;
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+    <div class="modal">
+        <h3 id="modal-title">Confirmar ação</h3>
+        <p id="modal-message">Tem certeza?</p>
+        <div class="modal-actions">
+            <button class="btn-ghost" id="modal-cancel">Cancelar</button>
+            <button class="btn-danger" id="modal-confirm">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="header-left">
+        <h1>Organizador Escolar</h1>
+        <p>Grade de horários EFAI / EFAF</p>
+    </div>
+    <div class="cycle-badges">
+        <div class="cycle-badge badge-efai" title="Clique para mudar a cor do ciclo EFAI">
+            <span class="badge-dot" id="efai-dot" style="background:var(--efai-color)"></span>
+            EFAI
+            <input type="color" id="efai-color-picker" value="#4da6ff" title="Cor EFAI">
+        </div>
+        <div class="cycle-badge badge-efaf" title="Clique para mudar a cor do ciclo EFAF">
+            <span class="badge-dot" id="efaf-dot" style="background:var(--efaf-color)"></span>
+            EFAF
+            <input type="color" id="efaf-color-picker" value="#ff6b6b" title="Cor EFAF">
+        </div>
+    </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+    <button class="btn-primary" id="add-row">＋ Nova Linha</button>
+    <button class="btn-success" id="save-data">💾 Salvar</button>
+
+    <div class="toolbar-sep"></div>
+
+    <div class="color-group">
+        <label>Cor do texto</label>
+        <input type="color" id="text-color-tool" value="#4da6ff">
+        <button class="btn-primary btn-icon-sm" id="apply-color">Aplicar</button>
+    </div>
+
+    <div class="toolbar-sep"></div>
+
+    <button class="btn-ghost" id="export-html">↓ HTML</button>
+    <button class="btn-ghost" id="export-json">↓ JSON</button>
+    <button class="btn-ghost" id="import-json">↑ Importar</button>
+    <input type="file" id="file-import" accept=".json" style="display:none;">
+
+    <span class="autosave-status">
+        <span class="autosave-dot" id="autosave-dot"></span>
+        <span id="autosave-label">—</span>
+    </span>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrapper">
+    <table id="main-table">
+        <thead>
+            <tr>
+                <th>Ciclo EFAI</th>
+                <th>Ciclo EFAF</th>
+                <th>Segunda</th>
+                <th>Terça</th>
+                <th>Quarta</th>
+                <th>Quinta</th>
+                <th>Sexta</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+    </table>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'escola-grade-v3';
+
+let cycleColors = { EFAI: '#4da6ff', EFAF: '#ff6b6b' };
+let autosaveTimer = null;
+let confirmCallback = null;
+let rowCounter = 0;
+
+// ── DOM REFS ───────────────────────────────────────────────────────────────
+const tableBody       = document.getElementById('table-body');
+const colorInput      = document.getElementById('text-color-tool');
+const fileImportInput = document.getElementById('file-import');
+const autosaveDot     = document.getElementById('autosave-dot');
+const autosaveLabel   = document.getElementById('autosave-label');
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<span>${icons[type]}</span> ${message}`;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+}
+
+// ── CONFIRM MODAL ──────────────────────────────────────────────────────────
+function showConfirm(title, message, onConfirm) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-message').textContent = message;
+    document.getElementById('confirm-modal').classList.add('active');
+    confirmCallback = onConfirm;
+}
+
+document.getElementById('modal-cancel').onclick = () => {
+    document.getElementById('confirm-modal').classList.remove('active');
+    confirmCallback = null;
+};
+
+document.getElementById('modal-confirm').onclick = () => {
+    document.getElementById('confirm-modal').classList.remove('active');
+    if (confirmCallback) { confirmCallback(); confirmCallback = null; }
+};
+
+// ── AUTOSAVE ───────────────────────────────────────────────────────────────
+function setAutosaveStatus(status) {
+    autosaveDot.className = 'autosave-dot ' + status;
+    const labels = { saved: 'Salvo', saving: 'Salvando…', '': '—' };
+    autosaveLabel.textContent = labels[status] || '—';
+}
+
+function triggerAutosave() {
+    setAutosaveStatus('saving');
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+        saveData(false);
+        setAutosaveStatus('saved');
+    }, 800);
+}
+
+// ── SERIALIZE / DESERIALIZE ────────────────────────────────────────────────
+function getTableData() {
+    const rows = [];
+    tableBody.querySelectorAll('tr').forEach(tr => {
+        const times = tr.querySelectorAll('.time-display');
+        const cells = tr.querySelectorAll('td[contenteditable="true"]');
+        rows.push({
+            timeEFAI: times[0]?.textContent || '',
+            timeEFAF: times[1]?.textContent || '',
+            cells: Array.from(cells).map(c => c.innerHTML)
+        });
+    });
+    return rows;
+}
+
+function saveData(notify = true) {
+    const data = { rows: getTableData(), colors: cycleColors };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (notify) {
+        showToast('Grade salva com sucesso!', 'success');
+        setAutosaveStatus('saved');
+    }
+}
+
+// ── TIME CELL ──────────────────────────────────────────────────────────────
+function createTimeCell(timeValue, cycle) {
+    const td = document.createElement('td');
+    td.className = 'time-cell';
+    td.setAttribute('aria-label', `Horário ${cycle}: ${timeValue}`);
+
+    const display = document.createElement('div');
+    display.className = 'time-display';
+    display.style.color = cycleColors[cycle];
+    display.textContent = timeValue;
+
+    const editor = document.createElement('div');
+    editor.className = 'time-editor';
+    editor.innerHTML = `
+        <input type="text" value="${timeValue}" placeholder="HH:MM-HH:MM" aria-label="Editar horário ${cycle}">
+        <div class="time-editor-actions">
+            <button class="btn-success btn-icon-sm" style="flex:1">✓</button>
+            <button class="btn-ghost btn-icon-sm" style="flex:1">✕</button>
+        </div>
+    `;
+
+    const input = editor.querySelector('input');
+    const [btnSave, btnCancel] = editor.querySelectorAll('button');
+
+    display.onclick = (e) => {
+        e.stopPropagation();
+        editor.classList.add('active');
+        input.focus();
+        input.select();
+    };
+
+    btnSave.onclick = () => {
+        display.textContent = input.value;
+        td.setAttribute('aria-label', `Horário ${cycle}: ${input.value}`);
+        editor.classList.remove('active');
+        triggerAutosave();
+    };
+
+    btnCancel.onclick = () => {
+        input.value = display.textContent;
+        editor.classList.remove('active');
+    };
+
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') btnSave.click();
+        if (e.key === 'Escape') btnCancel.click();
+    };
+
+    td.appendChild(display);
+    td.appendChild(editor);
+    return td;
+}
+
+// ── CREATE ROW ──────────────────────────────────────────────────────────────
+function createRow(data = null) {
+    rowCounter++;
+    const rowIndex = rowCounter;
+
+    const defaultData = {
+        timeEFAI: '07:30-08:20',
+        timeEFAF: '07:30-08:15',
+        cells: ['', '', '', '', '']
+    };
+    const rowData = data || defaultData;
+
+    const tr = document.createElement('tr');
+    tr.dataset.rowId = rowIndex;
+
+    // Time cells
+    tr.appendChild(createTimeCell(rowData.timeEFAI, 'EFAI'));
+    tr.appendChild(createTimeCell(rowData.timeEFAF, 'EFAF'));
+
+    // Content cells
+    const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+    rowData.cells.forEach((content, i) => {
+        const td = document.createElement('td');
+        td.contentEditable = 'true';
+        td.innerHTML = content;
+        td.setAttribute('aria-label', `${days[i]}, linha ${rowIndex}`);
+        td.addEventListener('input', triggerAutosave);
+        td.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const allEditable = Array.from(tableBody.querySelectorAll('td[contenteditable="true"]'));
+                const idx = allEditable.indexOf(td);
+                const next = allEditable[e.shiftKey ? idx - 1 : idx + 1];
+                if (next) { next.focus(); }
+            }
+        });
+        tr.appendChild(td);
+    });
+
+    // Delete cell
+    const actionTd = document.createElement('td');
+    actionTd.className = 'action-cell';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-danger btn-icon-sm';
+    delBtn.textContent = '✕';
+    delBtn.setAttribute('aria-label', `Excluir linha ${rowIndex}`);
+    delBtn.onclick = () => {
+        showConfirm('Excluir linha', 'Esta linha será removida permanentemente.', () => {
+            tr.remove();
+            triggerAutosave();
+            showToast('Linha removida.', 'info');
+        });
+    };
+    actionTd.appendChild(delBtn);
+    tr.appendChild(actionTd);
+
+    return tr;
+}
+
+// ── UPDATE CYCLE COLORS ────────────────────────────────────────────────────
+function updateCycleColor(cycle, color) {
+    cycleColors[cycle] = color;
+    document.documentElement.style.setProperty(`--${cycle.toLowerCase()}-color`, color);
+    document.getElementById(`${cycle.toLowerCase()}-dot`).style.background = color;
+    tableBody.querySelectorAll('tr').forEach(tr => {
+        const displays = tr.querySelectorAll('.time-display');
+        const idx = cycle === 'EFAI' ? 0 : 1;
+        if (displays[idx]) displays[idx].style.color = color;
+    });
+    triggerAutosave();
+}
+
+document.getElementById('efai-color-picker').addEventListener('input', e => {
+    updateCycleColor('EFAI', e.target.value);
+});
+document.getElementById('efaf-color-picker').addEventListener('input', e => {
+    updateCycleColor('EFAF', e.target.value);
+});
+
+// ── COLOR TOOL (span-based, no execCommand) ────────────────────────────────
+document.getElementById('apply-color').onclick = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) {
+        showToast('Selecione um texto antes de aplicar a cor.', 'error');
+        return;
+    }
+    const range = sel.getRangeAt(0);
+
+    // Check if selection is inside a contenteditable cell
+    let container = range.commonAncestorContainer;
+    while (container && container.nodeType !== 1) container = container.parentNode;
+    if (!container || !container.closest('td[contenteditable]')) {
+        showToast('Selecione texto dentro de uma célula.', 'error');
+        return;
+    }
+
+    const span = document.createElement('span');
+    span.style.color = colorInput.value;
+    try {
+        range.surroundContents(span);
+    } catch {
+        // Fallback: extract and wrap
+        const fragment = range.extractContents();
+        span.appendChild(fragment);
+        range.insertNode(span);
+    }
+    sel.removeAllRanges();
+    triggerAutosave();
+};
+
+// ── TOOLBAR ACTIONS ────────────────────────────────────────────────────────
+document.getElementById('add-row').onclick = () => {
+    tableBody.appendChild(createRow());
+    triggerAutosave();
+};
+
+document.getElementById('save-data').onclick = () => saveData(true);
+
+document.getElementById('export-json').onclick = () => {
+    const data = { rows: getTableData(), colors: cycleColors };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, 'grade_escolar.json');
+    showToast('JSON exportado!', 'success');
+};
+
+document.getElementById('import-json').onclick = () => fileImportInput.click();
+
+fileImportInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = evt => {
+        try {
+            const parsed = JSON.parse(evt.target.result);
+
+            // Support both old format (array) and new format (object with rows)
+            const rows   = Array.isArray(parsed) ? parsed : parsed.rows;
+            const colors = parsed.colors || cycleColors;
+
+            if (!Array.isArray(rows)) throw new Error('Formato inválido');
+
+            tableBody.innerHTML = '';
+            cycleColors = colors;
+
+            document.getElementById('efai-color-picker').value = colors.EFAI || '#4da6ff';
+            document.getElementById('efaf-color-picker').value = colors.EFAF || '#ff6b6b';
+            updateCycleColor('EFAI', colors.EFAI || '#4da6ff');
+            updateCycleColor('EFAF', colors.EFAF || '#ff6b6b');
+
+            rows.forEach(row => tableBody.appendChild(createRow(row)));
+            showToast('Dados importados com sucesso!', 'success');
+            saveData(false);
+        } catch (err) {
+            showToast('Erro ao importar: arquivo inválido.', 'error');
+            console.error(err);
+        }
+    };
+    reader.readAsText(file);
+    fileImportInput.value = '';
+});
+
+document.getElementById('export-html').onclick = () => {
+    const tableClone = document.getElementById('main-table').cloneNode(true);
+
+    // Remove "Ação" column
+    const headers = tableClone.querySelectorAll('thead th');
+    let actionIdx = -1;
+    headers.forEach((th, i) => { if (th.textContent.trim() === '') actionIdx = i; });
+
+    if (actionIdx >= 0) {
+        headers[actionIdx].remove();
+        tableClone.querySelectorAll('tbody tr').forEach(tr => {
+            const tds = tr.querySelectorAll('td');
+            if (tds[actionIdx]) tds[actionIdx].remove();
+        });
+    }
+
+    // Remove contenteditable & time editors
+    tableClone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    tableClone.querySelectorAll('.time-editor').forEach(el => el.remove());
+
+    const efaiColor = cycleColors.EFAI;
+    const efafColor = cycleColors.EFAF;
+
+    const html = `<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Grade Escolar</title>
+<style>
+body { background:#0f0f0f; color:#ececec; font-family:Arial,sans-serif; padding:28px; }
+table { width:100%; border-collapse:collapse; }
+th, td { border:1px solid #2e2e2e; padding:10px; text-align:center; }
+thead th { background:#222; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#888; }
+thead th:first-child { color:${efaiColor}; }
+thead th:nth-child(2) { color:${efafColor}; }
+.time-cell { background:rgba(0,0,0,0.3); }
+.time-display { font-weight:700; font-size:0.82rem; }
+</style>
+</head>
+<body>${tableClone.outerHTML}</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    downloadBlob(blob, 'grade_escolar.html');
+    showToast('HTML exportado!', 'success');
+};
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Close time editors when clicking outside
+document.addEventListener('click', () => {
+    document.querySelectorAll('.time-editor.active').forEach(e => e.classList.remove('active'));
+});
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+function init() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            const rows   = Array.isArray(data) ? data : (data.rows || []);
+            const colors = data.colors || cycleColors;
+
+            cycleColors = colors;
+            document.getElementById('efai-color-picker').value = colors.EFAI;
+            document.getElementById('efaf-color-picker').value = colors.EFAF;
+            updateCycleColor('EFAI', colors.EFAI);
+            updateCycleColor('EFAF', colors.EFAF);
+
+            rows.forEach(row => tableBody.appendChild(createRow(row)));
+            setAutosaveStatus('saved');
+            return;
+        } catch { /* fall through */ }
+    }
+
+    // Default rows
+    for (let i = 0; i < 5; i++) tableBody.appendChild(createRow());
+}
+
+init();
+</script>
+</body>
+</html>
