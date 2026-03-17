@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Gerenciador de Acessos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --surface: #141414;
+            --surface2: #1a1a1a;
+            --border: #252525;
+            --border-bright: #333;
+            --text: #c8c8c8;
+            --text-dim: #555;
+            --text-bright: #e8e8e8;
+            --green: #22c55e;
+            --green-dim: #166534;
+            --cyan: #06b6d4;
+            --cyan-dim: #164e63;
+            --amber: #f59e0b;
+            --red: #ef4444;
+            --radius: 4px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Barlow', sans-serif;
+            font-weight: 400;
+            min-height: 100vh;
+            padding: 32px 20px;
+        }
+
+        /* Scanline background effect */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.03) 2px,
+                rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container { max-width: 1020px; margin: 0 auto; position: relative; z-index: 1; }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-icon {
+            width: 40px; height: 40px;
+            background: var(--cyan-dim);
+            border: 1px solid var(--cyan);
+            border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .header-text h1 {
+            font-size: 11px;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 400;
+        }
+
+        #titulo-pagina {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-bright);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.1;
+            margin-top: 2px;
+        }
+
+        .header-badge {
+            margin-left: auto;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            color: var(--text-dim);
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .header-badge span { color: var(--green); font-weight: bold; }
+
+        /* ── Painel de Importação ── */
+        .painel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .painel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .painel-header h2 {
+            font-size: 11px;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 400;
+        }
+
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .campo-grupo { display: flex; flex-direction: column; gap: 6px; }
+
+        label {
+            font-size: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        input[type="text"], textarea {
+            background: #000;
+            color: var(--green);
+            border: 1px solid var(--border-bright);
+            padding: 10px 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            border-radius: var(--radius);
+            width: 100%;
+            transition: border-color 0.2s;
+            resize: vertical;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--cyan);
+            box-shadow: 0 0 0 2px rgba(6,182,212,0.1);
+        }
+
+        input[type="text"]::placeholder, textarea::placeholder {
+            color: #333;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+            margin-top: 4px;
+        }
+
+        /* ── Botões ── */
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 400;
+            transition: all 0.15s;
+            display: flex; align-items: center; gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+
+        .btn-primary {
+            background: var(--cyan);
+            color: #000;
+            border-color: var(--cyan);
+        }
+        .btn-primary:hover { background: #22d3ee; }
+
+        .btn-green {
+            background: transparent;
+            color: var(--green);
+            border-color: var(--green-dim);
+        }
+        .btn-green:hover { background: rgba(34,197,94,0.08); border-color: var(--green); }
+
+        .btn-amber {
+            background: transparent;
+            color: var(--amber);
+            border-color: #78350f;
+        }
+        .btn-amber:hover { background: rgba(245,158,11,0.08); border-color: var(--amber); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-dim);
+            border-color: var(--border);
+        }
+        .btn-ghost:hover { color: var(--text); border-color: var(--border-bright); }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--red);
+            border-color: #7f1d1d;
+            margin-left: auto;
+        }
+        .btn-danger:hover { background: rgba(239,68,68,0.08); border-color: var(--red); }
+
+        /* Upload JSON */
+        .upload-json-label {
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            border: 1px solid #78350f;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--amber);
+            display: flex; align-items: center; gap: 8px;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .upload-json-label:hover {
+            background: rgba(245,158,11,0.08);
+            border-color: var(--amber);
+            transform: translateY(-1px);
+        }
+        #input-json { display: none; }
+
+        /* ── Tabela ── */
+        .tabela-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .tabela-info {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        .count-badge {
+            background: var(--cyan-dim);
+            color: var(--cyan);
+            border: 1px solid var(--cyan);
+            border-radius: 3px;
+            padding: 1px 7px;
+            font-size: 11px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        table { width: 100%; border-collapse: collapse; min-width: 520px; }
+
+        thead tr {
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border-bright);
+        }
+
+        th {
+            padding: 11px 14px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 400;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.1s;
+        }
+
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: var(--surface2); }
+
+        td {
+            padding: 11px 14px;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .coluna-num {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            width: 36px;
+            text-align: center;
+        }
+
+        .coluna-aluno {
+            font-family: 'Barlow', sans-serif;
+            text-transform: uppercase;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-bright);
+        }
+
+        .cell-mono {
+            font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
+            font-size: 15px;
+            letter-spacing: 0.07em;
+            color: var(--green);
+        }
+
+        .cell-senha {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 2px;
+            white-space: nowrap;
+        }
+
+        .senha-mask { color: var(--text-dim); }
+        .senha-visible { color: var(--amber); display: none; }
+
+        /* Botão copiar senha — visibilidade controlada exclusivamente por JS (style.display) */
+        .copy-senha-btn {
+            margin-left: 10px;
+            letter-spacing: 1px;
+            color: var(--amber);
+            border-color: #78350f;
+        }
+        .copy-senha-btn:hover {
+            background: rgba(245,158,11,0.08);
+            border-color: var(--amber);
+        }
+        .copy-senha-btn.copied {
+            color: var(--green);
+            border-color: var(--green);
+        }
+
+        .cell-actions { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            border-radius: var(--radius);
+            padding: 5px 9px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .icon-btn:hover { color: var(--cyan); border-color: var(--cyan); background: rgba(6,182,212,0.06); }
+        .icon-btn.copied { color: var(--green); border-color: var(--green); }
+        .icon-btn.show-active { color: var(--amber); border-color: var(--amber); }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+        }
+
+        .empty-state .empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.3; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(16px);
+            background: var(--surface2);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 1px;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── Separador de seções ── */
+        .section-divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 10px 0 18px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .section-divider::before, .section-divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--border);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-icon">🔐</div>
+        <div class="header-text">
+            <h1>Sistema // Credenciais</h1>
+            <div id="titulo-pagina">Lista de Credenciais</div>
+        </div>
+        <div class="header-badge" id="header-badge" style="display:none">
+            <span id="count-header">0</span> alunos
+        </div>
+    </div>
+
+    <!-- Painel Importação -->
+    <div class="painel no-export" id="painel-importacao">
+        <div class="painel-header">
+            <div class="dot"></div>
+            <h2>Configuração da Turma</h2>
+        </div>
+
+        <div class="grid-2">
+            <div class="campo-grupo">
+                <label for="nome-turma">Nome da Turma</label>
+                <input type="text" id="nome-turma" placeholder="Ex: 2º ANO A" oninput="atualizarTituloLive()">
+                <p class="hint">// Aparecerá como título</p>
+            </div>
+            <div class="campo-grupo">
+                <label for="entrada-dados">Dados — Cole do Excel ou Google Sheets</label>
+                <textarea id="entrada-dados" rows="5" placeholder="Nome ⇥ Login ⇥ Senha&#10;João Silva ⇥ joao.silva ⇥ abc123&#10;..."></textarea>
+                <p class="hint">// Formato: colunas separadas por Tab (⇥)</p>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-primary" onclick="importarDados()">
+                ▶ Visualizar
+            </button>
+
+            <div class="section-divider" style="flex:1; margin:0">Exportar</div>
+
+            <button class="btn btn-green" onclick="exportarHTML()">
+                ⬇ HTML
+            </button>
+            <button class="btn btn-green" onclick="exportarJSON()">
+                ⬇ JSON
+            </button>
+
+            <div class="section-divider" style="flex:1; margin:0">Importar</div>
+
+            <label class="upload-json-label" for="input-json">
+                ⬆ JSON
+            </label>
+            <input type="file" id="input-json" accept=".json" onchange="importarJSON(event)">
+
+            <button class="btn btn-danger" onclick="limparTudo()" id="btn-limpar" style="display:none">
+                ✕ Limpar
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div id="secao-tabela">
+        <div class="tabela-header">
+            <div class="tabela-info">
+                <span>Registros</span>
+                <span class="count-badge" id="count-badge">0</span>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Aluno</th>
+                        <th>Login</th>
+                        <th>Senha</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpo-tabela">
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-icon">⬛</div>
+                                Nenhum dado importado. Cole os dados acima e clique em Visualizar.
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div id="toast" class="toast">Copiado!</div>
+
+<script>
+    // ── Estado ──────────────────────────────────────────
+    let dadosAtuais = [];
+
+    // ── UI helpers ──────────────────────────────────────
+    function atualizarTituloLive() {
+        const nome = document.getElementById('nome-turma').value;
+        document.getElementById('titulo-pagina').textContent = nome || 'Lista de Credenciais';
+    }
+
+    function mostrarToast(msg = 'Copiado!', cor = 'var(--cyan)') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.style.borderColor = cor;
+        t.style.color = cor;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 1800);
+    }
+
+    function atualizarContadores(n) {
+        document.getElementById('count-badge').textContent = n;
+        const badge = document.getElementById('header-badge');
+        const countH = document.getElementById('count-header');
+        badge.style.display = n > 0 ? 'flex' : 'none';
+        countH.textContent = n;
+        const btnLimpar = document.getElementById('btn-limpar');
+        if (btnLimpar) btnLimpar.style.display = n > 0 ? 'flex' : 'none';
+    }
+
+    // ── Cópia robusta ────────────────────────────────────
+    function copiar(texto, btn) {
+        if (!texto) return;
+        const onSuccess = () => {
+            mostrarToast('Copiado!');
+            if (btn) {
+                btn.textContent = '✓ Ok';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copiar';
+                    btn.classList.remove('copied');
+                }, 1500);
+            }
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(texto).then(onSuccess).catch(() => fallbackCopia(texto, onSuccess));
+        } else {
+            fallbackCopia(texto, onSuccess);
+        }
+    }
+
+    function fallbackCopia(texto, callback) {
+        const ta = document.createElement('textarea');
+        ta.value = texto;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        try { if (document.execCommand('copy')) callback(); } catch (e) {}
+        document.body.removeChild(ta);
+    }
+
+    // ── Toggle senha ──────────────────────────────────────
+    function toggleSenha(idx, btn) {
+        const mask     = document.getElementById('mask-' + idx);
+        const vis      = document.getElementById('vis-' + idx);
+        const copyBtn  = document.getElementById('copy-senha-' + idx);
+        const hidden   = vis.style.display === 'none';
+
+        mask.style.display    = hidden ? 'none'   : 'inline';
+        vis.style.display     = hidden ? 'inline' : 'none';
+        copyBtn.style.display = hidden ? 'inline-flex' : 'none';
+
+        btn.textContent = hidden ? 'Ocultar' : 'Ver';
+        btn.classList.toggle('show-active', hidden);
+    }
+
+    // ── Renderizar tabela ─────────────────────────────────
+    function renderizarTabela(dados) {
+        const corpo = document.getElementById('corpo-tabela');
+        corpo.innerHTML = '';
+
+        if (!dados.length) {
+            corpo.innerHTML = `<tr><td colspan="5">
+                <div class="empty-state">
+                    <div class="empty-icon">⬛</div>
+                    Nenhum dado importado.
+                </div>
+            </td></tr>`;
+            atualizarContadores(0);
+            return;
+        }
+
+        dados.forEach((d, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="coluna-num">${i + 1}</td>
+                <td class="coluna-aluno"></td>
+                <td class="cell-mono"></td>
+                <td class="cell-senha">
+                    <span class="senha-mask" id="mask-${i}">••••••••</span>
+                    <span class="senha-visible" id="vis-${i}"></span>
+                    <button class="icon-btn copy-senha-btn" id="copy-senha-${i}" style="display:none" title="Copiar senha">Copiar</button>
+                </td>
+                <td class="cell-actions">
+                    <button class="icon-btn copy-login-btn">Copiar</button>
+                    <button class="icon-btn" onclick="toggleSenha(${i}, this)">Ver</button>
+                </td>
+            `;
+
+            tr.querySelector('.coluna-aluno').textContent = d.nome;
+            tr.querySelector('.cell-mono').textContent    = d.login;
+            tr.querySelector(`#vis-${i}`).textContent     = d.senha;
+
+            const copyLoginBtn = tr.querySelector('.copy-login-btn');
+            copyLoginBtn.addEventListener('click', () => copiar(d.login, copyLoginBtn));
+
+            const copySenhaBtn = tr.querySelector(`#copy-senha-${i}`);
+            copySenhaBtn.addEventListener('click', () => copiar(d.senha, copySenhaBtn));
+
+            corpo.appendChild(tr);
+        });
+
+        atualizarContadores(dados.length);
+    }
+
+    // ── Importar do textarea ──────────────────────────────
+    function importarDados() {
+        const raw = document.getElementById('entrada-dados').value;
+        if (!raw.trim()) { mostrarToast('Nenhum dado encontrado', 'var(--red)'); return; }
+
+        dadosAtuais = [];
+        raw.split('\n').forEach(linha => {
+            if (!linha.trim()) return;
+            const cols = linha.split(/\t/);
+            const nome  = (cols[0] || '').trim();
+            const login = (cols[1] || '').trim();
+            const senha = (cols[2] || '').trim();
+            if (!nome && !login) return;
+            dadosAtuais.push({ nome, login, senha });
+        });
+
+        renderizarTabela(dadosAtuais);
+        mostrarToast(`${dadosAtuais.length} registros carregados`, 'var(--green)');
+    }
+
+    // ── Limpar tudo ────────────────────────────────────────
+    function limparTudo() {
+        if (!confirm('Limpar todos os dados da tabela?')) return;
+        dadosAtuais = [];
+        document.getElementById('entrada-dados').value = '';
+        document.getElementById('nome-turma').value = '';
+        atualizarTituloLive();
+        renderizarTabela([]);
+        mostrarToast('Dados limpos', 'var(--red)');
+    }
+
+    // ── Exportar HTML ─────────────────────────────────────
+    function exportarHTML() {
+        if (!dadosAtuais.length) { mostrarToast('Nenhum dado para exportar', 'var(--red)'); return; }
+
+        const turma = document.getElementById('nome-turma').value.trim() || 'lista_credenciais';
+        const filename = turma.toLowerCase().replace(/\s+/g, '_') + '.html';
+
+        const rows = dadosAtuais.map((d, i) => `
+            <tr>
+                <td class="coluna-num">${i + 1}</td>
+                <td class="coluna-aluno">${escHtml(d.nome)}</td>
+                <td class="cell-mono">${escHtml(d.login)}
+                    <button class="copy-btn" data-login="${escAttr(d.login)}">Copiar</button>
+                </td>
+                <td class="cell-senha">
+                    <span class="senha-mask" id="mask-${i}">••••••••</span>
+                    <span class="senha-visible" id="vis-${i}" style="display:none">${escHtml(d.senha)}</span>
+                    <button class="copy-senha-btn" id="copy-senha-${i}" data-senha="${escAttr(d.senha)}" style="display:none">Copiar</button>
+                    <button class="ver-btn" data-idx="${i}">Ver</button>
+                </td>
+            </tr>`).join('');
+
+        const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escHtml(turma.toUpperCase())}</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#c8c8c8;font-family:'Barlow',sans-serif;padding:32px 20px}
+.container{max-width:900px;margin:0 auto}
+h1{font-size:11px;font-family:'Share Tech Mono',monospace;color:#06b6d4;letter-spacing:4px;text-transform:uppercase;margin-bottom:4px}
+h2{font-size:22px;font-weight:700;color:#e8e8e8;text-transform:uppercase;margin-bottom:28px}
+.table-wrap{overflow-x:auto;border:1px solid #252525;border-radius:4px}
+table{width:100%;border-collapse:collapse;min-width:480px}
+thead tr{background:#1a1a1a;border-bottom:1px solid #333}
+th{padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#555;text-transform:uppercase;letter-spacing:2px;text-align:left}
+tbody tr{border-bottom:1px solid #252525;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#141414}
+td{padding:11px 14px;font-size:14px;vertical-align:middle}
+.coluna-num{font-family:'Share Tech Mono',monospace;font-size:11px;color:#555;width:36px;text-align:center}
+.coluna-aluno{text-transform:uppercase;font-weight:600;font-size:13px;color:#e8e8e8}
+.cell-mono{font-family:'JetBrains Mono','Share Tech Mono',monospace;font-size:15px;letter-spacing:0.07em;color:#22c55e}
+.cell-senha{font-family:'Share Tech Mono',monospace;white-space:nowrap}
+.senha-mask{color:#555;letter-spacing:2px}
+.senha-visible{color:#f59e0b}
+.copy-btn,.ver-btn,.copy-senha-btn{margin-left:10px;background:transparent;border:1px solid #333;color:#555;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:10px;text-transform:uppercase;transition:all .15s}
+.copy-btn:hover{color:#06b6d4;border-color:#06b6d4}
+.ver-btn:hover{color:#f59e0b;border-color:#f59e0b}
+.copy-btn.copied{color:#22c55e;border-color:#22c55e}
+.copy-senha-btn{border-color:#78350f;color:#f59e0b}
+.copy-senha-btn:hover{background:rgba(245,158,11,0.08);border-color:#f59e0b}
+.copy-senha-btn.copied{color:#22c55e;border-color:#22c55e}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#141414;border:1px solid #06b6d4;color:#06b6d4;padding:10px 22px;border-radius:20px;font-family:'Share Tech Mono',monospace;font-size:12px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:1000}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Credenciais //</h1>
+<h2>${escHtml(turma.toUpperCase())}</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>#</th><th>Aluno</th><th>Login</th><th>Senha</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+</div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+function toast(m,c){const t=document.getElementById('toast');t.textContent=m;t.style.borderColor=c||'#06b6d4';t.style.color=c||'#06b6d4';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
+function copiar(texto,btn){
+  const ok=()=>{toast('Copiado!');if(btn){btn.textContent='✓ Ok';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copiar';btn.classList.remove('copied')},1500)}};
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(texto).then(ok).catch(()=>fb(texto,ok));}else{fb(texto,ok);}
+}
+function fb(t,cb){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.left='-9999px';document.body.appendChild(a);a.focus();a.select();try{if(document.execCommand('copy'))cb();}catch(e){}document.body.removeChild(a);}
+document.querySelectorAll('.copy-btn').forEach(b=>b.addEventListener('click',()=>copiar(b.dataset.login,b)));
+document.querySelectorAll('.copy-senha-btn').forEach(b=>b.addEventListener('click',()=>copiar(b.dataset.senha,b)));
+document.querySelectorAll('.ver-btn').forEach(b=>b.addEventListener('click',function(){
+  const i=this.dataset.idx;
+  const m=document.getElementById('mask-'+i);
+  const v=document.getElementById('vis-'+i);
+  const c=document.getElementById('copy-senha-'+i);
+  const h=v.style.display==='none';
+  m.style.display=h?'none':'inline';
+  v.style.display=h?'inline':'none';
+  c.style.display=h?'inline-flex':'none';
+  this.textContent=h?'Ocultar':'Ver';
+}));
+<\/script>
+</body></html>`;
+
+        baixarArquivo(html, filename, 'text/html');
+        mostrarToast('HTML exportado!', 'var(--green)');
+    }
+
+    // ── Exportar JSON ─────────────────────────────────────
+    function exportarJSON() {
+        if (!dadosAtuais.length) { mostrarToast('Nenhum dado para exportar', 'var(--red)'); return; }
+
+        const turma = document.getElementById('nome-turma').value.trim() || 'lista_credenciais';
+        const filename = turma.toLowerCase().replace(/\s+/g, '_') + '.json';
+
+        const payload = {
+            turma: turma,
+            exportadoEm: new Date().toISOString(),
+            total: dadosAtuais.length,
+            alunos: dadosAtuais
+        };
+
+        baixarArquivo(JSON.stringify(payload, null, 2), filename, 'application/json');
+        mostrarToast('JSON exportado!', 'var(--green)');
+    }
+
+    // ── Importar JSON ─────────────────────────────────────
+    function importarJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const payload = JSON.parse(e.target.result);
+
+                // Aceita {alunos:[...]} ou array direto
+                const lista = Array.isArray(payload) ? payload : (payload.alunos || []);
+
+                if (!lista.length) { mostrarToast('JSON vazio ou inválido', 'var(--red)'); return; }
+
+                dadosAtuais = lista.map(item => ({
+                    nome:  (item.nome  || item.name  || '').trim(),
+                    login: (item.login || item.user  || '').trim(),
+                    senha: (item.senha || item.password || item.pass || '').trim(),
+                })).filter(d => d.nome || d.login);
+
+                // Preenche o nome da turma se disponível
+                if (!Array.isArray(payload) && payload.turma) {
+                    document.getElementById('nome-turma').value = payload.turma;
+                    atualizarTituloLive();
+                }
+
+                renderizarTabela(dadosAtuais);
+                mostrarToast(`${dadosAtuais.length} registros importados`, 'var(--green)');
+            } catch (err) {
+                mostrarToast('Erro ao ler JSON', 'var(--red)');
+            }
+        };
+        reader.readAsText(file);
+
+        // Reseta o input para permitir reimportar o mesmo arquivo
+        event.target.value = '';
+    }
+
+    // ── Utilitários ───────────────────────────────────────
+    function baixarArquivo(conteudo, filename, type) {
+        const blob = new Blob([conteudo], { type });
+        const link = document.createElement('a');
+        link.href  = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function escAttr(str) {
+        return String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // Init
+    renderizarTabela([]);
+</script>
+</body>
+</html>
