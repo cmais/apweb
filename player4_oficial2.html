@@ -668,6 +668,11 @@ document.addEventListener("keydown", (event) => {
         event.preventDefault();
     }
 
+    if (key === "k") {
+        event.preventDefault();
+        subtitleOpenBtn.click();
+    }
+
     if (key === "f") {
         if (!currentVideoKey) return;
         event.preventDefault();
