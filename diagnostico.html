@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico de Ambiente Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg:        #080c10;
+    --surface:   #0d1117;
+    --border:    #1e2733;
+    --text:      #c9d1d9;
+    --muted:     #4a5568;
+    --pass:      #39d353;
+    --fail:      #f85149;
+    --warn:      #d29922;
+    --info:      #58a6ff;
+    --pass-bg:   rgba(57, 211, 83,  0.07);
+    --fail-bg:   rgba(248, 81, 73,  0.07);
+    --warn-bg:   rgba(210, 153, 34, 0.07);
+    --info-bg:   rgba(88, 166, 255, 0.07);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 40px 20px 60px;
+}
+
+/* Grid de fundo */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(88,166,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(88,166,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+}
+
+/* Header */
+header {
+    margin-bottom: 40px;
+}
+
+.label-top {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--info);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 700;
+    color: #e6edf3;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 300;
+}
+
+/* Botão executar */
+#runBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 24px 0 36px;
+    background: var(--info);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+}
+#runBtn:hover  { opacity: 0.85; }
+#runBtn:active { transform: scale(0.97); }
+#runBtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* Sumário */
+#summary {
+    display: none;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+}
+#summary.visible { display: flex; }
+
+.sum-card {
+    flex: 1;
+    min-width: 120px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    text-align: center;
+}
+.sum-card .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.sum-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.sum-card.pass .num { color: var(--pass); }
+.sum-card.fail .num { color: var(--fail); }
+.sum-card.warn .num { color: var(--warn); }
+.sum-card.info .num { color: var(--info); }
+
+/* Grupos */
+.group {
+    margin-bottom: 28px;
+}
+
+.group-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+}
+
+/* Cards de teste */
+.test-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    align-items: start;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.test-card.pass { border-color: rgba(57,211,83,0.25);  background: var(--pass-bg); }
+.test-card.fail { border-color: rgba(248,81,73,0.25);  background: var(--fail-bg); }
+.test-card.warn { border-color: rgba(210,153,34,0.25); background: var(--warn-bg); }
+.test-card.info { border-color: rgba(88,166,255,0.25); background: var(--info-bg); }
+.test-card.running { border-color: rgba(88,166,255,0.15); }
+
+.test-name {
+    font-weight: 500;
+    color: #e6edf3;
+    font-size: 13px;
+}
+
+.test-detail {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+    grid-column: 1;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+}
+
+.test-detail.pass { color: var(--pass); }
+.test-detail.fail { color: var(--fail); }
+.test-detail.warn { color: var(--warn); }
+.test-detail.info { color: var(--info); }
+
+.badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    grid-row: 1;
+}
+.badge.pass { background: rgba(57,211,83,0.15);  color: var(--pass); }
+.badge.fail { background: rgba(248,81,73,0.15);  color: var(--fail); }
+.badge.warn { background: rgba(210,153,34,0.15); color: var(--warn); }
+.badge.info { background: rgba(88,166,255,0.15); color: var(--info); }
+.badge.pending { background: rgba(74,85,104,0.3); color: var(--muted); }
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--info);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+}
+
+/* Info do ambiente */
+#envInfo {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+    margin-bottom: 28px;
+}
+#envInfo span { color: var(--info); }
+
+footer {
+    margin-top: 48px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+    <header>
+        <div class="label-top">// diagnóstico de ambiente</div>
+        <h1>Web API Diagnostic</h1>
+        <p class="subtitle">Verifica compatibilidade com APIs utilizadas nos aplicativos</p>
+    </header>
+
+    <div id="envInfo">Carregando informações do ambiente...</div>
+
+    <button id="runBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Executar diagnóstico
+    </button>
+
+    <div id="summary">
+        <div class="sum-card pass"><div class="num" id="cnt-pass">0</div><div class="lbl">OK</div></div>
+        <div class="sum-card warn"><div class="num" id="cnt-warn">0</div><div class="lbl">Atenção</div></div>
+        <div class="sum-card fail"><div class="num" id="cnt-fail">0</div><div class="lbl">Bloqueado</div></div>
+        <div class="sum-card info"><div class="num" id="cnt-info">0</div><div class="lbl">Info</div></div>
+    </div>
+
+    <div id="results"></div>
+
+    <footer>diagnóstico gerado em <span id="ts"></span> · <span id="origin"></span></footer>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Ambiente
+// ---------------------------------------------------------------------------
+function buildEnvInfo() {
+    const el = document.getElementById('envInfo');
+    const ua = navigator.userAgent;
+    let browser = 'Desconhecido';
+    if (/Edg\//.test(ua))     browser = 'Microsoft Edge';
+    else if (/OPR\//.test(ua)) browser = 'Opera';
+    else if (/Brave/.test(ua)) browser = 'Brave';
+    else if (/Chrome\//.test(ua)) browser = 'Google Chrome';
+    else if (/Firefox\//.test(ua)) browser = 'Firefox';
+    else if (/Safari\//.test(ua))  browser = 'Safari';
+
+    const m = ua.match(/(Chrome|Firefox|Safari|Edg|OPR)[\/ ]([\d.]+)/);
+    const version = m ? m[2] : '?';
+    const platform = navigator.platform || '?';
+    const touch = navigator.maxTouchPoints > 0 ? 'Sim' : 'Não';
+    const protocol = location.protocol;
+    const online = navigator.onLine ? 'Sim' : 'Não';
+
+    el.innerHTML =
+        `browser    <span>${browser} ${version}</span>\n` +
+        `plataforma <span>${platform}</span>\n` +
+        `protocolo  <span>${protocol}</span>\n` +
+        `touch      <span>${touch}</span>\n` +
+        `online     <span>${online}</span>\n` +
+        `origem     <span>${location.origin}</span>`;
+}
+
+// ---------------------------------------------------------------------------
+// Motor de testes
+// ---------------------------------------------------------------------------
+const groups = [
+    {
+        title: 'File System Access API',
+        tests: [
+            {
+                id: 'fsa-exists',
+                name: 'showOpenFilePicker disponível',
+                detail: 'Verifica se a API existe no contexto atual',
+                run: async () => {
+                    if (typeof window.showOpenFilePicker === 'function')
+                        return pass('Função disponível no window');
+                    return fail('Função não encontrada — API não suportada ou bloqueada por política');
+                }
+            },
+            {
+                id: 'fsa-invoke',
+                name: 'showOpenFilePicker invocável',
+                detail: 'Tenta abrir o seletor de arquivos (pode aparecer um diálogo)',
+                run: async () => {
+                    if (typeof window.showOpenFilePicker !== 'function')
+                        return warn('Ignorado — API não disponível');
+                    try {
+                        const [h] = await window.showOpenFilePicker({ multiple: false });
+                        return pass('Diálogo aberto e arquivo selecionado com sucesso');
+                    } catch(e) {
+                        if (e.name === 'AbortError')
+                            return warn('Diálogo aberto mas cancelado pelo usuário — API funcional');
+                        if (e.name === 'SecurityError')
+                            return fail('Bloqueado por política de segurança (SecurityError)');
+                        return fail(`Erro inesperado: ${e.message}`);
+                    }
+                }
+            },
+            {
+                id: 'fsa-id',
+                name: 'Parâmetro id suportado',
+                detail: 'Verifica se a memória de pasta por id funciona',
+                run: async () => {
+                    if (typeof window.showOpenFilePicker !== 'function')
+                        return warn('Ignorado — API não disponível');
+                    try {
+                        await window.showOpenFilePicker({ id: 'diag-test', multiple: false });
+                        return pass('Parâmetro id aceito sem erro');
+                    } catch(e) {
+                        if (e.name === 'AbortError')
+                            return warn('Cancelado pelo usuário — parâmetro id aceito sem erro');
+                        if (e.name === 'TypeError')
+                            return fail('Parâmetro id rejeitado pelo browser (TypeError)');
+                        return warn(`Resultado inconclusivo: ${e.message}`);
+                    }
+                }
+            },
+            {
+                id: 'fsa-parent',
+                name: 'FileSystemFileHandle.getParent()',
+                detail: 'Verifica se é possível obter a pasta pai de um arquivo selecionado',
+                run: async () => {
+                    if (typeof window.showOpenFilePicker !== 'function')
+                        return warn('Ignorado — API não disponível');
+                    try {
+                        const [h] = await window.showOpenFilePicker({ multiple: false });
+                        if (typeof h.getParent === 'function') {
+                            const dir = await h.getParent();
+                            return pass(`getParent() disponível — pasta: ${dir.name}`);
+                        }
+                        return fail('getParent() não existe neste handle');
+                    } catch(e) {
+                        if (e.name === 'AbortError')
+                            return warn('Cancelado — não foi possível testar getParent()');
+                        return fail(`Erro: ${e.message}`);
+                    }
+                }
+            }
+        ]
+    },
+    {
+        title: 'Service Worker',
+        tests: [
+            {
+                id: 'sw-support',
+                name: 'Service Worker suportado',
+                detail: 'Verifica se navigator.serviceWorker está disponível',
+                run: async () => {
+                    if ('serviceWorker' in navigator)
+                        return pass('navigator.serviceWorker disponível');
+                    return fail('Service Worker não suportado neste ambiente');
+                }
+            },
+            {
+                id: 'sw-register',
+                name: 'Registro de Service Worker',
+                detail: 'Tenta registrar um Service Worker mínimo',
+                run: async () => {
+                    if (!('serviceWorker' in navigator))
+                        return warn('Ignorado — Service Worker não suportado');
+                    if (location.protocol !== 'https:' && location.hostname !== 'localhost')
+                        return fail('Service Worker exige HTTPS — protocolo atual: ' + location.protocol);
+                    try {
+                        // Cria um SW inline via blob URL
+                        const swCode = 'self.addEventListener("install", e => e.waitUntil(self.skipWaiting()));';
+                        const blob = new Blob([swCode], { type: 'application/javascript' });
+                        const url  = URL.createObjectURL(blob);
+                        const reg  = await navigator.serviceWorker.register(url, { scope: '/' });
+                        URL.revokeObjectURL(url);
+                        return pass('Service Worker registrado com sucesso');
+                    } catch(e) {
+                        if (/scope/.test(e.message))
+                            return warn('Scope restrito — registro parcial (comum em GitHub Pages)');
+                        return fail(`Registro bloqueado: ${e.message}`);
+                    }
+                }
+            }
+        ]
+    },
+    {
+        title: 'PWA / Instalação',
+        tests: [
+            {
+                id: 'pwa-manifest',
+                name: 'Link para Web Manifest',
+                detail: 'Verifica se a página possui um manifest declarado',
+                run: async () => {
+                    const link = document.querySelector('link[rel="manifest"]');
+                    if (link) return pass(`Manifest declarado: ${link.href}`);
+                    return info('Nenhum manifest declarado nesta página de diagnóstico');
+                }
+            },
+            {
+                id: 'pwa-prompt',
+                name: 'Evento beforeinstallprompt',
+                detail: 'Detecta se o browser considera o app instalável (aguarda 3s)',
+                run: async () => {
+                    return new Promise(resolve => {
+                        const handler = e => {
+                            e.preventDefault();
+                            window.removeEventListener('beforeinstallprompt', handler);
+                            resolve(pass('Evento disparado — app pode ser instalado como PWA'));
+                        };
+                        window.addEventListener('beforeinstallprompt', handler);
+                        setTimeout(() => {
+                            window.removeEventListener('beforeinstallprompt', handler);
+                            resolve(info('Evento não disparado — página sem manifest completo ou já instalada'));
+                        }, 3000);
+                    });
+                }
+            },
+            {
+                id: 'pwa-standalone',
+                name: 'Modo standalone ativo',
+                detail: 'Verifica se o app está rodando como PWA instalado',
+                run: async () => {
+                    const standalone = window.matchMedia('(display-mode: standalone)').matches
+                        || window.navigator.standalone === true;
+                    if (standalone) return pass('Rodando em modo standalone (PWA instalado)');
+                    return info('Rodando no browser — não instalado como PWA');
+                }
+            }
+        ]
+    },
+    {
+        title: 'Armazenamento',
+        tests: [
+            {
+                id: 'storage-local',
+                name: 'localStorage',
+                detail: 'Testa escrita e leitura no localStorage',
+                run: async () => {
+                    try {
+                        localStorage.setItem('__diag__', '1');
+                        const v = localStorage.getItem('__diag__');
+                        localStorage.removeItem('__diag__');
+                        if (v === '1') return pass('Leitura e escrita funcionando');
+                        return fail('Valor lido não corresponde ao escrito');
+                    } catch(e) {
+                        return fail(`Bloqueado: ${e.message}`);
+                    }
+                }
+            },
+            {
+                id: 'storage-idb',
+                name: 'IndexedDB',
+                detail: 'Testa abertura e operação básica no IndexedDB',
+                run: async () => {
+                    return new Promise(resolve => {
+                        if (!window.indexedDB) {
+                            resolve(fail('indexedDB não disponível'));
+                            return;
+                        }
+                        const req = indexedDB.open('__diag__', 1);
+                        req.onupgradeneeded = e => e.target.result.createObjectStore('t');
+                        req.onsuccess = e => {
+                            const db = e.target.result;
+                            try {
+                                const tx = db.transaction('t', 'readwrite');
+                                tx.objectStore('t').put('ok', 'k');
+                                tx.oncomplete = () => {
+                                    db.close();
+                                    indexedDB.deleteDatabase('__diag__');
+                                    resolve(pass('Leitura e escrita funcionando'));
+                                };
+                                tx.onerror = () => resolve(fail('Erro na transação'));
+                            } catch(err) {
+                                resolve(fail(`Erro: ${err.message}`));
+                            }
+                        };
+                        req.onerror = () => resolve(fail('Não foi possível abrir o banco'));
+                    });
+                }
+            },
+            {
+                id: 'storage-quota',
+                name: 'Cota de armazenamento',
+                detail: 'Verifica espaço disponível via StorageManager',
+                run: async () => {
+                    if (!navigator.storage || !navigator.storage.estimate)
+                        return info('StorageManager não disponível');
+                    const { quota, usage } = await navigator.storage.estimate();
+                    const mb = v => (v / 1024 / 1024).toFixed(1) + ' MB';
+                    return info(`Usado: ${mb(usage)} / Disponível: ${mb(quota)}`);
+                }
+            },
+            {
+                id: 'storage-persist',
+                name: 'Armazenamento persistente',
+                detail: 'Verifica se o browser garante que os dados não serão apagados',
+                run: async () => {
+                    if (!navigator.storage || !navigator.storage.persisted)
+                        return info('StorageManager não disponível');
+                    const persisted = await navigator.storage.persisted();
+                    if (persisted) return pass('Armazenamento persistente garantido');
+                    if (navigator.storage.persist) {
+                        const granted = await navigator.storage.persist();
+                        if (granted) return pass('Persistência solicitada e concedida');
+                        return warn('Persistência solicitada mas não concedida pelo browser');
+                    }
+                    return warn('Dados podem ser apagados pelo browser sob pressão de memória');
+                }
+            }
+        ]
+    },
+    {
+        title: 'Capacidades de Mídia',
+        tests: [
+            {
+                id: 'media-video',
+                name: 'Formatos de vídeo suportados',
+                detail: 'Verifica suporte nativo a formatos comuns',
+                run: async () => {
+                    const v = document.createElement('video');
+                    const formats = {
+                        'MP4 / H.264': 'video/mp4; codecs="avc1.42E01E"',
+                        'WebM / VP8':  'video/webm; codecs="vp8"',
+                        'WebM / VP9':  'video/webm; codecs="vp9"',
+                        'MKV':         'video/x-matroska',
+                        'OGG':         'video/ogg; codecs="theora"'
+                    };
+                    const results = [];
+                    for (const [name, mime] of Object.entries(formats)) {
+                        const r = v.canPlayType(mime);
+                        results.push(`${name}: ${r || 'não suportado'}`);
+                    }
+                    return info(results.join(' · '));
+                }
+            },
+            {
+                id: 'media-audio',
+                name: 'Web Audio API',
+                detail: 'Verifica disponibilidade da Web Audio API',
+                run: async () => {
+                    if (window.AudioContext || window.webkitAudioContext)
+                        return pass('AudioContext disponível');
+                    return fail('Web Audio API não disponível');
+                }
+            },
+            {
+                id: 'media-fullscreen',
+                name: 'Fullscreen API',
+                detail: 'Verifica suporte à tela cheia programática',
+                run: async () => {
+                    if (document.fullscreenEnabled)
+                        return pass('Fullscreen API disponível e habilitada');
+                    if (document.webkitFullscreenEnabled)
+                        return warn('Suporte via prefixo webkit apenas');
+                    return fail('Fullscreen API não disponível ou bloqueada por política');
+                }
+            }
+        ]
+    },
+    {
+        title: 'Drag & Drop e Clipboard',
+        tests: [
+            {
+                id: 'dnd',
+                name: 'Drag and Drop API',
+                detail: 'Verifica suporte ao arraste de arquivos',
+                run: async () => {
+                    if ('DataTransfer' in window && 'draggable' in document.createElement('div'))
+                        return pass('API disponível — fallback funcional para abertura de arquivos');
+                    return fail('Drag and Drop não suportado');
+                }
+            },
+            {
+                id: 'clipboard-read',
+                name: 'Clipboard API (leitura)',
+                detail: 'Verifica permissão de leitura do clipboard',
+                run: async () => {
+                    if (!navigator.clipboard) return warn('Clipboard API não disponível');
+                    try {
+                        await navigator.clipboard.readText();
+                        return pass('Leitura do clipboard permitida');
+                    } catch(e) {
+                        if (e.name === 'NotAllowedError')
+                            return warn('Permissão negada — requer gesto do usuário ou permissão explícita');
+                        return info(`Resultado: ${e.message}`);
+                    }
+                }
+            }
+        ]
+    },
+    {
+        title: 'Rede e Protocolo',
+        tests: [
+            {
+                id: 'net-https',
+                name: 'Protocolo HTTPS',
+                detail: 'Exigido para Service Worker, File System Access API e PWA',
+                run: async () => {
+                    if (location.protocol === 'https:')
+                        return pass('Servido via HTTPS');
+                    if (location.hostname === 'localhost')
+                        return warn('localhost — equivalente a HTTPS para fins de desenvolvimento');
+                    return fail(`Protocolo atual: ${location.protocol} — APIs seguras não funcionarão`);
+                }
+            },
+            {
+                id: 'net-online',
+                name: 'Conectividade',
+                detail: 'Estado atual da conexão de rede',
+                run: async () => {
+                    if (!navigator.onLine) return warn('Sem conexão detectada');
+                    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                    if (conn) return pass(`Online · tipo: ${conn.effectiveType || '?'} · downlink: ${conn.downlink || '?'} Mbps`);
+                    return pass('Online');
+                }
+            },
+            {
+                id: 'net-cors',
+                name: 'Fetch API',
+                detail: 'Verifica disponibilidade da Fetch API',
+                run: async () => {
+                    if (typeof fetch === 'function') return pass('fetch() disponível');
+                    return fail('Fetch API não disponível');
+                }
+            }
+        ]
+    }
+];
+
+// Helpers de resultado
+const pass = msg => ({ status: 'pass', msg });
+const fail = msg => ({ status: 'fail', msg });
+const warn = msg => ({ status: 'warn', msg });
+const info = msg => ({ status: 'info', msg });
+
+const LABELS = { pass: 'OK', fail: 'BLOQUEADO', warn: 'ATENÇÃO', info: 'INFO' };
+
+// ---------------------------------------------------------------------------
+// Renderização
+// ---------------------------------------------------------------------------
+function renderGroups() {
+    const container = document.getElementById('results');
+    container.innerHTML = '';
+    groups.forEach(g => {
+        const section = document.createElement('div');
+        section.className = 'group';
+        section.innerHTML = `<div class="group-title">${g.title}</div>`;
+        g.tests.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'test-card';
+            card.id = 'card-' + t.id;
+            card.innerHTML = `
+                <div class="test-name">${t.name}</div>
+                <div class="badge pending" id="badge-${t.id}">AGUARDANDO</div>
+                <div class="test-detail" id="detail-${t.id}">${t.detail}</div>
+            `;
+            section.appendChild(card);
+        });
+        container.appendChild(section);
+    });
+}
+
+function updateCard(id, status, msg) {
+    const card   = document.getElementById('card-' + id);
+    const badge  = document.getElementById('badge-' + id);
+    const detail = document.getElementById('detail-' + id);
+    if (!card) return;
+    card.className  = 'test-card ' + status;
+    badge.className = 'badge ' + status;
+    badge.textContent = LABELS[status];
+    detail.className = 'test-detail ' + status;
+    detail.textContent = msg;
+}
+
+function setRunning(id) {
+    const badge  = document.getElementById('badge-' + id);
+    const card   = document.getElementById('card-' + id);
+    if (badge) { badge.className = 'badge pending'; badge.innerHTML = '<span class="spinner"></span>'; }
+    if (card)  card.className = 'test-card running';
+}
+
+// ---------------------------------------------------------------------------
+// Execução
+// ---------------------------------------------------------------------------
+async function runAll() {
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Executando...';
+
+    const summary = document.getElementById('summary');
+    summary.classList.remove('visible');
+
+    const counts = { pass: 0, fail: 0, warn: 0, info: 0 };
+
+    for (const group of groups) {
+        for (const test of group.tests) {
+            setRunning(test.id);
+            // Pequeno delay para o DOM atualizar
+            await new Promise(r => setTimeout(r, 40));
+            try {
+                const result = await test.run();
+                updateCard(test.id, result.status, result.msg);
+                counts[result.status]++;
+            } catch(e) {
+                updateCard(test.id, 'fail', `Exceção não tratada: ${e.message}`);
+                counts.fail++;
+            }
+        }
+    }
+
+    // Atualiza sumário
+    document.getElementById('cnt-pass').textContent = counts.pass;
+    document.getElementById('cnt-warn').textContent = counts.warn;
+    document.getElementById('cnt-fail').textContent = counts.fail;
+    document.getElementById('cnt-info').textContent = counts.info;
+    summary.classList.add('visible');
+
+    btn.disabled = false;
+    btn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Executar novamente`;
+
+    document.getElementById('ts').textContent = new Date().toLocaleString('pt-BR');
+}
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+buildEnvInfo();
+renderGroups();
+
+document.getElementById('runBtn').addEventListener('click', runAll);
+document.getElementById('origin').textContent = location.origin;
+document.getElementById('ts').textContent = new Date().toLocaleString('pt-BR');
+</script>
+
+</body>
+</html>
