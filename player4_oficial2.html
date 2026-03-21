@@ -154,12 +154,11 @@ video.ready {
         </svg>
     </button>
 
-    <label for="subtitleInput" title="Carregar legenda">
+    <button id="subtitleOpenBtn" title="Carregar legenda">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
         </svg>
-    </label>
-    <input type="file" id="subtitleInput" accept=".srt">
+    </button>
 
     <button id="styleBtn" disabled title="Estilo de legenda (L)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -201,7 +200,7 @@ video.ready {
 /* ELEMENTOS DOM */
 const videoPlayer    = document.getElementById('videoPlayer');
 const videoOpenBtn   = document.getElementById('videoOpenBtn');
-const subtitleInput  = document.getElementById('subtitleInput');
+const subtitleOpenBtn = document.getElementById('subtitleOpenBtn');
 const resetBtn       = document.getElementById('resetBtn');
 const styleBtn       = document.getElementById('styleBtn');
 const cinemaBtn      = document.getElementById('cinemaBtn');
@@ -379,7 +378,6 @@ function restoreProgress() {
 function loadVideo(file) {
     cleanupVideo(false);
 
-    subtitleInput.value = "";
     lastSavedTime       = -1;
 
     const videoURL = URL.createObjectURL(file);
@@ -421,7 +419,6 @@ function stripSrtHtmlTags(text) {
 function loadSubtitle(file) {
     if (!currentVideoKey) {
         updateStatus("Carregue um vídeo antes da legenda.");
-        subtitleInput.value = "";
         return;
     }
 
@@ -517,7 +514,6 @@ function cleanupVideo(fullReset = true) {
     Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
 
     if (fullReset) {
-        subtitleInput.value = "";
         styleBtn.disabled      = true;
         cinemaBtn.disabled     = true;
         fullscreenBtn.disabled = true;
@@ -551,8 +547,21 @@ videoOpenBtn.addEventListener('click', async () => {
     }
 });
 
-subtitleInput.addEventListener('change', e => {
-    if (e.target.files[0]) loadSubtitle(e.target.files[0]);
+subtitleOpenBtn.addEventListener('click', async () => {
+    try {
+        const [fileHandle] = await window.showOpenFilePicker({
+            id: "player-subtitle",
+            types: [{
+                description: "Legendas",
+                accept: { "text/plain": [".srt"] }
+            }],
+            multiple: false
+        });
+        const file = await fileHandle.getFile();
+        loadSubtitle(file);
+    } catch (e) {
+        if (e.name !== "AbortError") updateStatus("Erro ao abrir legenda: " + e.message);
+    }
 });
 
 styleBtn.addEventListener('click', () => {
