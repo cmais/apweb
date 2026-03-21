@@ -213,6 +213,7 @@ const shortcutFeedback = document.getElementById('shortcut-feedback');
 let currentVideoKey       = null;
 let currentVideoBlobUrl   = null;
 let currentSubtitleBlobUrl = null;
+let currentVideoDir       = null;
 let subtitleStyleIndex    = 0;
 let cinemaMode            = false;
 let lastSavedTime         = -1;
@@ -505,6 +506,7 @@ function cleanupVideo(fullReset = true) {
     currentVideoBlobUrl    = null;
     currentSubtitleBlobUrl = null;
     currentVideoKey        = null;
+    currentVideoDir        = null;
 
     videoPlayer.removeAttribute("src");
     videoPlayer.load();
@@ -541,6 +543,7 @@ videoOpenBtn.addEventListener('click', async () => {
             multiple: false
         });
         const file = await fileHandle.getFile();
+        try { currentVideoDir = await fileHandle.getParent(); } catch { currentVideoDir = null; }
         loadVideo(file);
     } catch (e) {
         if (e.name !== "AbortError") updateStatus("Erro ao abrir arquivo: " + e.message);
@@ -549,14 +552,16 @@ videoOpenBtn.addEventListener('click', async () => {
 
 subtitleOpenBtn.addEventListener('click', async () => {
     try {
-        const [fileHandle] = await window.showOpenFilePicker({
+        const options = {
             id: "player-subtitle",
             types: [{
                 description: "Legendas",
                 accept: { "text/plain": [".srt"] }
             }],
             multiple: false
-        });
+        };
+        if (currentVideoDir) options.startIn = currentVideoDir;
+        const [fileHandle] = await window.showOpenFilePicker(options);
         const file = await fileHandle.getFile();
         loadSubtitle(file);
     } catch (e) {
