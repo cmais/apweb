@@ -1,0 +1,21 @@
+{
+    "name": "Comic Web Reader",
+    "short_name": "CWReader",
+    "description": "Leitor de quadrinhos CBZ e PDF",
+    "start_url": "/apweb/comic8_oficial.html",
+    "display": "standalone",
+    "background_color": "#050505",
+    "theme_color": "#27ae60",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23050505'/><rect x='40' y='30' width='72' height='96' rx='6' fill='%23222'/><rect x='80' y='66' width='72' height='96' rx='6' fill='%2327ae60'/><rect x='90' y='80' width='42' height='6' rx='3' fill='%23050505'/><rect x='90' y='96' width='32' height='6' rx='3' fill='%23050505'/><rect x='90' y='112' width='38' height='6' rx='3' fill='%23050505'/></svg>",
+            "sizes": "192x192",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23050505'/><rect x='106' y='80' width='192' height='256' rx='16' fill='%23222'/><rect x='214' y='176' width='192' height='256' rx='16' fill='%2327ae60'/><rect x='240' y='214' width='112' height='16' rx='8' fill='%23050505'/><rect x='240' y='256' width='86' height='16' rx='8' fill='%23050505'/><rect x='240' y='298' width='101' height='16' rx='8' fill='%23050505'/></svg>",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        }
+    ]
+}
