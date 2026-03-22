@@ -1,0 +1,20 @@
+{
+    "name": "SW Test",
+    "short_name": "SW Test",
+    "start_url": "/apweb/sw-test.html",
+    "display": "standalone",
+    "background_color": "#080c10",
+    "theme_color": "#58a6ff",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23080c10'/><text y='140' x='20' font-size='140' font-family='monospace'>⚙</text></svg>",
+            "sizes": "192x192",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23080c10'/><text y='380' x='40' font-size='380' font-family='monospace'>⚙</text></svg>",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        }
+    ]
+}

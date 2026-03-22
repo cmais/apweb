@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SW Test</title>
+<link rel="manifest" href="/apweb/sw-test-manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg:      #080c10;
+    --surface: #0d1117;
+    --border:  #1e2733;
+    --text:    #c9d1d9;
+    --muted:   #4a5568;
+    --pass:    #39d353;
+    --fail:    #f85149;
+    --warn:    #d29922;
+    --info:    #58a6ff;
+    --pass-bg: rgba(57,211,83,0.07);
+    --fail-bg: rgba(248,81,73,0.07);
+    --warn-bg: rgba(210,153,34,0.07);
+    --info-bg: rgba(88,166,255,0.07);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding: 40px 20px 60px;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(88,166,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(88,166,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 620px;
+    margin: 0 auto;
+}
+
+header { margin-bottom: 36px; }
+
+.label-top {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--info);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(1.3rem, 4vw, 1.8rem);
+    font-weight: 700;
+    color: #e6edf3;
+    margin-bottom: 6px;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 300;
+}
+
+/* Cards */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.card.pass { border-color: rgba(57,211,83,0.3);  background: var(--pass-bg); }
+.card.fail { border-color: rgba(248,81,73,0.3);  background: var(--fail-bg); }
+.card.warn { border-color: rgba(210,153,34,0.3); background: var(--warn-bg); }
+.card.info { border-color: rgba(88,166,255,0.3); background: var(--info-bg); }
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e6edf3;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+}
+.badge.pass    { background: rgba(57,211,83,0.15);  color: var(--pass); }
+.badge.fail    { background: rgba(248,81,73,0.15);  color: var(--fail); }
+.badge.warn    { background: rgba(210,153,34,0.15); color: var(--warn); }
+.badge.info    { background: rgba(88,166,255,0.15); color: var(--info); }
+.badge.pending { background: rgba(74,85,104,0.2);   color: var(--muted); }
+
+.card-body {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--muted);
+}
+
+.card-body.pass { color: var(--pass); }
+.card-body.fail { color: var(--fail); }
+.card-body.warn { color: var(--warn); }
+.card-body.info { color: var(--info); }
+
+/* Botão instalar */
+#installBtn {
+    display: none;
+    width: 100%;
+    margin-top: 4px;
+    background: var(--info);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    letter-spacing: 0.05em;
+}
+#installBtn:hover { opacity: 0.85; }
+#installBtn.visible { display: block; }
+
+/* Log */
+.log-section { margin-top: 28px; }
+
+.log-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+}
+
+#log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+#log .entry { display: block; }
+#log .entry.pass { color: var(--pass); }
+#log .entry.fail { color: var(--fail); }
+#log .entry.warn { color: var(--warn); }
+#log .entry.info { color: var(--info); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border: 2px solid var(--border);
+    border-top-color: var(--info);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+footer {
+    margin-top: 40px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+    <header>
+        <div class="label-top">// teste de viabilidade PWA</div>
+        <h1>Service Worker + PWA</h1>
+        <p class="subtitle">Valida registro de SW real e instalabilidade no ambiente atual</p>
+    </header>
+
+    <!-- Service Worker -->
+    <div class="card" id="card-sw">
+        <div class="card-header">
+            <span class="card-title">Service Worker</span>
+            <span class="badge pending" id="badge-sw"><span class="spinner"></span></span>
+        </div>
+        <div class="card-body" id="body-sw">Registrando sw-test-worker.js...</div>
+    </div>
+
+    <!-- Manifest -->
+    <div class="card" id="card-manifest">
+        <div class="card-header">
+            <span class="card-title">Web Manifest</span>
+            <span class="badge pending" id="badge-manifest"><span class="spinner"></span></span>
+        </div>
+        <div class="card-body" id="body-manifest">Verificando sw-test-manifest.json...</div>
+    </div>
+
+    <!-- Instalação -->
+    <div class="card" id="card-install">
+        <div class="card-header">
+            <span class="card-title">Instalação PWA</span>
+            <span class="badge pending" id="badge-install"><span class="spinner"></span></span>
+        </div>
+        <div class="card-body" id="body-install">Aguardando evento beforeinstallprompt...</div>
+        <button id="installBtn">⬇ Instalar como PWA</button>
+    </div>
+
+    <!-- Modo standalone -->
+    <div class="card" id="card-standalone">
+        <div class="card-header">
+            <span class="card-title">Modo Standalone</span>
+            <span class="badge pending" id="badge-standalone"></span>
+        </div>
+        <div class="card-body" id="body-standalone">Verificando...</div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-section">
+        <div class="log-title">// log de eventos</div>
+        <div id="log"></div>
+    </div>
+
+    <footer>origem: <span id="origin"></span></footer>
+</div>
+
+<script>
+let installPrompt = null;
+
+// ---------------------------------------------------------------------------
+// Log
+// ---------------------------------------------------------------------------
+function addLog(msg, type = '') {
+    const log = document.getElementById('log');
+    const entry = document.createElement('span');
+    entry.className = 'entry ' + type;
+    const ts = new Date().toLocaleTimeString('pt-BR');
+    entry.textContent = `[${ts}] ${msg}`;
+    log.appendChild(entry);
+    log.appendChild(document.createElement('br'));
+    log.scrollTop = log.scrollHeight;
+}
+
+// ---------------------------------------------------------------------------
+// Atualiza card
+// ---------------------------------------------------------------------------
+function setCard(id, status, msg) {
+    const card  = document.getElementById('card-' + id);
+    const badge = document.getElementById('badge-' + id);
+    const body  = document.getElementById('body-' + id);
+    const LABELS = { pass: 'OK', fail: 'BLOQUEADO', warn: 'ATENÇÃO', info: 'INFO' };
+    card.className  = 'card ' + status;
+    badge.className = 'badge ' + status;
+    badge.textContent = LABELS[status] || status;
+    body.className  = 'card-body ' + status;
+    body.textContent = msg;
+}
+
+// ---------------------------------------------------------------------------
+// Modo standalone
+// ---------------------------------------------------------------------------
+function checkStandalone() {
+    const sa = window.matchMedia('(display-mode: standalone)').matches
+             || window.navigator.standalone === true;
+    if (sa) {
+        setCard('standalone', 'pass', 'Rodando em modo standalone — PWA instalado e ativo');
+        addLog('Modo standalone detectado', 'pass');
+    } else {
+        setCard('standalone', 'info', 'Rodando no browser — não instalado como PWA ainda');
+        addLog('Modo browser normal', 'info');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Manifest
+// ---------------------------------------------------------------------------
+async function checkManifest() {
+    const link = document.querySelector('link[rel="manifest"]');
+    if (!link) {
+        setCard('manifest', 'fail', 'Tag <link rel="manifest"> não encontrada');
+        addLog('Manifest: tag não encontrada', 'fail');
+        return;
+    }
+    try {
+        const res = await fetch(link.href);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setCard('manifest', 'pass', `Carregado com sucesso · nome: "${data.name}" · display: ${data.display}`);
+        addLog(`Manifest OK — ${link.href}`, 'pass');
+    } catch(e) {
+        setCard('manifest', 'fail', `Erro ao carregar manifest: ${e.message}`);
+        addLog(`Manifest erro: ${e.message}`, 'fail');
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Service Worker
+// ---------------------------------------------------------------------------
+async function registerSW() {
+    if (!('serviceWorker' in navigator)) {
+        setCard('sw', 'fail', 'navigator.serviceWorker não disponível neste ambiente');
+        addLog('SW: API não disponível', 'fail');
+        return;
+    }
+
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        setCard('sw', 'fail', `Protocolo inseguro: ${location.protocol} — SW exige HTTPS`);
+        addLog('SW: protocolo inválido', 'fail');
+        return;
+    }
+
+    try {
+        addLog('SW: iniciando registro...', 'info');
+        const reg = await navigator.serviceWorker.register(
+            '/apweb/sw-test-worker.js',
+            { scope: '/apweb/' }
+        );
+
+        if (reg.installing) {
+            addLog('SW: instalando...', 'info');
+            reg.installing.addEventListener('statechange', e => {
+                addLog(`SW: estado → ${e.target.state}`, e.target.state === 'activated' ? 'pass' : 'info');
+            });
+        }
+
+        const state = reg.active ? 'ativo'
+                    : reg.waiting ? 'aguardando'
+                    : reg.installing ? 'instalando' : 'registrado';
+
+        setCard('sw', 'pass', `Registrado com sucesso · escopo: ${reg.scope} · estado: ${state}`);
+        addLog(`SW registrado — escopo: ${reg.scope}`, 'pass');
+
+    } catch(e) {
+        if (/policy/i.test(e.message) || /blocked/i.test(e.message)) {
+            setCard('sw', 'fail', `Bloqueado por política: ${e.message}`);
+            addLog(`SW bloqueado por política: ${e.message}`, 'fail');
+        } else if (/scope/i.test(e.message)) {
+            setCard('sw', 'warn', `Escopo restrito: ${e.message}`);
+            addLog(`SW escopo restrito: ${e.message}`, 'warn');
+        } else {
+            setCard('sw', 'fail', `Erro no registro: ${e.message}`);
+            addLog(`SW erro: ${e.message}`, 'fail');
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// beforeinstallprompt
+// ---------------------------------------------------------------------------
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    installPrompt = e;
+    setCard('install', 'pass', 'App pode ser instalado como PWA neste dispositivo');
+    addLog('beforeinstallprompt disparado — instalação disponível', 'pass');
+    const btn = document.getElementById('installBtn');
+    btn.classList.add('visible');
+});
+
+window.addEventListener('appinstalled', () => {
+    setCard('install', 'pass', 'PWA instalado com sucesso!');
+    addLog('appinstalled — PWA instalado', 'pass');
+    document.getElementById('installBtn').classList.remove('visible');
+    checkStandalone();
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    addLog(`Escolha do usuário: ${outcome}`, outcome === 'accepted' ? 'pass' : 'warn');
+    installPrompt = null;
+});
+
+// Timeout para o beforeinstallprompt
+setTimeout(() => {
+    const badge = document.getElementById('badge-install');
+    if (badge.classList.contains('pending')) {
+        setCard('install', 'warn',
+            'Evento não disparado em 5s — possíveis causas: manifest inválido, SW não registrado, app já instalado, ou política bloqueando');
+        addLog('beforeinstallprompt não disparou em 5s', 'warn');
+    }
+}, 5000);
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+document.getElementById('origin').textContent = location.origin;
+addLog(`Página carregada · origem: ${location.origin}`, 'info');
+addLog(`Protocolo: ${location.protocol}`, 'info');
+
+checkStandalone();
+checkManifest();
+registerSW();
+</script>
+
+</body>
+</html>
