@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Gerenciador de Acessos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Acessos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500&family=Roboto:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0d0d0d;
@@ -29,7 +29,7 @@
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Barlow', sans-serif;
+            font-family: 'Roboto', sans-serif;
             font-weight: 400;
             min-height: 100vh;
             padding: 32px 20px;
@@ -90,6 +90,7 @@
             letter-spacing: 1px;
             line-height: 1.1;
             margin-top: 2px;
+            font-family: 'Roboto', sans-serif;
         }
 
         .header-badge {
@@ -343,34 +344,68 @@
             text-align: center;
         }
 
-        .coluna-aluno {
-            font-family: 'Barlow', sans-serif;
-            text-transform: uppercase;
+        /* ── Células editáveis ── */
+        .cell-edit {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            padding: 4px 6px;
+            width: 100%;
+            transition: border-color 0.15s, background 0.15s;
+            outline: none;
+        }
+
+        .cell-edit:hover {
+            border-color: var(--border-bright);
+        }
+
+        .cell-edit:focus {
+            border-color: var(--cyan);
+            background: rgba(6,182,212,0.05);
+            box-shadow: 0 0 0 2px rgba(6,182,212,0.08);
+        }
+
+        .cell-edit-nome {
+            font-family: 'Roboto', sans-serif;
             font-weight: 600;
             font-size: 13px;
             color: var(--text-bright);
+            text-transform: uppercase;
         }
 
-        .cell-mono {
-            font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
-            font-size: 15px;
-            letter-spacing: 0.07em;
+        .cell-edit-login {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            letter-spacing: 0.03em;
             color: var(--green);
         }
 
-        .cell-senha {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-            letter-spacing: 2px;
+        .cell-edit-senha {
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+            font-size: 14px;
+            letter-spacing: 0.04em;
+            color: var(--amber);
+        }
+
+        .cell-senha-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             white-space: nowrap;
         }
 
-        .senha-mask { color: var(--text-dim); }
-        .senha-visible { color: var(--amber); display: none; }
+        .senha-mask {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+        }
 
         /* Botão copiar senha — visibilidade controlada exclusivamente por JS (style.display) */
         .copy-senha-btn {
-            margin-left: 10px;
+            margin-left: 4px;
             letter-spacing: 1px;
             color: var(--amber);
             border-color: #78350f;
@@ -455,6 +490,17 @@
         .section-divider::before, .section-divider::after {
             content: ''; flex: 1; height: 1px; background: var(--border);
         }
+
+        /* ── Hint de edição ── */
+        .edit-hint {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-left: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .edit-hint.visible { opacity: 1; }
     </style>
 </head>
 <body>
@@ -526,6 +572,7 @@
             <div class="tabela-info">
                 <span>Registros</span>
                 <span class="count-badge" id="count-badge">0</span>
+                <span class="edit-hint" id="edit-hint">// clique em qualquer célula para editar</span>
             </div>
         </div>
 
@@ -585,6 +632,10 @@
         countH.textContent = n;
         const btnLimpar = document.getElementById('btn-limpar');
         if (btnLimpar) btnLimpar.style.display = n > 0 ? 'flex' : 'none';
+
+        // Mostra hint de edição quando há dados
+        const hint = document.getElementById('edit-hint');
+        if (hint) hint.classList.toggle('visible', n > 0);
     }
 
     // ── Cópia robusta ────────────────────────────────────
@@ -622,17 +673,34 @@
 
     // ── Toggle senha ──────────────────────────────────────
     function toggleSenha(idx, btn) {
-        const mask     = document.getElementById('mask-' + idx);
-        const vis      = document.getElementById('vis-' + idx);
-        const copyBtn  = document.getElementById('copy-senha-' + idx);
-        const hidden   = vis.style.display === 'none';
+        const mask    = document.getElementById('mask-' + idx);
+        const input   = document.getElementById('input-senha-' + idx);
+        const copyBtn = document.getElementById('copy-senha-' + idx);
+        const hidden  = input.style.display === 'none';
 
-        mask.style.display    = hidden ? 'none'   : 'inline';
-        vis.style.display     = hidden ? 'inline' : 'none';
-        copyBtn.style.display = hidden ? 'inline-flex' : 'none';
+        mask.style.display    = hidden ? 'none'         : 'inline';
+        input.style.display   = hidden ? 'inline-block' : 'none';
+        copyBtn.style.display = hidden ? 'inline-flex'  : 'none';
 
         btn.textContent = hidden ? 'Ocultar' : 'Ver';
         btn.classList.toggle('show-active', hidden);
+    }
+
+    // ── Criar input editável ──────────────────────────────
+    function criarInputEditavel(valor, classeExtra, campo, idx) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = valor;
+        input.className = 'cell-edit ' + classeExtra;
+        input.addEventListener('input', () => {
+            dadosAtuais[idx][campo] = input.value;
+            // Se editar a senha, sincroniza o input oculto
+            if (campo === 'senha') {
+                const inputSenha = document.getElementById('input-senha-' + idx);
+                if (inputSenha) inputSenha.value = input.value;
+            }
+        });
+        return input;
     }
 
     // ── Renderizar tabela ─────────────────────────────────
@@ -653,30 +721,80 @@
 
         dados.forEach((d, i) => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="coluna-num">${i + 1}</td>
-                <td class="coluna-aluno"></td>
-                <td class="cell-mono"></td>
-                <td class="cell-senha">
-                    <span class="senha-mask" id="mask-${i}">••••••••</span>
-                    <span class="senha-visible" id="vis-${i}"></span>
-                    <button class="icon-btn copy-senha-btn" id="copy-senha-${i}" style="display:none" title="Copiar senha">Copiar</button>
-                </td>
-                <td class="cell-actions">
-                    <button class="icon-btn copy-login-btn">Copiar</button>
-                    <button class="icon-btn" onclick="toggleSenha(${i}, this)">Ver</button>
-                </td>
-            `;
 
-            tr.querySelector('.coluna-aluno').textContent = d.nome;
-            tr.querySelector('.cell-mono').textContent    = d.login;
-            tr.querySelector(`#vis-${i}`).textContent     = d.senha;
+            // Célula #
+            const tdNum = document.createElement('td');
+            tdNum.className = 'coluna-num';
+            tdNum.textContent = i + 1;
 
-            const copyLoginBtn = tr.querySelector('.copy-login-btn');
-            copyLoginBtn.addEventListener('click', () => copiar(d.login, copyLoginBtn));
+            // Célula Aluno — editável
+            const tdNome = document.createElement('td');
+            tdNome.appendChild(criarInputEditavel(d.nome, 'cell-edit-nome', 'nome', i));
 
-            const copySenhaBtn = tr.querySelector(`#copy-senha-${i}`);
-            copySenhaBtn.addEventListener('click', () => copiar(d.senha, copySenhaBtn));
+            // Célula Login — editável
+            const tdLogin = document.createElement('td');
+            const inputLogin = criarInputEditavel(d.login, 'cell-edit-login', 'login', i);
+            const copyLoginBtn = document.createElement('button');
+            copyLoginBtn.className = 'icon-btn copy-login-btn';
+            copyLoginBtn.textContent = 'Copiar';
+            copyLoginBtn.style.marginLeft = '8px';
+            copyLoginBtn.addEventListener('click', () => copiar(dadosAtuais[i].login, copyLoginBtn));
+            const loginWrap = document.createElement('div');
+            loginWrap.style.display = 'flex';
+            loginWrap.style.alignItems = 'center';
+            loginWrap.appendChild(inputLogin);
+            loginWrap.appendChild(copyLoginBtn);
+            tdLogin.appendChild(loginWrap);
+
+            // Célula Senha — máscara + input editável oculto
+            const tdSenha = document.createElement('td');
+            const senhaWrap = document.createElement('div');
+            senhaWrap.className = 'cell-senha-wrap';
+
+            const mask = document.createElement('span');
+            mask.className = 'senha-mask';
+            mask.id = 'mask-' + i;
+            mask.textContent = '••••••••';
+
+            // Input editável da senha (visível ao clicar "Ver")
+            const inputSenha = document.createElement('input');
+            inputSenha.type = 'text';
+            inputSenha.id = 'input-senha-' + i;
+            inputSenha.value = d.senha;
+            inputSenha.className = 'cell-edit cell-edit-senha';
+            inputSenha.style.display = 'none';
+            inputSenha.addEventListener('input', () => {
+                dadosAtuais[i].senha = inputSenha.value;
+            });
+
+            const copySenhaBtn = document.createElement('button');
+            copySenhaBtn.className = 'icon-btn copy-senha-btn';
+            copySenhaBtn.id = 'copy-senha-' + i;
+            copySenhaBtn.textContent = 'Copiar';
+            copySenhaBtn.style.display = 'none';
+            copySenhaBtn.addEventListener('click', () => copiar(dadosAtuais[i].senha, copySenhaBtn));
+
+            senhaWrap.appendChild(mask);
+            senhaWrap.appendChild(inputSenha);
+            senhaWrap.appendChild(copySenhaBtn);
+            tdSenha.appendChild(senhaWrap);
+
+            // Célula Ações
+            const tdAcoes = document.createElement('td');
+            tdAcoes.className = 'cell-actions';
+
+            const verBtn = document.createElement('button');
+            verBtn.className = 'icon-btn';
+            verBtn.textContent = 'Ver';
+            verBtn.addEventListener('click', () => toggleSenha(i, verBtn));
+
+            tdAcoes.appendChild(verBtn);
+
+            tr.appendChild(tdNum);
+            tr.appendChild(tdNome);
+            tr.appendChild(tdLogin);
+            tr.appendChild(tdSenha);
+            tr.appendChild(tdAcoes);
 
             corpo.appendChild(tr);
         });
@@ -726,7 +844,7 @@
             <tr>
                 <td class="coluna-num">${i + 1}</td>
                 <td class="coluna-aluno">${escHtml(d.nome)}</td>
-                <td class="cell-mono">${escHtml(d.login)}
+                <td class="cell-login">${escHtml(d.login)}
                     <button class="copy-btn" data-login="${escAttr(d.login)}">Copiar</button>
                 </td>
                 <td class="cell-senha">
@@ -742,13 +860,13 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escHtml(turma.toUpperCase())}</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500&family=Roboto:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0d0d0d;color:#c8c8c8;font-family:'Barlow',sans-serif;padding:32px 20px}
+body{background:#0d0d0d;color:#c8c8c8;font-family:'Roboto',sans-serif;padding:32px 20px}
 .container{max-width:900px;margin:0 auto}
 h1{font-size:11px;font-family:'Share Tech Mono',monospace;color:#06b6d4;letter-spacing:4px;text-transform:uppercase;margin-bottom:4px}
-h2{font-size:22px;font-weight:700;color:#e8e8e8;text-transform:uppercase;margin-bottom:28px}
+h2{font-size:22px;font-weight:700;color:#e8e8e8;text-transform:uppercase;margin-bottom:28px;font-family:'Roboto',sans-serif}
 .table-wrap{overflow-x:auto;border:1px solid #252525;border-radius:4px}
 table{width:100%;border-collapse:collapse;min-width:480px}
 thead tr{background:#1a1a1a;border-bottom:1px solid #333}
@@ -758,11 +876,11 @@ tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:#141414}
 td{padding:11px 14px;font-size:14px;vertical-align:middle}
 .coluna-num{font-family:'Share Tech Mono',monospace;font-size:11px;color:#555;width:36px;text-align:center}
-.coluna-aluno{text-transform:uppercase;font-weight:600;font-size:13px;color:#e8e8e8}
-.cell-mono{font-family:'JetBrains Mono','Share Tech Mono',monospace;font-size:15px;letter-spacing:0.07em;color:#22c55e}
+.coluna-aluno{text-transform:uppercase;font-weight:600;font-size:13px;color:#e8e8e8;font-family:'Roboto',sans-serif}
+.cell-login{font-family:'Inter',sans-serif;font-weight:500;font-size:14px;letter-spacing:0.03em;color:#22c55e}
 .cell-senha{font-family:'Share Tech Mono',monospace;white-space:nowrap}
 .senha-mask{color:#555;letter-spacing:2px}
-.senha-visible{color:#f59e0b}
+.senha-visible{font-family:'Inter',sans-serif;font-weight:400;font-size:14px;letter-spacing:0.04em;color:#f59e0b}
 .copy-btn,.ver-btn,.copy-senha-btn{margin-left:10px;background:transparent;border:1px solid #333;color:#555;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:10px;text-transform:uppercase;transition:all .15s}
 .copy-btn:hover{color:#06b6d4;border-color:#06b6d4}
 .ver-btn:hover{color:#f59e0b;border-color:#f59e0b}
