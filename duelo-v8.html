@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duelo de Monstrinhos 🐉</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0d1117;
+  --surf:    #161b22;
+  --card:    #1c2230;
+  --border:  rgba(255,255,255,0.07);
+  --accent:  #e94560;
+  --gold:    #f1c40f;
+  --green:   #2ecc71;
+  --blue:    #3498db;
+  --purple:  #8e44ad;
+  --text:    #e8eaf0;
+  --muted:   #6b7280;
+  --radius:  16px;
+  --swap-cost: 2;
+  --faint-penalty: 2;
+
+  --fogo:#ff5733; --agua:#3498db; --natureza:#27ae60; --pedra:#95a5a6;
+  --eletrico:#f1c40f; --gelo:#5dade2; --vento:#1abc9c; --sombra:#8e44ad;
+  --luz:#f39c12; --terra:#a04000; --metal:#566573; --psiquico:#e91e63;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(255,255,255,.022) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+
+.screen{display:none;position:relative;z-index:1;}
+.screen.active{display:flex;flex-direction:column;align-items:center;min-height:100vh;}
+
+/* ── INÍCIO ── */
+#s-start{justify-content:center;gap:26px;padding:40px 20px;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(233,69,96,.15) 0%,transparent 65%);}
+.logo-dragon{font-size:5rem;display:block;text-align:center;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.logo-title{font-family:'Fredoka One',cursive;font-size:clamp(2.4rem,7vw,4.8rem);background:linear-gradient(135deg,#ff5733 0%,#f1c40f 35%,#27ae60 65%,#3498db 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;line-height:1.1;}
+.logo-sub{font-size:.8rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-top:6px;}
+.showcase{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:580px;}
+.sc-card{background:var(--card);border-radius:12px;padding:12px 14px;border:1px solid var(--border);text-align:center;transition:transform .2s,border-color .2s;cursor:default;min-width:82px;}
+.sc-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.2);}
+.sc-card .se{font-size:1.9rem;display:block;margin-bottom:3px;}
+.sc-card .sn{font-family:'Fredoka One',cursive;font-size:.85rem;}
+.sc-card .st{font-size:.62rem;color:var(--muted);margin-top:2px;}
+.btn-main{font-family:'Fredoka One',cursive;font-size:1.3rem;padding:14px 44px;border:none;border-radius:50px;background:linear-gradient(135deg,var(--accent),#c0392b);color:#fff;cursor:pointer;box-shadow:0 6px 28px rgba(233,69,96,.4);transition:transform .15s,box-shadow .15s;}
+.btn-main:hover{transform:translateY(-3px);box-shadow:0 10px 36px rgba(233,69,96,.5);}
+
+/* ── SELEÇÃO ── */
+#s-select{padding:22px 14px 40px;gap:16px;background:radial-gradient(ellipse 70% 40% at 50% 0%,rgba(52,152,219,.1) 0%,transparent 60%);}
+.sel-title{font-family:'Fredoka One',cursive;font-size:1.7rem;text-align:center;}
+.sel-title span{color:var(--accent);}
+.sel-block{width:100%;max-width:740px;background:var(--surf);border-radius:var(--radius);padding:16px;border:1px solid var(--border);}
+.sel-label{font-family:'Fredoka One',cursive;font-size:1.05rem;margin-bottom:11px;display:flex;align-items:center;gap:8px;}
+.cp1{color:#e74c3c;} .cp2{color:#3498db;}
+.sel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:9px;}
+.sel-c{background:var(--card);border-radius:11px;padding:11px 8px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .16s;position:relative;user-select:none;}
+.sel-c:hover{border-color:rgba(255,255,255,.22);transform:translateY(-2px);}
+.sel-c.on{border-color:var(--accent);background:rgba(233,69,96,.1);}
+.sel-c.on::after{content:'✓';position:absolute;top:5px;right:8px;font-size:.75rem;color:var(--accent);font-weight:900;}
+.sel-c .ce{font-size:1.9rem;display:block;margin-bottom:3px;}
+.sel-c .cn{font-family:'Fredoka One',cursive;font-size:.85rem;}
+.sel-c .ct{font-size:.62rem;color:var(--muted);margin-top:1px;}
+.sel-c .ch{font-size:.68rem;color:var(--green);margin-top:2px;font-weight:700;}
+.sel-c .cen{font-size:.62rem;color:var(--gold);margin-top:1px;}
+.sel-info{font-size:.78rem;color:var(--muted);text-align:center;margin-top:5px;}
+.btn-go{font-family:'Fredoka One',cursive;font-size:1.1rem;padding:12px 36px;border:none;border-radius:50px;background:linear-gradient(135deg,#27ae60,#1e8449);color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(39,174,96,.4);transition:all .15s;opacity:.35;pointer-events:none;}
+.btn-go.ready{opacity:1;pointer-events:all;}
+.btn-go.ready:hover{transform:translateY(-2px);}
+
+/* ── BATALHA ── */
+#s-battle{padding:0;}
+.bwrap{width:100%;max-width:860px;margin:0 auto;padding:11px;display:flex;flex-direction:column;gap:9px;}
+.tbar{display:flex;justify-content:space-between;align-items:center;background:var(--surf);border-radius:50px;padding:7px 18px;border:1px solid var(--border);}
+.tnum{font-family:'Fredoka One',cursive;font-size:.9rem;color:var(--muted);}
+.tphase{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--gold);text-align:center;}
+.ppanel{background:var(--surf);border-radius:var(--radius);padding:11px;border:1px solid var(--border);}
+.ptop{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+.pname{font-family:'Fredoka One',cursive;font-size:.95rem;}
+
+/* Orbes */
+.orbes{display:flex;align-items:center;gap:4px;}
+.orb-lbl{font-size:.6rem;color:var(--muted);margin-right:3px;font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+.orb{width:15px;height:15px;border-radius:50%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.13);transition:all .3s;}
+.orb.on{background:var(--gold);border-color:var(--gold);box-shadow:0 0 7px var(--gold),0 0 14px rgba(241,196,15,.3);}
+
+/* Card ativo */
+.acard{background:var(--card);border-radius:12px;padding:11px;border:2px solid var(--border);position:relative;overflow:hidden;transition:border-color .3s;}
+.acard-glow{position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0;}
+.acard-row{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+.acard-em{font-size:2.2rem;}
+.acard-info{flex:1;}
+.acard-name{font-family:'Fredoka One',cursive;font-size:.95rem;}
+.acard-type{font-size:.65rem;color:var(--muted);margin-top:1px;}
+.acard-en{font-size:.68rem;color:var(--gold);margin-top:2px;font-weight:700;}
+.hpbar-wrap{margin-bottom:2px;}
+.hpbar-row{display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-bottom:3px;}
+.hpbar{height:7px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;}
+.hpfill{height:100%;border-radius:4px;transition:width .5s ease,background .3s;}
+.hpfill.hi{background:#2ecc71;}.hpfill.md{background:#f39c12;}.hpfill.lo{background:#e74c3c;}
+
+/* Banco */
+.bankrow{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+.blbl{font-size:.6rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:1px;width:100%;margin-bottom:1px;}
+
+/* Estados do banco */
+.bchip{background:var(--card);border-radius:7px;padding:4px 9px;font-size:.7rem;display:flex;align-items:center;gap:5px;border:1px solid var(--border);}
+.bchip .bhp{color:var(--green);font-weight:700;}
+.bchip .ben{color:var(--gold);font-size:.6rem;}
+.bchip.locked{border-color:rgba(231,76,60,.3);opacity:.65;}
+.bchip.fainted{border-color:rgba(142,68,173,.4);background:rgba(142,68,173,.08);opacity:.7;}
+.bchip .btag{font-size:.58rem;font-weight:800;padding:1px 5px;border-radius:3px;}
+.btag-lock{background:rgba(231,76,60,.2);color:#e74c3c;}
+.btag-faint{background:rgba(142,68,173,.25);color:#b87fd4;}
+
+.vs{text-align:center;font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--accent);padding:2px 0;text-shadow:0 0 14px rgba(233,69,96,.5);}
+
+/* Decisão */
+.dpanel{background:var(--surf);border-radius:var(--radius);padding:12px;border:1px solid var(--border);}
+.dtitle{font-family:'Fredoka One',cursive;font-size:.92rem;margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+.ptag{font-size:.58rem;font-family:'Nunito',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:1px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:50px;}
+.cgrid{display:flex;flex-direction:column;gap:9px;}
+.mon-row{display:flex;gap:7px;flex-wrap:wrap;}
+.mon-opt{flex:1;min-width:105px;background:var(--card);border-radius:10px;padding:9px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .15s;position:relative;}
+.mon-opt:hover:not(.dis){border-color:rgba(255,255,255,.22);}
+.mon-opt.sel{border-color:var(--blue);background:rgba(52,152,219,.1);}
+.mon-opt.dis{opacity:.3;cursor:not-allowed;}
+.mon-opt .moe{font-size:1.7rem;display:block;margin-bottom:2px;}
+.mon-opt .mon{font-family:'Fredoka One',cursive;font-size:.8rem;}
+.mon-opt .moh{font-size:.65rem;color:var(--green);}
+.mon-opt .moen{font-size:.62rem;color:var(--gold);margin-top:1px;}
+.mon-opt .mot{font-size:.6rem;color:var(--muted);margin-top:2px;}
+.mon-opt.sel.done::after{content:'✓';position:absolute;top:4px;right:6px;font-size:.75rem;color:var(--green);font-weight:900;}
+.mbadge{position:absolute;top:4px;right:5px;font-size:.55rem;font-weight:800;padding:1px 5px;border-radius:4px;}
+.mbadge-swap{background:rgba(233,69,96,.85);color:#fff;}
+.mbadge-lock{background:rgba(231,76,60,.85);color:#fff;}
+.mbadge-faint{background:rgba(142,68,173,.85);color:#fff;}
+
+.atk-row{display:flex;gap:7px;}
+.atk-opt{flex:1;background:var(--card);border-radius:10px;padding:10px;cursor:pointer;border:2px solid transparent;transition:all .15s;}
+.atk-opt:hover:not(.dis){border-color:rgba(255,255,255,.22);}
+.atk-opt.sel{border-color:var(--gold);background:rgba(241,196,15,.09);}
+.atk-opt.dis{opacity:.32;cursor:not-allowed;}
+.atk-name{font-family:'Fredoka One',cursive;font-size:.88rem;}
+.atk-type{font-size:.63rem;margin-top:2px;}
+.atk-dmg{font-size:.73rem;color:var(--accent);font-weight:700;margin-top:3px;}
+.atk-tags{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
+.tag{border-radius:4px;padding:1px 6px;font-size:.58rem;font-weight:800;}
+.tag-cost{background:rgba(241,196,15,.15);color:var(--gold);}
+.tag-cd{background:rgba(231,76,60,.15);color:#e74c3c;}
+.tag-ok{background:rgba(46,204,113,.15);color:var(--green);}
+.tag-wait{background:rgba(107,114,128,.2);color:var(--muted);}
+.tag-dodge{background:rgba(26,188,156,.15);color:#1abc9c;}
+
+/* Painel oculto do adversário */
+.ppanel-hidden{
+  background:var(--surf);border-radius:var(--radius);padding:18px;
+  border:1px solid var(--border);text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  min-height:80px;
+}
+.ppanel-hidden .ph-icon{font-size:2rem;}
+.ppanel-hidden .ph-label{font-family:'Fredoka One',cursive;font-size:1rem;color:var(--muted);}
+.ppanel-hidden .ph-sub{font-size:.72rem;color:var(--muted);opacity:.7;}
+
+/* Banco adversário parcial (só monstrinhos que já passaram pela arena) */
+.bchip-public{
+  background:var(--card);border-radius:7px;padding:4px 9px;
+  font-size:.7rem;display:flex;align-items:center;gap:5px;
+  border:1px solid var(--border);opacity:.75;
+}
+.bchip-unknown{
+  background:var(--card);border-radius:7px;padding:4px 9px;
+  font-size:.7rem;display:flex;align-items:center;gap:5px;
+  border:1px solid rgba(255,255,255,.05);opacity:.4;
+  font-style:italic;color:var(--muted);
+}
+
+/* Overlay de passagem de dispositivo */
+.pass-overlay-box{
+  background:var(--surf);border-radius:var(--radius);padding:32px 28px;
+  max-width:400px;width:100%;text-align:center;
+  border:2px solid rgba(241,196,15,.3);
+}
+.pass-icon{font-size:3.5rem;display:block;margin-bottom:10px;animation:passWobble 1s ease infinite alternate;}
+@keyframes passWobble{from{transform:rotate(-8deg);}to{transform:rotate(8deg);}}
+.pass-title{font-family:'Fredoka One',cursive;font-size:1.5rem;color:var(--gold);margin-bottom:6px;}
+.pass-sub{font-size:.85rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+.pass-confirm-box{
+  background:rgba(241,196,15,.07);border:1px solid rgba(241,196,15,.2);
+  border-radius:10px;padding:12px;margin-bottom:16px;font-size:.78rem;color:var(--muted);
+}
+.btn-pass{
+  font-family:'Fredoka One',cursive;font-size:1.1rem;padding:13px 36px;
+  border:none;border-radius:50px;
+  background:linear-gradient(135deg,var(--gold),#e6a800);
+  color:#1a1a2e;cursor:pointer;
+  box-shadow:0 4px 20px rgba(241,196,15,.35);transition:all .15s;
+}
+.btn-pass:hover{transform:translateY(-2px);}
+
+.warn-box
+.dodge-opt{
+  background:var(--card);border-radius:10px;padding:10px;
+  cursor:pointer;border:2px solid transparent;transition:all .15s;
+  text-align:center;
+}
+.dodge-opt:hover:not(.dis){border-color:rgba(26,188,156,.5);}
+.dodge-opt.sel{border-color:#1abc9c;background:rgba(26,188,156,.1);}
+.dodge-opt.dis{opacity:.32;cursor:not-allowed;}
+.dodge-icon{font-size:1.6rem;display:block;margin-bottom:3px;}
+.dodge-name{font-family:'Fredoka One',cursive;font-size:.88rem;color:#1abc9c;}
+.dodge-desc{font-size:.65rem;color:var(--muted);margin-top:3px;line-height:1.4;}
+.dodge-used{font-size:.6rem;color:#e74c3c;font-weight:800;margin-top:3px;}
+
+/* Badge esquiva no card ativo */
+.dodge-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(26,188,156,.15);color:#1abc9c;
+  border-radius:50px;padding:2px 8px;font-size:.62rem;font-weight:800;
+  margin-top:4px;
+}
+.dodge-badge.used{background:rgba(231,76,60,.1);color:#e74c3c;}
+
+/* Log de esquiva no reveal */
+.dlog-line .dodge{color:#1abc9c;font-weight:800;}
+
+.warn-box{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.25);border-radius:9px;padding:8px 12px;font-size:.75rem;color:#e74c3c;font-weight:700;}
+
+/* Aviso de passe de turno automático */
+.pass-box{background:rgba(142,68,173,.1);border:1px solid rgba(142,68,173,.3);border-radius:9px;padding:10px 14px;font-size:.78rem;color:#b87fd4;font-weight:700;text-align:center;}
+
+.btn-conf{width:100%;font-family:'Fredoka One',cursive;font-size:.98rem;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#c0392b);color:#fff;cursor:pointer;margin-top:7px;transition:all .15s;opacity:.35;pointer-events:none;}
+.btn-conf.ready{opacity:1;pointer-events:all;}
+.btn-conf.ready:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(233,69,96,.35);}
+.conf-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(46,204,113,.13);color:var(--green);border-radius:50px;padding:6px 14px;font-size:.78rem;font-weight:700;}
+
+/* ── OVERLAYS ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:18px;backdrop-filter:blur(6px);}
+.overlay.hidden{display:none;}
+
+/* Reveal */
+.rev-title{font-family:'Fredoka One',cursive;font-size:2rem;color:var(--gold);text-shadow:0 0 20px rgba(241,196,15,.6);animation:zpulse .5s infinite alternate;}
+@keyframes zpulse{from{transform:scale(1);}to{transform:scale(1.06);}}
+.rev-row{display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center;}
+.rev-card{background:var(--surf);border-radius:var(--radius);padding:16px 20px;text-align:center;border:2px solid rgba(255,255,255,.1);min-width:150px;animation:revIn .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes revIn{from{transform:scale(.4) rotateY(90deg);opacity:0;}to{transform:scale(1) rotateY(0);opacity:1;}}
+.rev-who{font-size:.65rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:1px;}
+.rev-em{font-size:2.6rem;display:block;margin:5px 0;}
+.rev-name{font-family:'Fredoka One',cursive;font-size:1.05rem;}
+.rev-atk{font-size:.78rem;color:var(--gold);font-weight:700;margin-top:3px;}
+.rev-dmg{font-size:.85rem;color:var(--accent);font-weight:800;margin-top:2px;}
+.rev-eff{font-size:.72rem;margin-top:6px;padding:3px 10px;border-radius:50px;font-weight:700;display:inline-block;}
+.eff-sup{background:rgba(46,204,113,.2);color:#2ecc71;}
+.eff-neu{background:rgba(255,255,255,.07);color:var(--muted);}
+.eff-res{background:rgba(52,152,219,.2);color:#3498db;}
+.rev-vs{font-family:'Fredoka One',cursive;font-size:2rem;color:var(--accent);}
+.dlog{background:var(--surf);border-radius:12px;padding:12px 16px;max-width:500px;width:100%;border:1px solid var(--border);}
+.dlog h3{font-family:'Fredoka One',cursive;font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.dlog-line{font-size:.8rem;padding:3px 0;line-height:1.5;}
+.dlog-line b{color:var(--accent);}
+.dlog-line .dead{color:#e74c3c;font-weight:800;}
+.dlog-line .faint{color:#b87fd4;font-weight:800;}
+.dlog-line .efft{color:var(--gold);font-size:.7rem;}
+.btn-next{font-family:'Fredoka One',cursive;font-size:1.05rem;padding:12px 34px;border:none;border-radius:50px;background:linear-gradient(135deg,var(--blue),#2980b9);color:#fff;cursor:pointer;box-shadow:0 4px 18px rgba(52,152,219,.4);transition:all .15s;}
+.btn-next:hover{transform:translateY(-2px);}
+
+/* Desmaio overlay */
+.faint-box{background:var(--surf);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;text-align:center;border:2px solid rgba(142,68,173,.4);}
+.faint-em{font-size:3.5rem;display:block;margin-bottom:8px;animation:wobble 1s ease;}
+@keyframes wobble{0%{transform:rotate(0);}20%{transform:rotate(-10deg);}40%{transform:rotate(10deg);}60%{transform:rotate(-6deg);}80%{transform:rotate(4deg);}100%{transform:rotate(0);}}
+.faint-title{font-family:'Fredoka One',cursive;font-size:1.6rem;color:#b87fd4;margin-bottom:6px;}
+.faint-sub{font-size:.82rem;color:var(--muted);margin-bottom:18px;line-height:1.6;}
+.faint-choose-title{font-family:'Fredoka One',cursive;font-size:1rem;color:var(--text);margin-bottom:10px;}
+.faint-opts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.faint-opt{background:var(--card);border-radius:10px;padding:10px 14px;cursor:pointer;border:2px solid transparent;transition:all .15s;text-align:center;min-width:100px;}
+.faint-opt:hover{border-color:rgba(255,255,255,.25);}
+.faint-opt.sel{border-color:var(--purple);background:rgba(142,68,173,.15);}
+.faint-opt .foe{font-size:1.8rem;display:block;margin-bottom:3px;}
+.faint-opt .fon{font-family:'Fredoka One',cursive;font-size:.85rem;}
+.faint-opt .foh{font-size:.65rem;color:var(--green);}
+.faint-opt .foen{font-size:.62rem;color:var(--gold);margin-top:1px;}
+.btn-faint-conf{font-family:'Fredoka One',cursive;font-size:1rem;padding:11px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,var(--purple),#6c3483);color:#fff;cursor:pointer;margin-top:14px;transition:all .15s;opacity:.35;pointer-events:none;box-shadow:0 4px 16px rgba(142,68,173,.3);}
+.btn-faint-conf.ready{opacity:1;pointer-events:all;}
+.btn-faint-conf.ready:hover{transform:translateY(-2px);}
+
+/* Banco decision */
+.bdbox{background:var(--surf);border-radius:var(--radius);padding:24px;max-width:370px;width:100%;text-align:center;border:1px solid rgba(255,255,255,.1);}
+.bdbox-em{font-size:2.8rem;display:block;margin-bottom:7px;}
+.bdbox-title{font-family:'Fredoka One',cursive;font-size:1.25rem;margin-bottom:5px;}
+.bdbox-sub{font-size:.8rem;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+.bdbox-btns{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;}
+.btn-bd{font-family:'Fredoka One',cursive;font-size:.9rem;padding:10px 20px;border:none;border-radius:50px;cursor:pointer;transition:all .15s;}
+.btn-bd:hover{transform:translateY(-2px);}
+.btn-tobank{background:linear-gradient(135deg,#8e44ad,#6c3483);color:#fff;box-shadow:0 4px 13px rgba(142,68,173,.4);}
+.btn-stay{background:linear-gradient(135deg,#e67e22,#ca6f1e);color:#fff;box-shadow:0 4px 13px rgba(230,126,34,.4);}
+.btn-bd-dis{opacity:.35;pointer-events:none;}
+
+/* Game Over */
+#s-over{justify-content:center;align-items:center;gap:22px;padding:40px 20px;background:radial-gradient(ellipse 70% 55% at 50% 50%,rgba(233,69,96,.13) 0%,transparent 70%);}
+.over-box{text-align:center;background:var(--surf);border-radius:var(--radius);padding:40px 46px;border:2px solid rgba(255,255,255,.07);box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.over-trophy{font-size:4.5rem;display:block;margin-bottom:12px;animation:tIn 1s cubic-bezier(.34,1.56,.64,1);}
+@keyframes tIn{from{transform:scale(.3) rotate(-30deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+.over-title{font-family:'Fredoka One',cursive;font-size:2.3rem;margin-bottom:5px;}
+.over-reason{font-size:.85rem;color:var(--muted);margin-bottom:22px;line-height:1.5;}
+
+.t-fogo{color:var(--fogo);}.t-agua{color:var(--agua);}.t-natureza{color:var(--natureza);}
+.t-pedra{color:var(--pedra);}.t-eletrico{color:var(--eletrico);}.t-gelo{color:var(--gelo);}
+.t-vento{color:var(--vento);}.t-sombra{color:var(--sombra);}.t-luz{color:var(--luz);}
+.t-terra{color:var(--terra);}.t-metal{color:var(--metal);}.t-psiquico{color:var(--psiquico);}
+</style>
+</head>
+<body>
+
+<!-- INÍCIO -->
+<div id="s-start" class="screen active">
+  <span class="logo-dragon">🐉</span>
+  <div class="logo-title">Duelo de<br>Monstrinhos</div>
+  <div class="logo-sub">Card Game Estratégico · 1v1 · v8</div>
+  <div class="showcase" id="showcase"></div>
+  <button class="btn-main" onclick="goSelect()">⚔️ Começar Partida</button>
+  <div style="color:var(--muted);font-size:.76rem;text-align:center;max-width:270px;line-height:1.7">
+    Gerencie energia. Troque no momento certo.<br>Não deixe seu monstrinho desmaiar!
+  </div>
+</div>
+
+<!-- SELEÇÃO -->
+<div id="s-select" class="screen">
+  <div class="sel-title">⚔️ Monte seu <span>Time</span></div>
+
+  <div class="sel-block" id="sel-block-1">
+    <div class="sel-label cp1">🔴 Jogador 1 — escolha 3 monstrinhos</div>
+    <div class="sel-grid" id="sg1"></div>
+    <div class="sel-info" id="si1">0 / 3 escolhidos</div>
+  </div>
+
+  <div class="sel-block" id="sel-block-2" style="display:none">
+    <div class="sel-label cp2">🔵 Jogador 2 — escolha 3 monstrinhos</div>
+    <div class="sel-grid" id="sg2"></div>
+    <div class="sel-info" id="si2">0 / 3 escolhidos</div>
+  </div>
+
+  <button class="btn-go" id="btn-confirm-p1" onclick="confirmSelP1()">✅ Confirmar e Passar Dispositivo →</button>
+  <button class="btn-go" id="btn-go" onclick="startBattle()" style="display:none">⚔️ Iniciar Batalha!</button>
+</div>
+
+<!-- BATALHA -->
+<div id="s-battle" class="screen">
+  <div class="bwrap">
+    <div class="tbar">
+      <span class="tnum" id="tnum">Turno 1</span>
+      <span class="tphase">⚔️ Escolha monstrinho + ataque</span>
+      <span class="tnum">⚡ Troca custa 2</span>
+    </div>
+    <div class="ppanel">
+      <div class="ptop">
+        <span class="pname cp2">🔵 Jogador 2</span>
+        <div class="orbes" id="orb2"></div>
+      </div>
+      <div class="acard" id="ac2"></div>
+      <div class="bankrow" id="bk2"></div>
+    </div>
+    <div class="vs">— VS —</div>
+    <div class="ppanel">
+      <div class="ptop">
+        <span class="pname cp1">🔴 Jogador 1</span>
+        <div class="orbes" id="orb1"></div>
+      </div>
+      <div class="acard" id="ac1"></div>
+      <div class="bankrow" id="bk1"></div>
+    </div>
+    <div class="dpanel">
+      <div class="dtitle">🔴 Jogador 1 <span class="ptag">Decisão</span></div>
+      <div id="dp1"></div>
+    </div>
+    <div class="dpanel">
+      <div class="dtitle">🔵 Jogador 2 <span class="ptag">Decisão</span></div>
+      <div id="dp2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div id="s-over" class="screen">
+  <div class="over-box">
+    <span class="over-trophy" id="over-trophy">🏆</span>
+    <div class="over-title" id="over-title"></div>
+    <div class="over-reason" id="over-reason"></div>
+    <button class="btn-main" onclick="restart()">🔄 Jogar Novamente</button>
+  </div>
+</div>
+
+<!-- OVERLAY PASSAGEM DE DISPOSITIVO -->
+<div class="overlay hidden" id="ov-pass">
+  <div class="pass-overlay-box" id="pass-box"></div>
+</div>
+
+<!-- OVERLAY REVEAL -->
+<div class="overlay hidden" id="ov-rev">
+  <div class="rev-title">⚡ REVELAR!</div>
+  <div class="rev-row" id="rev-cards"></div>
+  <div class="dlog" id="dlog"></div>
+  <button class="btn-next" onclick="afterReveal()">Continuar →</button>
+</div>
+
+<!-- OVERLAY DESMAIO -->
+<div class="overlay hidden" id="ov-faint">
+  <div class="faint-box" id="faint-box"></div>
+</div>
+
+<!-- OVERLAY BANCO -->
+<div class="overlay hidden" id="ov-bank">
+  <div class="bdbox" id="bdbox"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONSTANTES
+// ══════════════════════════════════════════
+const SWAP_COST    = 2;
+const FAINT_TURNS  = 2;
+
+const ET = {
+  fogo:'🔥',agua:'💧',natureza:'🌿',pedra:'🪨',eletrico:'⚡',
+  gelo:'🧊',vento:'🌪️',sombra:'🌑',luz:'✨',terra:'🌍',metal:'⚙️',psiquico:'🔮'
+};
+
+const WEAK = {
+  fogo:    {w:['agua','pedra'],       r:['natureza','gelo']},
+  agua:    {w:['natureza','eletrico'],r:['fogo','pedra']},
+  natureza:{w:['fogo','gelo'],        r:['agua','terra']},
+  pedra:   {w:['agua','natureza'],    r:['fogo','eletrico']},
+  eletrico:{w:['pedra','terra'],      r:['agua','metal']},
+  gelo:    {w:['fogo','metal'],       r:['natureza','vento']},
+  vento:   {w:['eletrico','gelo'],    r:['terra','sombra']},
+  sombra:  {w:['vento','fogo'],       r:['luz','psiquico']},
+  luz:     {w:['psiquico','gelo'],    r:['sombra','terra']},
+  terra:   {w:['agua','vento'],       r:['eletrico','pedra']},
+  metal:   {w:['fogo','terra'],       r:['gelo','pedra']},
+  psiquico:{w:['luz','metal'],        r:['sombra','vento']},
+};
+
+const CATALOG = [
+  {id:'flamito',  name:'Flamito',  em:'🔥',type:'fogo',     hp:100,en:6,a1:{name:'Chama Rápida',    type:'fogo',     dmg:25,cost:1,cd:0},a2:{name:'Explosão Solar',   type:'fogo',     dmg:60,cost:4,cd:2}},
+  {id:'bolhinha', name:'Bolhinha', em:'💧',type:'agua',     hp:120,en:6,a1:{name:"Jato d'Água",     type:'agua',     dmg:20,cost:1,cd:0},a2:{name:'Maremoto',          type:'agua',     dmg:55,cost:4,cd:2}},
+  {id:'brotinho', name:'Brotinho', em:'🌿',type:'natureza', hp:110,en:6,a1:{name:'Espinho',          type:'natureza', dmg:22,cost:1,cd:0},a2:{name:'Tempestade Floral', type:'natureza', dmg:58,cost:4,cd:2}},
+  {id:'pedroso',  name:'Pedroso',  em:'🪨',type:'pedra',    hp:150,en:6,a1:{name:'Pancada de Pedra', type:'pedra',    dmg:18,cost:1,cd:0},a2:{name:'Avalanche',         type:'pedra',    dmg:50,cost:4,cd:2}},
+  {id:'voltinho', name:'Voltinho', em:'⚡',type:'eletrico', hp:90, en:7,a1:{name:'Faísca',           type:'eletrico', dmg:30,cost:1,cd:0},a2:{name:'Raio Supremo',      type:'eletrico', dmg:65,cost:5,cd:2}},
+  {id:'glacito',  name:'Glacito',  em:'🧊',type:'gelo',     hp:115,en:6,a1:{name:'Sopro Gelado',     type:'gelo',     dmg:21,cost:1,cd:0},a2:{name:'Blizzard',          type:'gelo',     dmg:56,cost:4,cd:2}},
+  {id:'rafinho',  name:'Rafinho',  em:'🌪️',type:'vento',   hp:95, en:7,a1:{name:'Rajada',           type:'vento',    dmg:28,cost:1,cd:0},a2:{name:'Tornado',           type:'vento',    dmg:62,cost:5,cd:2}},
+  {id:'sombrix',  name:'Sombrix',  em:'🌑',type:'sombra',   hp:105,en:6,a1:{name:'Garra das Trevas', type:'sombra',   dmg:24,cost:1,cd:0},a2:{name:'Eclipse Total',      type:'sombra',   dmg:58,cost:4,cd:2}},
+  {id:'luminho',  name:'Luminho',  em:'✨',type:'luz',      hp:100,en:6,a1:{name:'Brilho',           type:'luz',      dmg:23,cost:1,cd:0},a2:{name:'Explosão de Luz',   type:'luz',      dmg:57,cost:4,cd:2}},
+  {id:'terrao',   name:'Terrão',   em:'🌍',type:'terra',    hp:135,en:6,a1:{name:'Soco de Terra',    type:'terra',    dmg:19,cost:1,cd:0},a2:{name:'Terremoto',         type:'terra',    dmg:52,cost:4,cd:2}},
+  {id:'ferrix',   name:'Ferrix',   em:'⚙️',type:'metal',   hp:125,en:6,a1:{name:'Lâmina de Aço',    type:'metal',    dmg:22,cost:1,cd:0},a2:{name:'Perfuração Máxima', type:'metal',    dmg:55,cost:4,cd:2}},
+  {id:'mentix',   name:'Mentix',   em:'🔮',type:'psiquico', hp:88, en:8,a1:{name:'Onda Mental',      type:'psiquico', dmg:26,cost:1,cd:0},a2:{name:'Colapso Psiônico',  type:'psiquico', dmg:70,cost:6,cd:3}},
+];
+
+// ══════════════════════════════════════════
+//  ESTADO
+// ══════════════════════════════════════════
+let G = {};
+let SEL = [[],[]];
+
+function mkPlayer(idx, name){
+  return { idx, name, field:null, bank:[], choice:null, confirmed:false };
+}
+
+function mkInst(def){
+  return {
+    id:def.id, name:def.name, em:def.em, type:def.type,
+    maxHp:def.hp, hp:def.hp,
+    maxEn:def.en, en:def.en,
+    a1:{...def.a1, cdLeft:0},
+    a2:{...def.a2, cdLeft:0},
+    faintLeft:0,
+    dodgeUsed:false,  // esquiva disponível até sair do campo
+  };
+}
+
+function getMult(atkType, defType){
+  const w = WEAK[defType];
+  if(!w) return 1;
+  if(w.w.includes(atkType)) return 2;
+  if(w.r.includes(atkType)) return 0.5;
+  return 1;
+}
+
+// ══════════════════════════════════════════
+//  UTILITÁRIOS UI
+// ══════════════════════════════════════════
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function ovShow(id){ document.getElementById(id).classList.remove('hidden'); }
+function ovHide(id){ document.getElementById(id).classList.add('hidden'); }
+
+// ══════════════════════════════════════════
+//  INÍCIO
+// ══════════════════════════════════════════
+(function(){
+  document.getElementById('showcase').innerHTML =
+    CATALOG.map(m=>`<div class="sc-card"><span class="se">${m.em}</span><div class="sn t-${m.type}">${m.name}</div><div class="st">${ET[m.type]} ${m.type}</div></div>`).join('');
+})();
+
+let SEL_PHASE = 0; // 0 = J1 selecionando, 1 = J2 selecionando
+
+function goSelect(){ SEL=[[],[]]; SEL_PHASE=0; renderSelect(); show('s-select'); }
+
+// ══════════════════════════════════════════
+//  SELEÇÃO
+// ══════════════════════════════════════════
+function renderSelect(){
+  // Mostrar apenas o bloco do jogador atual
+  document.getElementById('sel-block-1').style.display = SEL_PHASE===0 ? '' : 'none';
+  document.getElementById('sel-block-2').style.display = SEL_PHASE===1 ? '' : 'none';
+  document.getElementById('btn-confirm-p1').style.display = SEL_PHASE===0 ? '' : 'none';
+  document.getElementById('btn-go').style.display = SEL_PHASE===1 ? '' : 'none';
+
+  const pi = SEL_PHASE;
+  document.getElementById(`sg${pi+1}`).innerHTML =
+    CATALOG.map((m,mi)=>`
+      <div class="sel-c ${SEL[pi].includes(mi)?'on':''}" id="sc${pi}-${mi}" onclick="toggleSel(${pi},${mi})">
+        <span class="ce">${m.em}</span>
+        <div class="cn">${m.name}</div>
+        <div class="ct t-${m.type}">${ET[m.type]} ${m.type}</div>
+        <div class="ch">❤️ ${m.hp} PV</div>
+        <div class="cen">⚡ ${m.en} energia</div>
+      </div>`).join('');
+  updSelInfo(pi);
+  updSelBtn();
+}
+
+function toggleSel(pi,mi){
+  const idx=SEL[pi].indexOf(mi);
+  if(idx>=0) SEL[pi].splice(idx,1);
+  else if(SEL[pi].length<3) SEL[pi].push(mi);
+  CATALOG.forEach((_,i)=>{ document.getElementById(`sc${pi}-${i}`)?.classList.toggle('on',SEL[pi].includes(i)); });
+  updSelInfo(pi);
+  updSelBtn();
+}
+function updSelInfo(pi){ document.getElementById(`si${pi+1}`).textContent=`${SEL[pi].length} / 3 escolhidos`; }
+function updSelBtn(){
+  if(SEL_PHASE===0){
+    document.getElementById('btn-confirm-p1').classList.toggle('ready', SEL[0].length===3);
+  } else {
+    document.getElementById('btn-go').classList.toggle('ready', SEL[1].length===3);
+  }
+}
+
+function confirmSelP1(){
+  if(SEL[0].length!==3) return;
+  // Mostrar overlay de passagem antes de J2 escolher
+  document.getElementById('pass-box').innerHTML=`
+    <span class="pass-icon">📱</span>
+    <div class="pass-title">Passe o dispositivo!</div>
+    <div class="pass-sub">
+      Jogador 1 já fez suas escolhas — elas estão ocultas.<br>
+      <span style="color:#3498db;font-weight:800">🔵 Jogador 2</span>, é a sua vez de montar o time!
+    </div>
+    <div class="pass-confirm-box">
+      👁️ Você não verá o time do adversário.<br>
+      Cada jogador monta seu time em segredo.
+    </div>
+    <button class="btn-pass" onclick="startSelP2()">
+      ⚔️ Estou pronto — Montar meu time!
+    </button>`;
+  ovShow('ov-pass');
+}
+
+function startSelP2(){
+  ovHide('ov-pass');
+  SEL_PHASE=1;
+  renderSelect();
+}
+
+// ══════════════════════════════════════════
+//  INICIAR BATALHA
+// ══════════════════════════════════════════
+function startBattle(){
+  G = { turn:1, players:[mkPlayer(0,'Jogador 1'),mkPlayer(1,'Jogador 2')], bankQ:[], faintQ:[], activePi:0 };
+  [0,1].forEach(pi=>{
+    const p=G.players[pi];
+    const insts=SEL[pi].map(mi=>mkInst(CATALOG[mi]));
+    p.field=insts[0];
+    p.field.everOnField=true; // primeiro monstrinho já entra em campo revelado
+    p.bank=insts.slice(1);
+    // monstrinhos do banco começam ocultos
+    p.bank.forEach(m=>m.everOnField=false);
+  });
+  show('s-battle');
+  startPlayerTurn(0);
+}
+
+// ══════════════════════════════════════════
+//  CONTROLE DE TURNO POR JOGADOR
+// ══════════════════════════════════════════
+function startPlayerTurn(pi){
+  G.activePi=pi;
+  renderBattleForPlayer(pi);
+}
+
+function renderBattleForPlayer(pi){
+  const me=G.players[pi];
+  const opp=G.players[1-pi];
+  document.getElementById('tnum').textContent=`Turno ${G.turn}`;
+
+  // Painel próprio — completo
+  renderOrbs(me);
+  renderActiveCard(me, false);
+  renderBank(me, false);
+
+  // Painel adversário — oculto / parcial
+  renderActiveCardHidden(opp);
+  renderBankOpponent(opp);
+
+  // Painéis de decisão
+  renderDecisionForActive(me);
+  hideOpponentDecision(opp);
+}
+
+function renderActiveCardHidden(p){
+  const el=document.getElementById(`ac${p.idx+1}`);
+  const m=p.field;
+  if(!m){ el.innerHTML=`<div class="ppanel-hidden"><span class="ph-icon">❓</span><div class="ph-label">Sem monstrinho</div></div>`; return; }
+  // Mostra só emoji e nome — sem PV, energia ou esquiva
+  el.innerHTML=`
+    <div class="acard-glow" style="background:var(--${m.type});opacity:.4"></div>
+    <div class="acard-row">
+      <span class="acard-em">${m.em}</span>
+      <div class="acard-info">
+        <div class="acard-name">${m.name}</div>
+        <div class="acard-type t-${m.type}">${ET[m.type]} ${m.type}</div>
+        <div class="acard-en" style="color:var(--muted);font-style:italic">⚡ ??? &nbsp;·&nbsp; ❤️ ???</div>
+      </div>
+    </div>
+    <div class="hpbar-wrap">
+      <div class="hpbar-row"><span>❤️ PV</span><span style="color:var(--muted)">???</span></div>
+      <div class="hpbar"><div class="hpfill hi" style="width:100%;opacity:.15"></div></div>
+    </div>`;
+}
+
+function renderBankOpponent(p){
+  const el=document.getElementById(`bk${p.idx+1}`);
+  const revealed=p.bank.filter(m=>m.everOnField);
+  const hidden=p.bank.filter(m=>!m.everOnField);
+  if(!p.bank.length){ el.innerHTML=''; return; }
+  let html=`<div class="blbl">🏦 Banco adversário</div>`;
+  // Monstrinhos revelados — nome e tipo, sem PV/energia
+  revealed.forEach(m=>{
+    html+=`<div class="bchip-public">${m.em} ${m.name} <span style="font-size:.62rem;color:var(--muted)">já visto</span></div>`;
+  });
+  // Monstrinhos ocultos — só quantidade
+  hidden.forEach(()=>{
+    html+=`<div class="bchip-unknown">❓ Desconhecido</div>`;
+  });
+  el.innerHTML=html;
+}
+
+function hideOpponentDecision(p){
+  const el=document.getElementById(`dp${p.idx+1}`);
+  el.innerHTML=`<div style="text-align:center;color:var(--muted);font-size:.8rem;padding:8px">Aguardando...</div>`;
+}
+
+function renderDecisionForActive(p){
+  renderDecision(p);
+}
+
+// ══════════════════════════════════════════
+//  RENDER COMPLETO (usado no reveal e pós-turno)
+// ══════════════════════════════════════════
+function renderBattle(){
+  document.getElementById('tnum').textContent=`Turno ${G.turn}`;
+  G.players.forEach(p=>{ renderOrbs(p); renderActiveCard(p,false); renderBank(p,false); renderDecision(p); });
+}
+
+function renderOrbs(p, hidden=false){
+  const el=document.getElementById(`orb${p.idx+1}`);
+  if(hidden){ el.innerHTML=`<span class="orb-lbl" style="color:var(--muted)">⚡ ???</span>`; return; }
+  const m=p.field;
+  const cur=m?m.en:0, max=m?m.maxEn:6;
+  let html=`<span class="orb-lbl">⚡</span>`;
+  for(let i=0;i<max;i++) html+=`<div class="orb ${i<cur?'on':''}"></div>`;
+  el.innerHTML=html;
+}
+
+function renderActiveCard(p, hidden=false){
+  if(hidden){ renderActiveCardHidden(p); return; }
+  const el=document.getElementById(`ac${p.idx+1}`);
+  const m=p.field;
+  if(!m){ el.innerHTML=`<div style="text-align:center;color:var(--muted);padding:16px;font-size:.82rem">Sem monstrinho em campo</div>`; return; }
+  const pct=Math.max(0,(m.hp/m.maxHp)*100);
+  const cls=pct>50?'hi':pct>25?'md':'lo';
+  el.innerHTML=`
+    <div class="acard-glow" style="background:var(--${m.type})"></div>
+    <div class="acard-row">
+      <span class="acard-em">${m.em}</span>
+      <div class="acard-info">
+        <div class="acard-name">${m.name}</div>
+        <div class="acard-type t-${m.type}">${ET[m.type]} ${m.type}</div>
+        <div class="acard-en">⚡ ${m.en} / ${m.maxEn} energia</div>
+        <div>
+          <span class="dodge-badge ${m.dodgeUsed?'used':''}">
+            ${m.dodgeUsed?'💨 Esquiva usada':'💨 Esquiva disponível'}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="hpbar-wrap">
+      <div class="hpbar-row"><span>❤️ PV</span><span>${m.hp} / ${m.maxHp}</span></div>
+      <div class="hpbar"><div class="hpfill ${cls}" style="width:${pct}%"></div></div>
+    </div>`;
+}
+
+function renderBank(p, hidden=false){
+  if(hidden){ renderBankOpponent(p); return; }
+  const el=document.getElementById(`bk${p.idx+1}`);
+  const all=[...p.bank];
+  if(!all.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="blbl">🏦 Banco</div>`+all.map(m=>{
+    const fainted=m.faintLeft>0;
+    const locked=!fainted && m.en<SWAP_COST;
+    let tag='';
+    if(fainted) tag=`<span class="btag btag-faint">💤 ${m.faintLeft}t</span>`;
+    else if(locked) tag=`<span class="btag btag-lock">🔒 Sem ⚡</span>`;
+    return `<div class="bchip ${fainted?'fainted':locked?'locked':''}">
+      ${m.em} ${m.name}
+      <span class="bhp">${m.hp}PV</span>
+      <span class="ben">⚡${m.en}</span>
+      ${tag}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  PAINEL DE DECISÃO
+// ══════════════════════════════════════════
+function renderDecision(p){
+  const el=document.getElementById(`dp${p.idx+1}`);
+
+  if(p.confirmed){
+    // Mostrar badge de confirmado
+    const ch=p.choice;
+    if(ch.pass){
+      el.innerHTML=`<div class="conf-badge">⏭️ Passa o turno (sem energia)</div>`;
+    } else {
+      const mInst=ch.isSwap ? p.bank.find(m=>m.id===ch.mId)||p.field : p.field;
+      const atk=ch.atkIdx===0?mInst.a1:mInst.a2;
+      el.innerHTML=`<div class="conf-badge">✅ ${mInst.em} ${mInst.name} + ${atk.name}</div>`;
+    }
+    return;
+  }
+
+  const fieldM=p.field;
+  const canLeave=fieldM && fieldM.en>=SWAP_COST;
+  const selMId=p.choice?.mId||(fieldM?fieldM.id:null);
+  const isSwap=p.choice?.isSwap||false;
+  const selM=isSwap ? p.bank.find(m=>m.id===selMId) : fieldM;
+
+  // Verificar se pode atacar com algum ataque
+  const canAtkAny = fieldM && (
+    (fieldM.en>=fieldM.a1.cost && fieldM.a1.cdLeft===0) ||
+    (fieldM.en>=fieldM.a2.cost && fieldM.a2.cdLeft===0)
+  );
+  const canDodge = fieldM && !fieldM.dodgeUsed && fieldM.en>=1;
+
+  // Caso especial: sem energia para atacar, sem esquiva e sem banco — passa turno
+  const bankAvail = p.bank.some(m=>m.faintLeft===0);
+  if(fieldM && !canAtkAny && !canDodge && (!canLeave || !bankAvail)){
+    p.choice={pass:true};
+    el.innerHTML=`
+      <div class="pass-box">
+        💤 ${fieldM.name} não tem energia para atacar, esquivar ou sair.<br>
+        <span style="font-size:.72rem;opacity:.8">O turno será passado automaticamente.</span>
+      </div>
+      <button class="btn-conf ready" onclick="confirmChoice(${p.idx})">⏭️ Confirmar Passe</button>`;
+    return;
+  }
+
+  let html=`<div class="cgrid"><div class="mon-row">`;
+  const choiceComplete = p.choice?.mId && (p.choice?.atkIdx!==undefined || p.choice?.dodge===true);
+
+  // Opção: manter ativo
+  if(fieldM){
+    const isSel=selMId===fieldM.id && !isSwap;
+    const isDone=isSel && choiceComplete;
+    html+=`<div class="mon-opt ${isSel?'sel':''} ${isDone?'done':''}" onclick="selMonster(${p.idx},'${fieldM.id}',false)">
+      <span class="moe">${fieldM.em}</span>
+      <div class="mon">${fieldM.name}</div>
+      <div class="moh">❤️ ${fieldM.hp}PV</div>
+      <div class="moen">⚡ ${fieldM.en}/${fieldM.maxEn}</div>
+      <div class="mot">Em campo</div>
+    </div>`;
+  }
+
+  // Opções do banco
+  p.bank.forEach(bm=>{
+    const fainted=bm.faintLeft>0;
+    const isSel=selMId===bm.id && isSwap;
+    const isDone=isSel && choiceComplete;
+    const blocked=!canLeave || fainted;
+    let badge='';
+    if(fainted) badge=`<span class="mbadge mbadge-faint">💤 ${bm.faintLeft}t</span>`;
+    else if(!canLeave) badge=`<span class="mbadge mbadge-lock">🔒 Preso</span>`;
+    else badge=`<span class="mbadge mbadge-swap">⚡−${SWAP_COST}</span>`;
+    html+=`<div class="mon-opt ${isSel?'sel':''} ${isDone?'done':''} ${blocked?'dis':''}"
+        onclick="${blocked?'':(`selMonster(${p.idx},'${bm.id}',true)`)}">
+      ${badge}
+      <span class="moe">${bm.em}</span>
+      <div class="mon">${bm.name}</div>
+      <div class="moh">❤️ ${bm.hp}PV</div>
+      <div class="moen">⚡ ${bm.en}/${bm.maxEn}</div>
+      <div class="mot">${fainted?'Desmaiado':'Do banco'}</div>
+    </div>`;
+  });
+
+  html+=`</div>`; // fim mon-row
+
+  // Aviso de preso
+  if(!canLeave && p.bank.some(m=>m.faintLeft===0) && fieldM){
+    html+=`<div class="warn-box">🔒 ${fieldM.name} precisa de ⚡${SWAP_COST} para sair do campo</div>`;
+  }
+
+  // Linha de ataques + esquiva
+  if(selM){
+    const a1=selM.a1, a2=selM.a2;
+    const okA1=selM.en>=a1.cost && a1.cdLeft===0;
+    const okA2=selM.en>=a2.cost && a2.cdLeft===0;
+    const okDodge=!selM.dodgeUsed && selM.en>=1;
+    const sAtk=p.choice?.atkIdx;
+    const sDodge=p.choice?.dodge===true;
+    html+=`<div class="atk-row">`;
+
+    html+=`<div class="atk-opt ${sAtk===0?'sel':''} ${!okA1?'dis':''}" onclick="${okA1?`selAtk(${p.idx},0)`:''}">
+      <div class="atk-name">${a1.name}</div>
+      <div class="atk-type t-${a1.type}">${ET[a1.type]} ${a1.type}</div>
+      <div class="atk-dmg">💥 ${a1.dmg} dano</div>
+      <div class="atk-tags">
+        <span class="tag tag-cost">⚡${a1.cost}</span>
+        ${okA1?'<span class="tag tag-ok">✓ Disponível</span>':'<span class="tag tag-cd">Sem energia</span>'}
+      </div>
+    </div>`;
+
+    const cdMsg=a2.cdLeft>0
+      ?`<span class="tag tag-cd">⏳ ${a2.cdLeft}t</span>`
+      :(!okA2?'<span class="tag tag-cd">Sem energia</span>':'<span class="tag tag-ok">✓ Disponível</span>');
+    html+=`<div class="atk-opt ${sAtk===1?'sel':''} ${!okA2?'dis':''}" onclick="${okA2?`selAtk(${p.idx},1)`:''}">
+      <div class="atk-name">${a2.name}</div>
+      <div class="atk-type t-${a2.type}">${ET[a2.type]} ${a2.type}</div>
+      <div class="atk-dmg">💥 ${a2.dmg} dano</div>
+      <div class="atk-tags">
+        <span class="tag tag-cost">⚡${a2.cost}</span>
+        <span class="tag tag-wait">CD:${a2.cd}t</span>
+        ${cdMsg}
+      </div>
+    </div>`;
+
+    // Botão de esquiva
+    html+=`<div class="dodge-opt ${sDodge?'sel':''} ${!okDodge?'dis':''}"
+        onclick="${okDodge?`selDodge(${p.idx})`:''}">
+      <span class="dodge-icon">💨</span>
+      <div class="dodge-name">Esquiva</div>
+      <div class="atk-tags" style="justify-content:center;margin-top:4px">
+        <span class="tag tag-cost">⚡1</span>
+        ${okDodge
+          ?'<span class="tag tag-dodge">✓ Disponível</span>'
+          :(selM.dodgeUsed
+            ?'<span class="tag tag-cd">Já usou</span>'
+            :'<span class="tag tag-cd">Sem energia</span>')}
+      </div>
+      <div class="dodge-desc">Evita todo o dano<br>deste turno</div>
+    </div>`;
+
+    html+=`</div>`;
+  }
+
+  const ready=choiceComplete;
+  html+=`<button class="btn-conf ${ready?'ready':''}" onclick="confirmChoice(${p.idx})">✅ Confirmar Escolha</button>`;
+  html+=`</div>`;
+  el.innerHTML=html;
+}
+
+function selMonster(pi,mId,isSwap){ G.players[pi].choice={mId,isSwap,atkIdx:undefined,dodge:false}; renderDecision(G.players[pi]); }
+function selAtk(pi,atkIdx){ const p=G.players[pi]; if(!p.choice) return; p.choice.atkIdx=atkIdx; p.choice.dodge=false; renderDecision(p); }
+function selDodge(pi){ const p=G.players[pi]; if(!p.choice) return; p.choice.dodge=true; p.choice.atkIdx=undefined; renderDecision(p); }
+
+function confirmChoice(pi){
+  const p=G.players[pi];
+  if(!p.choice) return;
+
+  // Passe de turno
+  if(p.choice.pass){ p.confirmed=true; renderDecision(p); checkBothConfirmed(); return; }
+  if(!p.choice.mId) return;
+  if(p.choice.atkIdx===undefined && !p.choice.dodge) return;
+
+  // Troca voluntária: ativo paga SWAP_COST ao sair
+  if(p.choice.isSwap){
+    const bi=p.bank.findIndex(m=>m.id===p.choice.mId);
+    if(bi>=0){
+      p.field.en-=SWAP_COST;
+      const incoming=p.bank.splice(bi,1)[0];
+      p.bank.push(p.field);
+      incoming.dodgeUsed=false;
+      incoming.everOnField=true; // revelado ao entrar
+      p.field=incoming;
+    }
+  }
+
+  // Aplicar esquiva
+  if(p.choice.dodge){
+    p.field.en-=1;
+    p.field.dodgeUsed=true;
+  }
+
+  p.confirmed=true;
+  renderOrbs(p); renderActiveCard(p,false); renderBank(p,false); renderDecision(p);
+  checkBothConfirmed();
+}
+
+function checkBothConfirmed(){
+  if(!G.players.every(pl=>pl.confirmed)) {
+    // Primeiro jogador confirmou — mostrar overlay de passagem
+    const nextPi = G.players.findIndex(pl=>!pl.confirmed);
+    if(nextPi>=0) showPassOverlay(nextPi);
+    return;
+  }
+  setTimeout(resolveRound, 600);
+}
+
+function showPassOverlay(nextPi){
+  const nextP=G.players[nextPi];
+  const color=nextPi===0?'#e74c3c':'#3498db';
+  const icon=nextPi===0?'🔴':'🔵';
+  document.getElementById('pass-box').innerHTML=`
+    <span class="pass-icon">📱</span>
+    <div class="pass-title">Passe o dispositivo!</div>
+    <div class="pass-sub">
+      As escolhas do jogador anterior foram registradas e ocultadas.<br>
+      <span style="color:${color};font-weight:800">${icon} ${nextP.name}</span>, é a sua vez!
+    </div>
+    <div class="pass-confirm-box">
+      👁️ Você verá apenas seu próprio time.<br>
+      O monstrinho adversário ficará com PV e energia ocultos.<br>
+      Monstrinhos desconhecidos do banco continuam ocultos.
+    </div>
+    <button class="btn-pass" onclick="startPlayerTurnFromPass(${nextPi})">
+      ⚔️ Estou pronto — Iniciar minha vez!
+    </button>`;
+  ovShow('ov-pass');
+}
+
+function startPlayerTurnFromPass(pi){
+  ovHide('ov-pass');
+  startPlayerTurn(pi);
+}
+
+// ══════════════════════════════════════════
+//  RESOLUÇÃO
+// ══════════════════════════════════════════
+function resolveRound(){
+  const [p1,p2]=G.players;
+  const m1=p1.field, m2=p2.field;
+  const pass1=p1.choice.pass, pass2=p2.choice.pass;
+  const dodge1=p1.choice.dodge===true;
+  const dodge2=p2.choice.dodge===true;
+
+  let r1=null, r2=null;
+
+  if(!pass1 && !dodge1){
+    const atk=p1.choice.atkIdx===0?m1.a1:m1.a2;
+    const mult=getMult(atk.type,m2.type);
+    // Dano zerado se oponente esquivou
+    const dmg=dodge2?0:Math.round(atk.dmg*mult);
+    r1={atk,mult,dmg,dodgedBy:dodge2};
+    m1.en-=atk.cost;
+    if(atk.cd>0) atk.cdLeft=atk.cd;
+  }
+  if(!pass2 && !dodge2){
+    const atk=p2.choice.atkIdx===0?m2.a1:m2.a2;
+    const mult=getMult(atk.type,m1.type);
+    const dmg=dodge1?0:Math.round(atk.dmg*mult);
+    r2={atk,mult,dmg,dodgedBy:dodge1};
+    m2.en-=atk.cost;
+    if(atk.cd>0) atk.cdLeft=atk.cd;
+  }
+
+  // Aplicar dano simultaneamente
+  if(r1 && !r1.dodgedBy) m2.hp=Math.max(0,m2.hp-r1.dmg);
+  if(r2 && !r2.dodgedBy) m1.hp=Math.max(0,m1.hp-r2.dmg);
+
+  showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2);
+}
+
+function effLabel(mult){
+  if(mult===2)   return {txt:'🔥 Super eficaz!',cls:'eff-sup'};
+  if(mult===0.5) return {txt:'🛡️ Pouco eficaz', cls:'eff-res'};
+  return               {txt:'⚔️ Normal',         cls:'eff-neu'};
+}
+
+function showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2){
+  const e1=r1?effLabel(r1.mult):{txt:pass1?'⏭️ Passou':'💨 Esquivou',cls:'eff-neu'};
+  const e2=r2?effLabel(r2.mult):{txt:pass2?'⏭️ Passou':'💨 Esquivou',cls:'eff-neu'};
+
+  function revCard(who, icon, m, r, dodged, passed){
+    const atkLine = passed ? '⏭️ Passou o turno'
+                  : dodged ? '💨 Esquivou!'
+                  : r      ? `⚔️ ${r.atk.name}`
+                  : '—';
+    const dmgLine = passed||dodged ? '—'
+                  : r && r.dodgedBy ? `💥 ${r.atk.dmg} dano <span style="color:#1abc9c;font-size:.7rem">(esquivado!)</span>`
+                  : r ? `💥 ${r.dmg} dano`
+                  : '—';
+    const effLine = dodged
+      ? '<span class="rev-eff" style="background:rgba(26,188,156,.2);color:#1abc9c">💨 Esquivou!</span>'
+      : r ? `<span class="rev-eff ${effLabel(r.mult).cls}">${effLabel(r.mult).txt}</span>`
+      : '';
+    return `<div class="rev-card">
+      <div class="rev-who">${icon} ${who}</div>
+      <span class="rev-em">${m.em}</span>
+      <div class="rev-name">${m.name}</div>
+      <div class="rev-atk">${atkLine}</div>
+      <div class="rev-dmg">${dmgLine}</div>
+      ${effLine}
+    </div>`;
+  }
+
+  document.getElementById('rev-cards').innerHTML=
+    revCard('Jogador 1','🔴',m1,r1,dodge1,pass1)+
+    `<div class="rev-vs">VS</div>`+
+    revCard('Jogador 2','🔵',m2,r2,dodge2,pass2);
+
+  const lines=[];
+
+  // Linha P1
+  if(pass1)       lines.push(`${m1.em} <b>${m1.name}</b> <span class="faint">passou o turno sem energia.</span>`);
+  else if(dodge1) lines.push(`${m1.em} <b>${m1.name}</b> <span class="dodge">💨 esquivou!</span> Gastou ⚡1 e evitou todo o dano.`);
+  else if(r1){
+    const evaded = r1.dodgedBy ? ` <span class="dodge">💨 Esquivado por ${m2.name}!</span>` : '';
+    const dead = !r1.dodgedBy && m2.hp===0 ? ' <span class="dead">💀 Derrotado!</span>' : '';
+    lines.push(`${m1.em} <b>${m1.name}</b> usou <b>${r1.atk.name}</b> → <b>${r1.dodgedBy?'0':r1.dmg}PV</b> em ${m2.em} ${m2.name}${evaded}${dead}`);
+  }
+
+  // Linha P2
+  if(pass2)       lines.push(`${m2.em} <b>${m2.name}</b> <span class="faint">passou o turno sem energia.</span>`);
+  else if(dodge2) lines.push(`${m2.em} <b>${m2.name}</b> <span class="dodge">💨 esquivou!</span> Gastou ⚡1 e evitou todo o dano.`);
+  else if(r2){
+    const evaded = r2.dodgedBy ? ` <span class="dodge">💨 Esquivado por ${m1.name}!</span>` : '';
+    const dead = !r2.dodgedBy && m1.hp===0 ? ' <span class="dead">💀 Derrotado!</span>' : '';
+    lines.push(`${m2.em} <b>${m2.name}</b> usou <b>${r2.atk.name}</b> → <b>${r2.dodgedBy?'0':r2.dmg}PV</b> em ${m1.em} ${m1.name}${evaded}${dead}`);
+  }
+
+  // Avisar desmaio no log
+  [m1,m2].forEach(m=>{
+    if(m.en===0 && m.hp>0) lines.push(`⚠️ <b>${m.name}</b> <span class="faint">ficou sem energia — vai desmaiar!</span>`);
+  });
+
+  document.getElementById('dlog').innerHTML=`<h3>📋 Resultado do Turno</h3>`+lines.map(l=>`<div class="dlog-line">${l}</div>`).join('');
+  ovShow('ov-rev');
+}
+
+function afterReveal(){
+  ovHide('ov-rev');
+
+  // Mostrar estado completo da arena para ambos durante a resolução
+  G.players.forEach(p=>{ renderOrbs(p,false); renderActiveCard(p,false); renderBank(p,false); });
+
+  // Remover mortos do campo
+  G.players.forEach(p=>{ if(p.field && p.field.hp===0) p.field=null; });
+
+  // Checar derrota por morte — inclui caso: campo morto + banco só desmaiados
+  const defeatDeath=checkDefeat();
+  if(defeatDeath){ showGameOver(defeatDeath); return; }
+
+  // Detectar desmaios: monstrinho em campo com energia zero e ainda vivo
+  G.faintQ=G.players.filter(p=>p.field && p.field.en===0 && p.field.hp>0).map(p=>p.idx);
+
+  processFaintQ();
+}
+
+// ══════════════════════════════════════════
+//  FILA DE DESMAIOS
+// ══════════════════════════════════════════
+function processFaintQ(){
+  if(!G.faintQ.length){
+    // Checar derrota por desmaio (sem substitutos disponíveis)
+    const defeatFaint=checkDefeat();
+    if(defeatFaint){ showGameOver(defeatFaint); return; }
+    // Fila de decisão do banco
+    G.bankQ=G.players.filter(p=>p.field && p.field.hp>0 && p.field.en>0).map(p=>p.idx);
+    processBankQ();
+    return;
+  }
+
+  const pi=G.faintQ.shift();
+  const p=G.players[pi];
+  const m=p.field;
+
+  // Aplicar penalidade de desmaio: vai ao banco com faintLeft=FAINT_TURNS, energia congelada
+  m.faintLeft=FAINT_TURNS;
+  p.bank.push(m);
+  p.field=null;
+
+  // Monstrinhos disponíveis para substituir (não desmaiados)
+  const avail=p.bank.filter(bm=>bm.faintLeft===0 && bm.id!==m.id);
+
+  const color=pi===0?'#e74c3c':'#3498db';
+  const icon=pi===0?'🔴':'🔵';
+
+  if(avail.length===0){
+    // Sem substituto disponível — verificar derrota por colapso
+    const defeatCollapse=checkDefeat();
+    if(defeatCollapse){ showGameOver(defeatCollapse); return; }
+    // Sem derrota ainda (outro jogador também pode estar em situação crítica) — continuar fila
+    processFaintQ();
+    return;
+  }
+
+  // Mostrar overlay de desmaio com escolha de substituto
+  document.getElementById('faint-box').innerHTML=`
+    <span class="faint-em">${m.em}</span>
+    <div class="faint-title">💤 ${m.name} Desmaiou!</div>
+    <div class="faint-sub" style="color:${color}">
+      ${icon} ${p.name}<br>
+      <span style="font-size:.78rem">${m.name} ficou sem energia e precisa descansar por <b>${FAINT_TURNS} rodadas</b>.</span>
+    </div>
+    <div class="faint-choose-title">Escolha o substituto:</div>
+    <div class="faint-opts" id="faint-opts-${pi}">
+      ${avail.map(bm=>`
+        <div class="faint-opt" id="fopt-${pi}-${bm.id}" onclick="selFaintSub(${pi},'${bm.id}')">
+          <span class="foe">${bm.em}</span>
+          <div class="fon">${bm.name}</div>
+          <div class="foh">❤️ ${bm.hp}PV</div>
+          <div class="foen">⚡ ${bm.en}</div>
+        </div>`).join('')}
+    </div>
+    <button class="btn-faint-conf" id="btn-faint-${pi}" onclick="confirmFaintSub(${pi})">
+      ✅ Confirmar Substituto
+    </button>`;
+
+  ovShow('ov-faint');
+}
+
+function selFaintSub(pi, mId){
+  // Desmarcar todos
+  document.querySelectorAll(`#faint-opts-${pi} .faint-opt`).forEach(el=>el.classList.remove('sel'));
+  document.getElementById(`fopt-${pi}-${mId}`)?.classList.add('sel');
+  // Salvar escolha no estado temporário
+  G._faintChoice=mId;
+  document.getElementById(`btn-faint-${pi}`).classList.add('ready');
+}
+
+function confirmFaintSub(pi){
+  if(!G._faintChoice) return;
+  ovHide('ov-faint');
+  const p=G.players[pi];
+  const bi=p.bank.findIndex(m=>m.id===G._faintChoice);
+  if(bi>=0){
+    const incoming=p.bank.splice(bi,1)[0];
+    incoming.dodgeUsed=false;
+    incoming.everOnField=true;
+    p.field=incoming;
+  }
+  G._faintChoice=null;
+  processFaintQ();
+}
+
+// ══════════════════════════════════════════
+//  FILA DO BANCO
+// ══════════════════════════════════════════
+function processBankQ(){
+  if(!G.bankQ.length){ endTurn(); return; }
+  const pi=G.bankQ.shift();
+  const p=G.players[pi];
+  const m=p.field;
+  const canLeave=m.en>=SWAP_COST;
+  const color=pi===0?'#e74c3c':'#3498db';
+  const icon=pi===0?'🔴':'🔵';
+
+  document.getElementById('bdbox').innerHTML=`
+    <span class="bdbox-em">${m.em}</span>
+    <div class="bdbox-title" style="color:${color}">${icon} ${p.name}</div>
+    <div class="bdbox-sub">
+      O que fazer com <b>${m.name}</b>?<br>
+      ❤️ ${m.hp}/${m.maxHp} PV &nbsp;·&nbsp; ⚡ ${m.en}/${m.maxEn} energia
+      ${!canLeave?`<br><span style="color:#e74c3c;font-weight:800">⚠️ Precisa de ⚡${SWAP_COST} para ir ao banco</span>`:''}
+    </div>
+    <div class="bdbox-btns">
+      <button class="btn-bd btn-tobank ${!canLeave?'btn-bd-dis':''}"
+              onclick="${canLeave?`bankDec(${pi},true)`:''}">
+        🏦 Ir ao Banco ${canLeave?`(⚡−${SWAP_COST})`:'(Bloqueado)'}
+      </button>
+      <button class="btn-bd btn-stay" onclick="bankDec(${pi},false)">
+        ⚔️ Manter em Campo
+      </button>
+    </div>`;
+  ovShow('ov-bank');
+}
+
+function bankDec(pi,toBank){
+  ovHide('ov-bank');
+  const p=G.players[pi];
+  if(toBank){ p.field.en-=SWAP_COST; p.bank.push(p.field); p.field=null; }
+  processBankQ();
+}
+
+// ══════════════════════════════════════════
+//  FIM DO TURNO
+// ══════════════════════════════════════════
+function endTurn(){
+  G.players.forEach(p=>{
+    // Entrada gratuita se campo vazio (morte ou banco voluntário sem substituto imediato)
+    if(!p.field && p.bank.some(m=>m.faintLeft===0)){
+      const bi=p.bank.findIndex(m=>m.faintLeft===0);
+      const incoming=p.bank.splice(bi,1)[0];
+      incoming.dodgeUsed=false;
+      incoming.everOnField=true;
+      p.field=incoming;
+    }
+
+    // Recarregar energia no banco (+1, exceto desmaiados)
+    p.bank.forEach(m=>{
+      if(m.faintLeft>0){
+        m.faintLeft--; // conta rodada de penalidade
+        // energia congelada — não recarrega
+      } else {
+        if(m.en<m.maxEn) m.en++;
+      }
+    });
+
+    // Reduzir cooldowns
+    [p.field,...p.bank].forEach(m=>{
+      if(!m) return;
+      [m.a1,m.a2].forEach(a=>{ if(a.cdLeft>0) a.cdLeft--; });
+    });
+
+    p.choice=null;
+    p.confirmed=false;
+  });
+
+  const defeat=checkGameEnd();
+  if(defeat){ showGameOver(defeat); return; }
+
+  G.turn++;
+  startPlayerTurn(0);
+}
+
+// ══════════════════════════════════════════
+//  VERIFICAÇÃO DE FIM DE JOGO
+// ══════════════════════════════════════════
+function teamCanContinue(p){
+  if(p.field && p.field.hp>0) return true;
+  if(p.bank.some(m=>m.faintLeft===0 && m.hp>0)) return true;
+  return false;
+}
+
+// Conta monstrinhos com HP > 0 (campo + banco, incluindo desmaiados)
+function countAlive(p){
+  let n=0;
+  if(p.field && p.field.hp>0) n++;
+  p.bank.forEach(m=>{ if(m.hp>0) n++; });
+  return n;
+}
+
+// Soma PV de todos os monstrinhos com HP > 0
+function totalPV(p){
+  let total=0;
+  if(p.field && p.field.hp>0) total+=p.field.hp;
+  p.bank.forEach(m=>{ if(m.hp>0) total+=m.hp; });
+  return total;
+}
+
+function checkGameEnd(){
+  const p1ok=teamCanContinue(G.players[0]);
+  const p2ok=teamCanContinue(G.players[1]);
+  if(p1ok && p2ok) return null; // jogo continua
+
+  // Ao menos um jogador não pode continuar — resolver pelo critério de vitória
+  const alive1=countAlive(G.players[0]);
+  const alive2=countAlive(G.players[1]);
+  const pv1=totalPV(G.players[0]);
+  const pv2=totalPV(G.players[1]);
+
+  if(alive1>alive2) return {type:'win', winner:G.players[0], loser:G.players[1], alive1,alive2,pv1,pv2, reason:'monstrinhos vivos'};
+  if(alive2>alive1) return {type:'win', winner:G.players[1], loser:G.players[0], alive1,alive2,pv1,pv2, reason:'monstrinhos vivos'};
+  // Empate de contagem — desempate por PV total
+  if(pv1>pv2) return {type:'win', winner:G.players[0], loser:G.players[1], alive1,alive2,pv1,pv2, reason:'PV total'};
+  if(pv2>pv1) return {type:'win', winner:G.players[1], loser:G.players[0], alive1,alive2,pv1,pv2, reason:'PV total'};
+  return {type:'draw', alive1,alive2,pv1,pv2};
+}
+
+// Mantida para compatibilidade com chamadas existentes
+function checkDefeat(){ return checkGameEnd(); }
+
+// ══════════════════════════════════════════
+//  GAME OVER
+// ══════════════════════════════════════════
+function showGameOver(result){
+  if(result.type==='draw'){
+    document.getElementById('over-trophy').textContent='🤝';
+    document.getElementById('over-title').textContent='Empate!';
+    document.getElementById('over-reason').innerHTML=
+      `Ambos os times empataram em tudo.<br>`+
+      `🔴 Jogador 1: ${result.alive1} vivos · ${result.pv1} PV total &nbsp;·&nbsp; 🔵 Jogador 2: ${result.alive2} vivos · ${result.pv2} PV total<br>`+
+      `<span style="font-size:.8rem;color:var(--muted)">Nenhum dos dois leva a vitória desta vez!</span>`;
+  } else {
+    const w=result.winner;
+    const l=result.loser;
+    const wAlive=w.idx===0?result.alive1:result.alive2;
+    const lAlive=w.idx===0?result.alive2:result.alive1;
+    const wPV=w.idx===0?result.pv1:result.pv2;
+    const lPV=w.idx===0?result.pv2:result.pv1;
+    const byReason = result.reason==='PV total'
+      ? `Empate em monstrinhos vivos (${wAlive} vs ${lAlive}) — vitória pelo maior PV total!`
+      : `Mais monstrinhos vivos: ${wAlive} vs ${lAlive}`;
+    document.getElementById('over-trophy').textContent='🏆';
+    document.getElementById('over-title').textContent=`${w.idx===0?'🔴':'🔵'} ${w.name} Venceu!`;
+    document.getElementById('over-reason').innerHTML=
+      `${byReason}<br>`+
+      `🔴 Jogador 1: ${result.alive1} vivos · ${result.pv1} PV &nbsp;·&nbsp; 🔵 Jogador 2: ${result.alive2} vivos · ${result.pv2} PV<br>`+
+      `<span style="font-size:.8rem;color:var(--muted)">${w.name} levou a melhor nesta batalha!</span>`;
+  }
+  show('s-over');
+}
+
+function restart(){ SEL=[[],[]]; show('s-start'); }
+</script>
+</body>
+</html>
