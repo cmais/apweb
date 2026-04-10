@@ -204,15 +204,14 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 
 .warn-box
 .dodge-opt{
-  background:var(--card);border-radius:10px;padding:10px;
+  flex:1;background:var(--card);border-radius:10px;padding:10px;
   cursor:pointer;border:2px solid transparent;transition:all .15s;
-  text-align:center;
 }
-.dodge-opt:hover:not(.dis){border-color:rgba(26,188,156,.5);}
-.dodge-opt.sel{border-color:#1abc9c;background:rgba(26,188,156,.1);}
+.dodge-opt:hover:not(.dis){border-color:rgba(255,255,255,.22);}
+.dodge-opt.sel{border-color:#1abc9c;background:rgba(26,188,156,.09);}
 .dodge-opt.dis{opacity:.32;cursor:not-allowed;}
 .dodge-icon{font-size:1.6rem;display:block;margin-bottom:3px;}
-.dodge-name{font-family:'Fredoka One',cursive;font-size:.88rem;color:#1abc9c;}
+.dodge-name{font-family:'Fredoka One',cursive;font-size:.88rem;}
 .dodge-desc{font-size:.65rem;color:var(--muted);margin-top:3px;line-height:1.4;}
 .dodge-used{font-size:.6rem;color:#e74c3c;font-weight:800;margin-top:3px;}
 
@@ -319,7 +318,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 <div id="s-start" class="screen active">
   <span class="logo-dragon">🐉</span>
   <div class="logo-title">Duelo de<br>Monstrinhos</div>
-  <div class="logo-sub">Card Game Estratégico · 1v1 · v8</div>
+  <div class="logo-sub">Card Game Estratégico · 1v1 · v9</div>
   <div class="showcase" id="showcase"></div>
   <button class="btn-main" onclick="goSelect()">⚔️ Começar Partida</button>
   <div style="color:var(--muted);font-size:.76rem;text-align:center;max-width:270px;line-height:1.7">
@@ -610,7 +609,8 @@ function renderBattleForPlayer(pi){
   renderActiveCard(me, false);
   renderBank(me, false);
 
-  // Painel adversário — oculto / parcial
+  // Painel adversário — completamente oculto durante decisão
+  renderOrbs(opp, true);
   renderActiveCardHidden(opp);
   renderBankOpponent(opp);
 
@@ -623,36 +623,35 @@ function renderActiveCardHidden(p){
   const el=document.getElementById(`ac${p.idx+1}`);
   const m=p.field;
   if(!m){ el.innerHTML=`<div class="ppanel-hidden"><span class="ph-icon">❓</span><div class="ph-label">Sem monstrinho</div></div>`; return; }
-  // Mostra só emoji e nome — sem PV, energia ou esquiva
+  // Campo adversário: completamente oculto durante a fase de decisão
   el.innerHTML=`
-    <div class="acard-glow" style="background:var(--${m.type});opacity:.4"></div>
+    <div class="acard-glow" style="background:var(--muted);opacity:.2"></div>
     <div class="acard-row">
-      <span class="acard-em">${m.em}</span>
+      <span class="acard-em">❓</span>
       <div class="acard-info">
-        <div class="acard-name">${m.name}</div>
-        <div class="acard-type t-${m.type}">${ET[m.type]} ${m.type}</div>
-        <div class="acard-en" style="color:var(--muted);font-style:italic">⚡ ??? &nbsp;·&nbsp; ❤️ ???</div>
+        <div class="acard-name" style="color:var(--muted)">???</div>
+        <div class="acard-type" style="color:var(--muted)">Tipo desconhecido</div>
+        <div class="acard-en" style="color:var(--muted)">⚡ ??? &nbsp;·&nbsp; ❤️ ???</div>
       </div>
     </div>
     <div class="hpbar-wrap">
-      <div class="hpbar-row"><span>❤️ PV</span><span style="color:var(--muted)">???</span></div>
-      <div class="hpbar"><div class="hpfill hi" style="width:100%;opacity:.15"></div></div>
+      <div class="hpbar-row"><span style="color:var(--muted)">❤️ PV</span><span style="color:var(--muted)">???</span></div>
+      <div class="hpbar"><div class="hpfill hi" style="width:100%;opacity:.08"></div></div>
     </div>`;
 }
 
 function renderBankOpponent(p){
   const el=document.getElementById(`bk${p.idx+1}`);
-  const revealed=p.bank.filter(m=>m.everOnField);
-  const hidden=p.bank.filter(m=>!m.everOnField);
   if(!p.bank.length){ el.innerHTML=''; return; }
   let html=`<div class="blbl">🏦 Banco adversário</div>`;
-  // Monstrinhos revelados — nome e tipo, sem PV/energia
-  revealed.forEach(m=>{
-    html+=`<div class="bchip-public">${m.em} ${m.name} <span style="font-size:.62rem;color:var(--muted)">já visto</span></div>`;
-  });
-  // Monstrinhos ocultos — só quantidade
-  hidden.forEach(()=>{
-    html+=`<div class="bchip-unknown">❓ Desconhecido</div>`;
+  p.bank.forEach(m=>{
+    if(m.everOnField){
+      // Já foi revelado em batalha — mostra nome e tipo, sem PV/energia
+      html+=`<div class="bchip-public">${m.em} ${m.name} <span class="t-${m.type}" style="font-size:.62rem">${ET[m.type]} ${m.type}</span></div>`;
+    } else {
+      // Nunca entrou em campo — completamente oculto
+      html+=`<div class="bchip-unknown">❓ Desconhecido</div>`;
+    }
   });
   el.innerHTML=html;
 }
@@ -739,20 +738,29 @@ function renderDecision(p){
   const el=document.getElementById(`dp${p.idx+1}`);
 
   if(p.confirmed){
-    // Mostrar badge de confirmado
     const ch=p.choice;
     if(ch.pass){
       el.innerHTML=`<div class="conf-badge">⏭️ Passa o turno (sem energia)</div>`;
+    } else if(ch.isSwap){
+      const mInst=p.bank.find(m=>m.id===ch.mId)||p.field;
+      const atkName=ch.dodge?'Esquiva':ch.atkIdx===0?mInst.a1.name:ch.atkIdx===1?mInst.a2.name:'—';
+      el.innerHTML=`<div class="conf-badge">✅ Troca → ${mInst.em} ${mInst.name} + ${atkName}</div>`;
     } else {
-      const mInst=ch.isSwap ? p.bank.find(m=>m.id===ch.mId)||p.field : p.field;
-      const atk=ch.atkIdx===0?mInst.a1:mInst.a2;
-      el.innerHTML=`<div class="conf-badge">✅ ${mInst.em} ${mInst.name} + ${atk.name}</div>`;
+      const mInst=p.field;
+      const atkName=ch.dodge?'💨 Esquiva':ch.atkIdx===0?mInst.a1.name:mInst.a2.name;
+      el.innerHTML=`<div class="conf-badge">✅ ${mInst.em} ${mInst.name} + ${atkName}</div>`;
     }
     return;
   }
 
   const fieldM=p.field;
   const canLeave=fieldM && fieldM.en>=SWAP_COST;
+
+  // Pré-selecionar monstro ativo se ainda não há escolha
+  if(fieldM && !p.choice){
+    p.choice={mId:fieldM.id, isSwap:false, atkIdx:undefined, dodge:false};
+  }
+
   const selMId=p.choice?.mId||(fieldM?fieldM.id:null);
   const isSwap=p.choice?.isSwap||false;
   const selM=isSwap ? p.bank.find(m=>m.id===selMId) : fieldM;
@@ -855,12 +863,13 @@ function renderDecision(p){
       </div>
     </div>`;
 
-    // Botão de esquiva
-    html+=`<div class="dodge-opt ${sDodge?'sel':''} ${!okDodge?'dis':''}"
+    // Botão de esquiva — mesmo design dos ataques
+    html+=`<div class="atk-opt ${sDodge?'sel':''} ${!okDodge?'dis':''}"
         onclick="${okDodge?`selDodge(${p.idx})`:''}">
-      <span class="dodge-icon">💨</span>
-      <div class="dodge-name">Esquiva</div>
-      <div class="atk-tags" style="justify-content:center;margin-top:4px">
+      <div class="atk-name">💨 Esquiva</div>
+      <div class="atk-type" style="color:#1abc9c">Defesa</div>
+      <div class="atk-dmg" style="color:#1abc9c">Evita todo o dano</div>
+      <div class="atk-tags">
         <span class="tag tag-cost">⚡1</span>
         ${okDodge
           ?'<span class="tag tag-dodge">✓ Disponível</span>'
@@ -868,7 +877,6 @@ function renderDecision(p){
             ?'<span class="tag tag-cd">Já usou</span>'
             :'<span class="tag tag-cd">Sem energia</span>')}
       </div>
-      <div class="dodge-desc">Evita todo o dano<br>deste turno</div>
     </div>`;
 
     html+=`</div>`;
