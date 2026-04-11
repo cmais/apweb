@@ -286,18 +286,6 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .btn-faint-conf.ready{opacity:1;pointer-events:all;}
 .btn-faint-conf.ready:hover{transform:translateY(-2px);}
 
-/* Banco decision */
-.bdbox{background:var(--surf);border-radius:var(--radius);padding:24px;max-width:370px;width:100%;text-align:center;border:1px solid rgba(255,255,255,.1);}
-.bdbox-em{font-size:2.8rem;display:block;margin-bottom:7px;}
-.bdbox-title{font-family:'Fredoka One',cursive;font-size:1.25rem;margin-bottom:5px;}
-.bdbox-sub{font-size:.8rem;color:var(--muted);margin-bottom:14px;line-height:1.5;}
-.bdbox-btns{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;}
-.btn-bd{font-family:'Fredoka One',cursive;font-size:.9rem;padding:10px 20px;border:none;border-radius:50px;cursor:pointer;transition:all .15s;}
-.btn-bd:hover{transform:translateY(-2px);}
-.btn-tobank{background:linear-gradient(135deg,#8e44ad,#6c3483);color:#fff;box-shadow:0 4px 13px rgba(142,68,173,.4);}
-.btn-stay{background:linear-gradient(135deg,#e67e22,#ca6f1e);color:#fff;box-shadow:0 4px 13px rgba(230,126,34,.4);}
-.btn-bd-dis{opacity:.35;pointer-events:none;}
-
 /* Game Over */
 #s-over{justify-content:center;align-items:center;gap:22px;padding:40px 20px;background:radial-gradient(ellipse 70% 55% at 50% 50%,rgba(233,69,96,.13) 0%,transparent 70%);}
 .over-box{text-align:center;background:var(--surf);border-radius:var(--radius);padding:40px 46px;border:2px solid rgba(255,255,255,.07);box-shadow:0 20px 60px rgba(0,0,0,.5);}
@@ -305,6 +293,36 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 @keyframes tIn{from{transform:scale(.3) rotate(-30deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
 .over-title{font-family:'Fredoka One',cursive;font-size:2.3rem;margin-bottom:5px;}
 .over-reason{font-size:.85rem;color:var(--muted);margin-bottom:22px;line-height:1.5;}
+
+/* ── BOTÃO TÁTICO ── */
+.btn-tactic{
+  position:fixed;bottom:18px;right:18px;z-index:150;
+  width:44px;height:44px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,var(--gold),#e6a800);
+  color:#1a1a2e;font-size:1.2rem;font-weight:900;
+  cursor:pointer;box-shadow:0 4px 16px rgba(241,196,15,.45);
+  transition:transform .15s,box-shadow .15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.btn-tactic:hover{transform:scale(1.1);box-shadow:0 6px 22px rgba(241,196,15,.6);}
+
+/* ── OVERLAY TABELA DE TIPOS ── */
+.type-table-box{
+  background:var(--surf);border-radius:var(--radius);
+  padding:20px 16px;max-width:480px;width:100%;
+  border:2px solid rgba(241,196,15,.25);
+  max-height:88vh;overflow-y:auto;
+}
+.type-table-title{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--gold);text-align:center;margin-bottom:14px;}
+.tt-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;align-items:start;}
+.tt-head{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);text-align:center;padding:4px 0;border-bottom:1px solid var(--border);}
+.tt-type{background:var(--card);border-radius:8px;padding:7px 6px;text-align:center;}
+.tt-type .tt-name{font-family:'Fredoka One',cursive;font-size:.82rem;}
+.tt-cell{border-radius:8px;padding:6px 5px;font-size:.68rem;line-height:1.5;text-align:center;}
+.tt-strong{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.2);color:#2ecc71;}
+.tt-weak{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.2);color:#e74c3c;}
+.tt-legend{display:flex;gap:12px;justify-content:center;margin-top:10px;font-size:.7rem;}
+.tt-legend span{padding:2px 8px;border-radius:4px;font-weight:700;}
 
 .t-fogo{color:var(--fogo);}.t-agua{color:var(--agua);}.t-natureza{color:var(--natureza);}
 .t-pedra{color:var(--pedra);}.t-eletrico{color:var(--eletrico);}.t-gelo{color:var(--gelo);}
@@ -318,7 +336,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 <div id="s-start" class="screen active">
   <span class="logo-dragon">🐉</span>
   <div class="logo-title">Duelo de<br>Monstrinhos</div>
-  <div class="logo-sub">Card Game Estratégico · 1v1 · v9</div>
+  <div class="logo-sub">Card Game Estratégico · 1v1 · v10</div>
   <div class="showcase" id="showcase"></div>
   <button class="btn-main" onclick="goSelect()">⚔️ Começar Partida</button>
   <div style="color:var(--muted);font-size:.76rem;text-align:center;max-width:270px;line-height:1.7">
@@ -392,6 +410,34 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   </div>
 </div>
 
+<!-- OVERLAY TABELA DE TIPOS -->
+<div class="overlay hidden" id="ov-types">
+  <div class="type-table-box">
+    <div class="type-table-title">📖 Tabela de Tipos</div>
+    <div class="tt-row">
+      <div class="tt-head">Tipo</div>
+      <div class="tt-head">⚔️ Forte contra (×2)</div>
+      <div class="tt-head">🛡️ Fraco contra (×0,5)</div>
+    </div>
+    <div id="tt-body"></div>
+    <div class="tt-legend">
+      <span class="tt-strong">⚔️ Causa ×2 dano</span>
+      <span class="tt-weak">🛡️ Causa ×0,5 dano</span>
+    </div>
+    <div style="text-align:center;margin-top:14px">
+      <button class="btn-pass" onclick="ovHide('ov-types')" style="padding:10px 28px;font-size:.95rem">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY PASSE PÓS-REVEAL (início do novo turno) -->
+<div class="overlay hidden" id="ov-pass-turn">
+  <div class="pass-overlay-box" id="pass-turn-box"></div>
+</div>
+
+<!-- BOTÃO TÁTICO FIXO (visível na seleção e batalha) -->
+<button class="btn-tactic" id="btn-tactic" onclick="showTypeTable()" title="Tabela de Tipos" style="display:none">📖</button>
+
 <!-- OVERLAY PASSAGEM DE DISPOSITIVO -->
 <div class="overlay hidden" id="ov-pass">
   <div class="pass-overlay-box" id="pass-box"></div>
@@ -410,10 +456,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   <div class="faint-box" id="faint-box"></div>
 </div>
 
-<!-- OVERLAY BANCO -->
-<div class="overlay hidden" id="ov-bank">
-  <div class="bdbox" id="bdbox"></div>
-</div>
+
 
 <script>
 // ══════════════════════════════════════════
@@ -441,6 +484,29 @@ const WEAK = {
   metal:   {w:['fogo','terra'],       r:['gelo','pedra']},
   psiquico:{w:['luz','metal'],        r:['sombra','vento']},
 };
+
+// Nomes em PT para exibição na tabela
+const TYPE_PT = {
+  fogo:'Fogo',agua:'Água',natureza:'Natureza',pedra:'Pedra',eletrico:'Elétrico',
+  gelo:'Gelo',vento:'Vento',sombra:'Sombra',luz:'Luz',terra:'Terra',metal:'Metal',psiquico:'Psíquico'
+};
+
+function buildTypeTable(){
+  const body=document.getElementById('tt-body');
+  if(!body||body.children.length) return; // já construído
+  body.innerHTML=Object.keys(WEAK).map(type=>{
+    const row=WEAK[type];
+    const strong=row.w.map(t=>`${ET[t]} ${TYPE_PT[t]}`).join('<br>');
+    const weak=row.r.map(t=>`${ET[t]} ${TYPE_PT[t]}`).join('<br>');
+    return `<div class="tt-row">
+      <div class="tt-type"><span class="tt-name t-${type}">${ET[type]} ${TYPE_PT[type]}</span></div>
+      <div class="tt-cell tt-strong">${strong}</div>
+      <div class="tt-cell tt-weak">${weak}</div>
+    </div>`;
+  }).join('');
+}
+
+function showTypeTable(){ buildTypeTable(); ovShow('ov-types'); }
 
 const CATALOG = [
   {id:'flamito',  name:'Flamito',  em:'🔥',type:'fogo',     hp:100,en:6,a1:{name:'Chama Rápida',    type:'fogo',     dmg:25,cost:1,cd:0},a2:{name:'Explosão Solar',   type:'fogo',     dmg:60,cost:4,cd:2}},
@@ -490,7 +556,12 @@ function getMult(atkType, defType){
 // ══════════════════════════════════════════
 //  UTILITÁRIOS UI
 // ══════════════════════════════════════════
-function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Botão tático visível apenas na seleção e batalha
+  document.getElementById('btn-tactic').style.display=(id==='s-select'||id==='s-battle')?'flex':'none';
+}
 function ovShow(id){ document.getElementById(id).classList.remove('hidden'); }
 function ovHide(id){ document.getElementById(id).classList.add('hidden'); }
 
@@ -577,18 +648,17 @@ function startSelP2(){
 //  INICIAR BATALHA
 // ══════════════════════════════════════════
 function startBattle(){
-  G = { turn:1, players:[mkPlayer(0,'Jogador 1'),mkPlayer(1,'Jogador 2')], bankQ:[], faintQ:[], activePi:0 };
+  G = { turn:1, players:[mkPlayer(0,'Jogador 1'),mkPlayer(1,'Jogador 2')], faintQ:[], activePi:0 };
   [0,1].forEach(pi=>{
     const p=G.players[pi];
     const insts=SEL[pi].map(mi=>mkInst(CATALOG[mi]));
     p.field=insts[0];
-    p.field.everOnField=true; // primeiro monstrinho já entra em campo revelado
+    p.field.everOnField=true;
     p.bank=insts.slice(1);
-    // monstrinhos do banco começam ocultos
     p.bank.forEach(m=>m.everOnField=false);
   });
   show('s-battle');
-  startPlayerTurn(0);
+  showPassForNextTurn(0);
 }
 
 // ══════════════════════════════════════════
@@ -1093,9 +1163,8 @@ function processFaintQ(){
     // Checar derrota por desmaio (sem substitutos disponíveis)
     const defeatFaint=checkDefeat();
     if(defeatFaint){ showGameOver(defeatFaint); return; }
-    // Fila de decisão do banco
-    G.bankQ=G.players.filter(p=>p.field && p.field.hp>0 && p.field.en>0).map(p=>p.idx);
-    processBankQ();
+    // Desmaios resolvidos — encerrar turno diretamente
+    endTurn();
     return;
   }
 
@@ -1173,45 +1242,6 @@ function confirmFaintSub(pi){
 }
 
 // ══════════════════════════════════════════
-//  FILA DO BANCO
-// ══════════════════════════════════════════
-function processBankQ(){
-  if(!G.bankQ.length){ endTurn(); return; }
-  const pi=G.bankQ.shift();
-  const p=G.players[pi];
-  const m=p.field;
-  const canLeave=m.en>=SWAP_COST;
-  const color=pi===0?'#e74c3c':'#3498db';
-  const icon=pi===0?'🔴':'🔵';
-
-  document.getElementById('bdbox').innerHTML=`
-    <span class="bdbox-em">${m.em}</span>
-    <div class="bdbox-title" style="color:${color}">${icon} ${p.name}</div>
-    <div class="bdbox-sub">
-      O que fazer com <b>${m.name}</b>?<br>
-      ❤️ ${m.hp}/${m.maxHp} PV &nbsp;·&nbsp; ⚡ ${m.en}/${m.maxEn} energia
-      ${!canLeave?`<br><span style="color:#e74c3c;font-weight:800">⚠️ Precisa de ⚡${SWAP_COST} para ir ao banco</span>`:''}
-    </div>
-    <div class="bdbox-btns">
-      <button class="btn-bd btn-tobank ${!canLeave?'btn-bd-dis':''}"
-              onclick="${canLeave?`bankDec(${pi},true)`:''}">
-        🏦 Ir ao Banco ${canLeave?`(⚡−${SWAP_COST})`:'(Bloqueado)'}
-      </button>
-      <button class="btn-bd btn-stay" onclick="bankDec(${pi},false)">
-        ⚔️ Manter em Campo
-      </button>
-    </div>`;
-  ovShow('ov-bank');
-}
-
-function bankDec(pi,toBank){
-  ovHide('ov-bank');
-  const p=G.players[pi];
-  if(toBank){ p.field.en-=SWAP_COST; p.bank.push(p.field); p.field=null; }
-  processBankQ();
-}
-
-// ══════════════════════════════════════════
 //  FIM DO TURNO
 // ══════════════════════════════════════════
 function endTurn(){
@@ -1249,7 +1279,33 @@ function endTurn(){
   if(defeat){ showGameOver(defeat); return; }
 
   G.turn++;
-  startPlayerTurn(0);
+  showPassForNextTurn(0);
+}
+
+function showPassForNextTurn(pi){
+  const p=G.players[pi];
+  const color=pi===0?'#e74c3c':'#3498db';
+  const icon=pi===0?'🔴':'🔵';
+  document.getElementById('pass-turn-box').innerHTML=`
+    <span class="pass-icon">📱</span>
+    <div class="pass-title">Turno ${G.turn}</div>
+    <div class="pass-sub">
+      Passe o dispositivo para:<br>
+      <span style="color:${color};font-weight:800">${icon} ${p.name}</span>
+    </div>
+    <div class="pass-confirm-box">
+      👁️ Você verá apenas seu próprio time.<br>
+      O adversário permanece oculto até o reveal.
+    </div>
+    <button class="btn-pass" onclick="startTurnFromPass(${pi})">
+      ⚔️ Estou pronto!
+    </button>`;
+  ovShow('ov-pass-turn');
+}
+
+function startTurnFromPass(pi){
+  ovHide('ov-pass-turn');
+  startPlayerTurn(pi);
 }
 
 // ══════════════════════════════════════════
