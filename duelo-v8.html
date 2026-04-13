@@ -416,13 +416,13 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
     <div class="type-table-title">📖 Tabela de Tipos</div>
     <div class="tt-row">
       <div class="tt-head">Tipo</div>
-      <div class="tt-head">⚔️ Forte contra (×2)</div>
-      <div class="tt-head">🛡️ Fraco contra (×0,5)</div>
+      <div class="tt-head">⚔️ Causa ×2 em</div>
+      <div class="tt-head">💧 Causa ×0,5 em</div>
     </div>
     <div id="tt-body"></div>
     <div class="tt-legend">
       <span class="tt-strong">⚔️ Causa ×2 dano</span>
-      <span class="tt-weak">🛡️ Causa ×0,5 dano</span>
+      <span class="tt-weak">💧 Causa ×0,5 dano</span>
     </div>
     <div style="text-align:center;margin-top:14px">
       <button class="btn-pass" onclick="ovHide('ov-types')" style="padding:10px 28px;font-size:.95rem">Fechar</button>
@@ -496,8 +496,10 @@ function buildTypeTable(){
   if(!body||body.children.length) return; // já construído
   body.innerHTML=Object.keys(WEAK).map(type=>{
     const row=WEAK[type];
-    const strong=row.w.map(t=>`${ET[t]} ${TYPE_PT[t]}`).join('<br>');
-    const weak=row.r.map(t=>`${ET[t]} ${TYPE_PT[t]}`).join('<br>');
+    // row.r = tipos que este tipo resiste = tipos que este tipo causa ×2
+    // row.w = fraquezas deste tipo = tipos contra os quais este tipo causa ×0,5
+    const strong=row.r.map(t=>`${ET[t]} ${TYPE_PT[t]}`).join('<br>');
+    const weak=row.w.map(t=>`${ET[t]} ${TYPE_PT[t]}`).join('<br>');
     return `<div class="tt-row">
       <div class="tt-type"><span class="tt-name t-${type}">${ET[type]} ${TYPE_PT[type]}</span></div>
       <div class="tt-cell tt-strong">${strong}</div>
