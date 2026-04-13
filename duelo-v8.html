@@ -336,7 +336,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 <div id="s-start" class="screen active">
   <span class="logo-dragon">🐉</span>
   <div class="logo-title">Duelo de<br>Monstrinhos</div>
-  <div class="logo-sub">Card Game Estratégico · 1v1 · v10</div>
+  <div class="logo-sub">Card Game Estratégico · 1v1 · v11</div>
   <div class="showcase" id="showcase"></div>
   <button class="btn-main" onclick="goSelect()">⚔️ Começar Partida</button>
   <div style="color:var(--muted);font-size:.76rem;text-align:center;max-width:270px;line-height:1.7">
@@ -1247,6 +1247,18 @@ function confirmFaintSub(pi){
 //  FIM DO TURNO
 // ══════════════════════════════════════════
 function endTurn(){
+  // Antes de qualquer entrada forçada: verificar se ambos os lados
+  // estão sem monstros disponíveis para entrar em campo.
+  // Se sim, não há turno possível — encerrar com critério de desempate.
+  function semDisponivel(p){
+    return !p.field && !p.bank.some(m=>m.faintLeft===0 && m.hp>0);
+  }
+  if(semDisponivel(G.players[0]) && semDisponivel(G.players[1])){
+    const result=checkGameEnd()||{type:'draw',alive1:0,alive2:0,pv1:0,pv2:0};
+    showGameOver(result);
+    return;
+  }
+
   G.players.forEach(p=>{
     // Entrada gratuita se campo vazio (morte ou banco voluntário sem substituto imediato)
     if(!p.field && p.bank.some(m=>m.faintLeft===0)){
@@ -1260,8 +1272,7 @@ function endTurn(){
     // Recarregar energia no banco (+1, exceto desmaiados)
     p.bank.forEach(m=>{
       if(m.faintLeft>0){
-        m.faintLeft--; // conta rodada de penalidade
-        // energia congelada — não recarrega
+        m.faintLeft--;
       } else {
         if(m.en<m.maxEn) m.en++;
       }
