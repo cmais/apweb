@@ -241,8 +241,33 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:18px;backdrop-filter:blur(6px);}
 .overlay.hidden{display:none;}
 
-/* Reveal */
-.rev-title{font-family:'Fredoka One',cursive;font-size:2rem;color:var(--gold);text-shadow:0 0 20px rgba(241,196,15,.6);animation:zpulse .5s infinite alternate;}
+/* Reveal HP bar */
+.rev-hpbar-wrap{width:100%;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin:7px 0 4px;}
+.rev-hpbar-fill{height:100%;border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1),background .4s;}
+.rev-hpbar-fill.hi{background:#2ecc71;}
+.rev-hpbar-fill.md{background:#f39c12;}
+.rev-hpbar-fill.lo{background:#e74c3c;}
+.rev-hpbar-fill.empty{background:#e74c3c;}
+
+/* Morte */
+.rev-skull{font-size:1.6rem;display:block;margin:4px 0;animation:skullPop .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes skullPop{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+.rev-card.dead{filter:brightness(.55) saturate(.3);transition:filter .5s ease;}
+
+/* Desmaio */
+.rev-card.fainted{filter:brightness(.7) saturate(.2) hue-rotate(180deg);transition:filter .6s ease;}
+.rev-zzz{font-size:1.2rem;display:block;margin:2px 0;animation:zzzFloat 1s ease infinite alternate;}
+@keyframes zzzFloat{from{transform:translateY(0);opacity:.7;}to{transform:translateY(-5px);opacity:1;}}
+
+/* Overlay pré-reveal */
+.prerev-box{
+  background:var(--surf);border-radius:var(--radius);
+  padding:36px 32px;max-width:380px;width:100%;
+  text-align:center;border:2px solid rgba(241,196,15,.35);
+}
+.prerev-icon{font-size:3rem;display:block;margin-bottom:10px;animation:zpulse .5s infinite alternate;}
+.prerev-title{font-family:'Fredoka One',cursive;font-size:1.5rem;color:var(--gold);margin-bottom:8px;}
+.prerev-sub{font-size:.85rem;color:var(--muted);margin-bottom:22px;line-height:1.6;}
 @keyframes zpulse{from{transform:scale(1);}to{transform:scale(1.06);}}
 .rev-row{display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center;}
 .rev-card{background:var(--surf);border-radius:var(--radius);padding:16px 20px;text-align:center;border:2px solid rgba(255,255,255,.1);min-width:150px;animation:revIn .4s cubic-bezier(.34,1.56,.64,1);}
@@ -336,7 +361,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 <div id="s-start" class="screen active">
   <span class="logo-dragon">🐉</span>
   <div class="logo-title">Duelo de<br>Monstrinhos</div>
-  <div class="logo-sub">Card Game Estratégico · 1v1 · v11</div>
+  <div class="logo-sub">Card Game Estratégico · 1v1 · v12</div>
   <div class="showcase" id="showcase"></div>
   <button class="btn-main" onclick="goSelect()">⚔️ Começar Partida</button>
   <div style="color:var(--muted);font-size:.76rem;text-align:center;max-width:270px;line-height:1.7">
@@ -441,6 +466,18 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 <!-- OVERLAY PASSAGEM DE DISPOSITIVO -->
 <div class="overlay hidden" id="ov-pass">
   <div class="pass-overlay-box" id="pass-box"></div>
+</div>
+
+<!-- OVERLAY PRÉ-REVEAL -->
+<div class="overlay hidden" id="ov-prerev">
+  <div class="prerev-box">
+    <span class="prerev-icon">⚡</span>
+    <div class="prerev-title">Atenção J1 e J2!</div>
+    <div class="prerev-sub">Ambos os jogadores podem olhar.<br>Hora de revelar o resultado do turno!</div>
+    <button class="btn-pass" onclick="doShowReveal()" style="background:linear-gradient(135deg,var(--accent),#c0392b);color:#fff">
+      ⚔️ Revelar Resultado!
+    </button>
+  </div>
 </div>
 
 <!-- OVERLAY REVEAL -->
@@ -1049,7 +1086,6 @@ function resolveRound(){
   if(!pass1 && !dodge1){
     const atk=p1.choice.atkIdx===0?m1.a1:m1.a2;
     const mult=getMult(atk.type,m2.type);
-    // Dano zerado se oponente esquivou
     const dmg=dodge2?0:Math.round(atk.dmg*mult);
     r1={atk,mult,dmg,dodgedBy:dodge2};
     m1.en-=atk.cost;
@@ -1064,11 +1100,24 @@ function resolveRound(){
     if(atk.cd>0) atk.cdLeft=atk.cd;
   }
 
+  // Guardar HP pré-dano para animação da barra
+  const prevHp1=m1.hp, prevHp2=m2.hp;
+
   // Aplicar dano simultaneamente
   if(r1 && !r1.dodgedBy) m2.hp=Math.max(0,m2.hp-r1.dmg);
   if(r2 && !r2.dodgedBy) m1.hp=Math.max(0,m1.hp-r2.dmg);
 
-  showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2);
+  // Guardar dados do reveal no estado global para uso após overlay pré-reveal
+  G._pendingReveal={p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2,prevHp1,prevHp2};
+
+  // Mostrar overlay pré-reveal: ambos os jogadores chamados a olhar
+  ovShow('ov-prerev');
+}
+
+function doShowReveal(){
+  ovHide('ov-prerev');
+  const {p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2,prevHp1,prevHp2}=G._pendingReveal;
+  showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2,prevHp1,prevHp2);
 }
 
 function effLabel(mult){
@@ -1077,11 +1126,20 @@ function effLabel(mult){
   return               {txt:'⚔️ Normal',         cls:'eff-neu'};
 }
 
-function showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2){
-  const e1=r1?effLabel(r1.mult):{txt:pass1?'⏭️ Passou':'💨 Esquivou',cls:'eff-neu'};
-  const e2=r2?effLabel(r2.mult):{txt:pass2?'⏭️ Passou':'💨 Esquivou',cls:'eff-neu'};
+function showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2,prevHp1,prevHp2){
 
-  function revCard(who, icon, m, r, dodged, passed){
+  // Determinar estados pós-combate
+  const m1dead   = m1.hp===0;
+  const m2dead   = m2.hp===0;
+  const m1faint  = !m1dead && m1.en===0;
+  const m2faint  = !m2dead && m2.en===0;
+
+  function hpBarClass(hp, max){
+    const pct=(hp/max)*100;
+    return pct>50?'hi':pct>25?'md':'lo';
+  }
+
+  function revCard(who, icon, m, prevHp, r, dodged, passed, isDead, isFaint){
     const atkLine = passed ? '⏭️ Passou o turno'
                   : dodged ? '💨 Esquivou!'
                   : r      ? `⚔️ ${r.atk.name}`
@@ -1094,24 +1152,64 @@ function showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2){
       ? '<span class="rev-eff" style="background:rgba(26,188,156,.2);color:#1abc9c">💨 Esquivou!</span>'
       : r ? `<span class="rev-eff ${effLabel(r.mult).cls}">${effLabel(r.mult).txt}</span>`
       : '';
-    return `<div class="rev-card">
+
+    // Barra começa no prevHp (percentual) e vai animar para m.hp
+    const prevPct = Math.round((prevHp/m.maxHp)*100);
+    const finalPct= Math.round((m.hp/m.maxHp)*100);
+    const barCls  = hpBarClass(m.hp, m.maxHp);
+
+    // Orbes de energia
+    let orbes='<div style="display:flex;gap:3px;justify-content:center;margin-top:4px;flex-wrap:wrap">';
+    for(let i=0;i<m.maxEn;i++) orbes+=`<div style="width:9px;height:9px;border-radius:50%;background:${i<m.en?'var(--gold)':'rgba(255,255,255,.1)'};${i<m.en?'box-shadow:0 0 4px var(--gold)':''}"></div>`;
+    orbes+='</div>';
+
+    const statusIcon = isDead  ? '<span class="rev-skull">💀</span>'
+                     : isFaint ? '<span class="rev-zzz">💤</span>'
+                     : '';
+    const cardClass = isDead?'rev-card dead':isFaint?'rev-card fainted':'rev-card';
+
+    return `<div class="${cardClass}" id="revcard-${m.id}">
       <div class="rev-who">${icon} ${who}</div>
       <span class="rev-em">${m.em}</span>
       <div class="rev-name">${m.name}</div>
+      <div class="rev-hpbar-wrap">
+        <div class="rev-hpbar-fill ${barCls}" id="hpbar-${m.id}" style="width:${prevPct}%"></div>
+      </div>
+      ${orbes}
       <div class="rev-atk">${atkLine}</div>
       <div class="rev-dmg">${dmgLine}</div>
       ${effLine}
+      ${statusIcon}
     </div>`;
   }
 
   document.getElementById('rev-cards').innerHTML=
-    revCard('Jogador 1','🔴',m1,r1,dodge1,pass1)+
+    revCard('Jogador 1','🔴',m1,prevHp1,r1,dodge1,pass1,m1dead,m1faint)+
     `<div class="rev-vs">VS</div>`+
-    revCard('Jogador 2','🔵',m2,r2,dodge2,pass2);
+    revCard('Jogador 2','🔵',m2,prevHp2,r2,dodge2,pass2,m2dead,m2faint);
+
+  // Animar barras após render (delay para garantir DOM pronto)
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      [[m1,'hpbar-'+m1.id],[m2,'hpbar-'+m2.id]].forEach(([m,bid])=>{
+        const el=document.getElementById(bid);
+        if(!el) return;
+        const finalPct=Math.round((m.hp/m.maxHp)*100);
+        const barCls=hpBarClass(m.hp,m.maxHp);
+        el.className=`rev-hpbar-fill ${barCls}`;
+        el.style.width=finalPct+'%';
+      });
+      // Animações de morte/desmaio após a barra terminar (1.3s)
+      setTimeout(()=>{
+        if(m1dead){ const c=document.getElementById('revcard-'+m1.id); if(c) c.className='rev-card dead'; }
+        if(m2dead){ const c=document.getElementById('revcard-'+m2.id); if(c) c.className='rev-card dead'; }
+        if(m1faint){ const c=document.getElementById('revcard-'+m1.id); if(c) c.className='rev-card fainted'; }
+        if(m2faint){ const c=document.getElementById('revcard-'+m2.id); if(c) c.className='rev-card fainted'; }
+      }, 1300);
+    });
+  });
 
   const lines=[];
-
-  // Linha P1
   if(pass1)       lines.push(`${m1.em} <b>${m1.name}</b> <span class="faint">passou o turno sem energia.</span>`);
   else if(dodge1) lines.push(`${m1.em} <b>${m1.name}</b> <span class="dodge">💨 esquivou!</span> Gastou ⚡1 e evitou todo o dano.`);
   else if(r1){
@@ -1119,8 +1217,6 @@ function showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2){
     const dead = !r1.dodgedBy && m2.hp===0 ? ' <span class="dead">💀 Derrotado!</span>' : '';
     lines.push(`${m1.em} <b>${m1.name}</b> usou <b>${r1.atk.name}</b> → <b>${r1.dodgedBy?'0':r1.dmg}PV</b> em ${m2.em} ${m2.name}${evaded}${dead}`);
   }
-
-  // Linha P2
   if(pass2)       lines.push(`${m2.em} <b>${m2.name}</b> <span class="faint">passou o turno sem energia.</span>`);
   else if(dodge2) lines.push(`${m2.em} <b>${m2.name}</b> <span class="dodge">💨 esquivou!</span> Gastou ⚡1 e evitou todo o dano.`);
   else if(r2){
@@ -1128,8 +1224,6 @@ function showReveal(p1,p2,m1,m2,r1,r2,pass1,pass2,dodge1,dodge2){
     const dead = !r2.dodgedBy && m1.hp===0 ? ' <span class="dead">💀 Derrotado!</span>' : '';
     lines.push(`${m2.em} <b>${m2.name}</b> usou <b>${r2.atk.name}</b> → <b>${r2.dodgedBy?'0':r2.dmg}PV</b> em ${m1.em} ${m1.name}${evaded}${dead}`);
   }
-
-  // Avisar desmaio no log
   [m1,m2].forEach(m=>{
     if(m.en===0 && m.hp>0) lines.push(`⚠️ <b>${m.name}</b> <span class="faint">ficou sem energia — vai desmaiar!</span>`);
   });
