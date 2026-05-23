@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Damas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sq: 64px;
+      --dark-sq: #4a3728;
+      --light-sq: #d4a96a;
+      --p1-color: #c0392b;
+      --p1-dark: #7b241c;
+      --p2-color: #f5f0e8;
+      --p2-dark: #b0a898;
+      --selected-bg: #6b5520;
+      --highlight: #f1c40f;
+      --possible-fill: rgba(241,196,15,0.42);
+      --board-border: #2c1f14;
+      --bg: #1a1210;
+      --surface: #231812;
+      --surface-2: #2d201a;
+      --text: #e8ddd5;
+      --text-muted: #9a877d;
+      --border: rgba(255,255,255,0.08);
+      --radius: 10px;
+      
+      /* Cores para o histórico da última jogada */
+      --last-move-bg: rgba(241, 196, 15, 0.15);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    :fullscreen { overflow: hidden; }
+
+    #game {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 1.5rem 1rem 2rem;
+      gap: 1.1rem;
+      transform-origin: top center;
+    }
+
+    h1 {
+      font-weight: normal;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+
+    /* STATUS BAR */
+    #status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: calc(8 * var(--sq) + 12px);
+      padding: 0.7rem 1.1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      gap: 1rem;
+    }
+
+    .player-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: normal;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+    .player-tag.active { color: var(--text); }
+
+    .piece-dot {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      flex-shrink: 0;
+      transition: box-shadow 0.2s;
+    }
+    .dot-p1 { background: var(--p1-color); border-color: var(--p1-dark); }
+    .dot-p2 { background: var(--p2-color); border-color: var(--p2-dark); }
+    .player-tag.active .piece-dot { box-shadow: 0 0 0 2px var(--highlight); }
+
+    #turn-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+      flex: 1;
+    }
+
+    /* BOARD */
+    #board-wrap {
+      border: 6px solid var(--board-border);
+      border-radius: 4px;
+      box-shadow: 0 6px 32px rgba(0,0,0,0.6);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, var(--sq));
+      grid-template-rows: repeat(8, var(--sq));
+      width: calc(8 * var(--sq));
+      height: calc(8 * var(--sq));
+    }
+
+    .cell {
+      width: var(--sq); height: var(--sq);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .cell.light { background: var(--light-sq); }
+    .cell.dark  { background: var(--dark-sq); }
+    .cell.selected-cell { background: var(--selected-bg) !important; }
+    .cell.last-move-cell { background: var(--last-move-bg); }
+    
+    .cell.possible { cursor: pointer; }
+    .cell.possible::after {
+      content: '';
+      position: absolute;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--possible-fill);
+      pointer-events: none;
+    }
+    .cell.possible.has-enemy::after { display: none; }
+    .cell.possible.has-enemy .piece { box-shadow: 0 0 0 3px var(--highlight) !important; }
+
+    /* PIECES */
+    .piece {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      position: relative; z-index: 1;
+      transition: transform 0.12s, box-shadow 0.12s;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .piece:hover { transform: scale(1.05); }
+
+    .piece.p1 {
+      background: radial-gradient(circle at 36% 30%, #e74c3c, var(--p1-color) 58%, var(--p1-dark));
+      border-color: var(--p1-dark);
+      box-shadow: inset 0 -4px 7px rgba(0,0,0,0.35), 0 3px 6px rgba(0,0,0,0.4);
+    }
+    .piece.p2 {
+      background: radial-gradient(circle at 36% 30%, #ffffff, var(--p2-color) 58%, var(--p2-dark));
+      border-color: var(--p2-dark);
+      box-shadow: inset 0 -4px 7px rgba(0,0,0,0.18), 0 3px 6px rgba(0,0,0,0.35);
+    }
+    .piece.selected-piece {
+      box-shadow: 0 0 0 3px var(--highlight), inset 0 -4px 7px rgba(0,0,0,0.25) !important;
+      transform: scale(1.08);
+    }
+
+    /* Animação para peças que são obrigadas a capturar */
+    @keyframes forced-glow {
+      0% { box-shadow: 0 0 4px 1px var(--highlight); }
+      50% { box-shadow: 0 0 12px 3px var(--highlight); }
+      100% { box-shadow: 0 0 4px 1px var(--highlight); }
+    }
+    .piece.forced-to-jump {
+      animation: forced-glow 1.5s infinite ease-in-out;
+    }
+
+    /* EFEITO DE PEÇA EMPILHADA (DAMA 3D) */
+    .piece.king::after {
+      content: '';
+      position: absolute;
+      inset: -3px; /* cobre a borda original */
+      border-radius: 50%;
+      transform: translate(-3px, -4px); /* Deslocamento para criar efeito de profundidade */
+      z-index: 2;
+    }
+    
+    .piece.p1.king::after {
+      background: radial-gradient(circle at 36% 30%, #e74c3c, var(--p1-color) 58%, var(--p1-dark));
+      border: 3px solid var(--p1-dark);
+      box-shadow: inset 0 -4px 7px rgba(0,0,0,0.35), 3px 4px 5px rgba(0,0,0,0.5);
+    }
+
+    .piece.p2.king::after {
+      background: radial-gradient(circle at 36% 30%, #ffffff, var(--p2-color) 58%, var(--p2-dark));
+      border: 3px solid var(--p2-dark);
+      box-shadow: inset 0 -4px 7px rgba(0,0,0,0.18), 3px 4px 5px rgba(0,0,0,0.45);
+    }
+
+    .king-crown {
+      font-size: 18px;
+      line-height: 1;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+      position: relative;
+      z-index: 3; /* Fica por cima da peça empilhada */
+      color: #f1c40f; /* Coroa dourada para melhor destaque */
+    }
+
+    /* BOTTOM BAR */
+    #bottom-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      width: 100%;
+      max-width: calc(8 * var(--sq) + 12px);
+      justify-content: space-between;
+    }
+
+    #capture-info {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .btn-container {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    button.action-btn {
+      padding: 0.45rem 1.2rem;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+    }
+    button.action-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); background-color: rgba(255,255,255,0.02); }
+
+    /* MODAL */
+    #msg-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: none; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    #msg-overlay.show { display: flex; }
+    #msg-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 2.5rem;
+      text-align: center;
+      max-width: 320px; width: 90%;
+    }
+    #msg-box h2 { font-size: 20px; font-weight: normal; margin-bottom: 0.4rem; }
+    #msg-box p  { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; }
+    #msg-box button {
+      padding: 0.55rem 1.8rem;
+      font-size: 13px; font-family: inherit;
+      cursor: pointer;
+      border-radius: var(--radius);
+      background: var(--p1-color);
+      color: #fff; border: none;
+      transition: opacity 0.15s;
+    }
+    #msg-box button:hover { opacity: 0.85; }
+
+    /* RESPONSIVE */
+    @media (max-width: 560px) {
+      :root { --sq: 44px; }
+      .piece { width: 36px; height: 36px; }
+      .king-crown { font-size: 14px; }
+      .piece.king::after { transform: translate(-2px, -3px); }
+    }
+  </style>
+</head>
+<body>
+<div id="game">
+
+  <h1>Damas</h1>
+
+  <div id="status-bar">
+    <div class="player-tag" id="tag1">
+      <div class="piece-dot dot-p1"></div>
+      <span>Vermelho &nbsp;<strong id="c1">12</strong></span>
+    </div>
+    <div id="turn-text">Vez de Vermelho</div>
+    <div class="player-tag" id="tag2">
+      <div class="piece-dot dot-p2"></div>
+      <span>Branco &nbsp;<strong id="c2">12</strong></span>
+    </div>
+  </div>
+
+  <div id="board-wrap">
+    <div id="board"></div>
+  </div>
+
+  <div id="bottom-bar">
+    <div id="capture-info"></div>
+    <div class="btn-container">
+      <button id="fullscreen-btn" class="action-btn">Tela cheia</button>
+      <button id="reset-btn" class="action-btn">Nova partida</button>
+    </div>
+  </div>
+
+</div><!-- #game -->
+
+  <div id="msg-overlay">
+    <div id="msg-box">
+      <h2 id="msg-title"></h2>
+      <p  id="msg-body"></p>
+      <button id="msg-btn">Jogar novamente</button>
+    </div>
+  </div>
+
+  <script>
+    const SQ = 8;
+    let board = [], turn = 1, selected = null, possibleMoves = [], mustJumpFrom = null;
+    let lastMove = null; // Armazena { fr, fc, tr, tc } para destacar a última jogada
+
+    /* ---------- LÓGICA DO JOGO ---------- */
+
+    function initBoard() {
+      board = Array.from({length: SQ}, (_, r) =>
+        Array.from({length: SQ}, (_, c) => {
+          if (r < 3 && (r + c) % 2 === 1) return {p: 2, k: false};
+          if (r > 4 && (r + c) % 2 === 1) return {p: 1, k: false};
+          return null;
+        })
+      );
+      turn = 1; selected = null; possibleMoves = []; mustJumpFrom = null; lastMove = null;
+    }
+
+    function inBounds(r, c) { return r >= 0 && r < SQ && c >= 0 && c < SQ; }
+
+    /**
+     * Retorna os movimentos de uma peça de acordo com as REGRAS BRASILEIRAS.
+     */
+    function getMoves(r, c, b, jumpOnly) {
+      const cell = b[r][c];
+      if (!cell) return [];
+      
+      const allDirs = [[-1,-1], [-1,1], [1,-1], [1,1]];
+      const moves = [], jumps = [];
+
+      if (cell.k) {
+        // --- LÓGICA DA DAMA VOADORA ---
+        for (const [dr, dc] of allDirs) {
+          let nr = r + dr;
+          let nc = c + dc;
+          let enemyFound = null;
+
+          while (inBounds(nr, nc)) {
+            const nextCell = b[nr][nc];
+
+            if (!enemyFound) {
+              if (!nextCell) {
+                if (!jumpOnly) moves.push({r: nr, c: nc, jump: false});
+              } else if (nextCell.p !== cell.p) {
+                enemyFound = {r: nr, c: nc};
+              } else {
+                break; // Peça aliada bloqueia a diagonal
+              }
+            } else {
+              // Já encontramos um inimigo, agora procuramos casas vazias após ele
+              if (!nextCell) {
+                jumps.push({r: nr, c: nc, jump: true, mr: enemyFound.r, mc: enemyFound.c});
+              } else {
+                break; // Outra peça qualquer bloqueia a captura pousada
+              }
+            }
+            nr += dr;
+            nc += dc;
+          }
+        }
+      } else {
+        // --- LÓGICA DA PEÇA NORMAL (PEDRA) ---
+        // Movimento simples: Apenas para frente
+        if (!jumpOnly) {
+          const forwardDirs = cell.p === 1 ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
+          for (const [dr, dc] of forwardDirs) {
+            const nr = r + dr, nc = c + dc;
+            if (inBounds(nr, nc) && !b[nr][nc]) {
+              moves.push({r: nr, c: nc, jump: false});
+            }
+          }
+        }
+        // Captura: Pode capturar para todas as 4 direções (inclusive para trás)
+        for (const [dr, dc] of allDirs) {
+          const nr = r + dr, nc = c + dc;
+          if (inBounds(nr, nc) && b[nr][nc] && b[nr][nc].p !== cell.p) {
+            const jr = nr + dr, jc = nc + dc;
+            if (inBounds(jr, jc) && !b[jr][jc]) {
+              jumps.push({r: jr, c: jc, jump: true, mr: nr, mc: nc});
+            }
+          }
+        }
+      }
+
+      return jumps.length ? jumps : moves;
+    }
+
+    /**
+     * Calcula o número máximo de capturas a partir de uma casa recursivamente (Lei da Maioria)
+     */
+    function maxJumpsFrom(r, c, b, visitedEnemies = new Set()) {
+      const jumps = getMoves(r, c, b, true);
+      let maxCount = 0;
+
+      for (const j of jumps) {
+        const enemyKey = `${j.mr},${j.mc}`;
+        if (visitedEnemies.has(enemyKey)) continue;
+
+        // Simula o tabuleiro temporariamente
+        const nextBoard = b.map(row => row.map(cell => cell ? {...cell} : null));
+        nextBoard[j.r][j.c] = nextBoard[r][c];
+        nextBoard[r][c] = null;
+        nextBoard[j.mr][j.mc] = null;
+
+        visitedEnemies.add(enemyKey);
+        const count = 1 + maxJumpsFrom(j.r, j.c, nextBoard, visitedEnemies);
+        visitedEnemies.delete(enemyKey);
+
+        if (count > maxCount) maxCount = count;
+      }
+      return maxCount;
+    }
+
+    /**
+     * Obtém todas as peças do jogador atual que possuem o maior número de capturas disponíveis.
+     */
+    function getForcedJumps(player) {
+      let maxJumpsGlobal = 0;
+      let piecesWithMaxJumps = [];
+
+      for (let r = 0; r < SQ; r++) {
+        for (let c = 0; c < SQ; c++) {
+          if (board[r][c]?.p === player) {
+            const count = maxJumpsFrom(r, c, board);
+            if (count > maxJumpsGlobal) {
+              maxJumpsGlobal = count;
+              piecesWithMaxJumps = [{ r, c, count }];
+            } else if (count === maxJumpsGlobal && count > 0) {
+              piecesWithMaxJumps.push({ r, c, count });
+            }
+          }
+        }
+      }
+      return { maxCount: maxJumpsGlobal, pieces: piecesWithMaxJumps };
+    }
+
+    function countPieces() {
+      let c1 = 0, c2 = 0;
+      for (let r = 0; r < SQ; r++)
+        for (let c = 0; c < SQ; c++) {
+          if (board[r][c]?.p === 1) c1++;
+          if (board[r][c]?.p === 2) c2++;
+        }
+      return [c1, c2];
+    }
+
+    function applyMove(fr, fc, tr, tc, mv) {
+      const b = board.map(r => r.map(c => c ? {...c} : null));
+      b[tr][tc] = b[fr][fc];
+      b[fr][fc] = null;
+      if (mv.jump) b[mv.mr][mv.mc] = null;
+      
+      // Promoção para Dama ao atingir o fundo
+      if ((b[tr][tc].p === 1 && tr === 0) || (b[tr][tc].p === 2 && tr === 7))
+        b[tr][tc].k = true;
+      return b;
+    }
+
+    function selectCell(r, c) {
+      const forced = getForcedJumps(turn);
+
+      if (mustJumpFrom) {
+        if (r === mustJumpFrom.r && c === mustJumpFrom.c) return;
+        const mv = possibleMoves.find(m => m.r === r && m.c === c);
+        if (mv) { doMove(mustJumpFrom.r, mustJumpFrom.c, r, c, mv); return; }
+        return;
+      }
+
+      const mv = selected && possibleMoves.find(m => m.r === r && m.c === c);
+      if (mv) { doMove(selected.r, selected.c, r, c, mv); return; }
+
+      if (board[r][c]?.p === turn) {
+        // Verifica se a peça clicada respeita a Lei da Maioria
+        if (forced.maxCount > 0 && !forced.pieces.some(p => p.r === r && p.c === c)) {
+          return; // Bloqueia seleção de peças com menor potencial de captura
+        }
+
+        selected = {r, c};
+        const moves = getMoves(r, c, board, false);
+        
+        if (forced.maxCount > 0) {
+          // Filtra apenas os movimentos que são capturas válidas
+          possibleMoves = moves.filter(m => m.jump);
+        } else {
+          possibleMoves = moves;
+        }
+      } else {
+        selected = null; possibleMoves = [];
+      }
+      render();
+    }
+
+    function doMove(fr, fc, tr, tc, mv) {
+      board = applyMove(fr, fc, tr, tc, mv);
+      lastMove = { fr, fc, tr, tc }; // Guarda a jogada para o rastro visual
+      selected = null; possibleMoves = [];
+
+      if (mv.jump) {
+        // Em capturas múltiplas, continua validando novas capturas daquela peça
+        const further = getMoves(tr, tc, board, true);
+        if (further.length) {
+          mustJumpFrom = {r: tr, c: tc};
+          selected = {r: tr, c: tc};
+          possibleMoves = further;
+          render(); return;
+        }
+      }
+      mustJumpFrom = null;
+      turn = turn === 1 ? 2 : 1;
+      checkGameOver();
+      render();
+    }
+
+    function checkGameOver() {
+      const [c1, c2] = countPieces();
+      if (c1 === 0) { showMsg('Branco venceu!', 'As peças vermelhas foram todas capturadas.'); return; }
+      if (c2 === 0) { showMsg('Vermelho venceu!', 'As peças brancas foram todas capturadas.'); return; }
+      let hasMoves = false;
+      for (let r = 0; r < SQ && !hasMoves; r++)
+        for (let c = 0; c < SQ && !hasMoves; c++)
+          if (board[r][c]?.p === turn && getMoves(r, c, board, false).length) hasMoves = true;
+      if (!hasMoves) {
+        const winner = turn === 1 ? 'Branco' : 'Vermelho';
+        showMsg(`${winner} venceu!`, 'O adversário não tem movimentos possíveis.');
+      }
+    }
+
+    function showMsg(title, body) {
+      document.getElementById('msg-title').textContent = title;
+      document.getElementById('msg-body').textContent  = body;
+      document.getElementById('msg-overlay').classList.add('show');
+    }
+
+    /* ---------- RENDERIZAÇÃO ---------- */
+
+    function render() {
+      const [c1, c2] = countPieces();
+      document.getElementById('c1').textContent = c1;
+      document.getElementById('c2').textContent = c2;
+      document.getElementById('turn-text').textContent =
+        mustJumpFrom ? 'Captura múltipla!' : (turn === 1 ? 'Vez de Vermelho' : 'Vez de Branco');
+      document.getElementById('tag1').className = 'player-tag' + (turn === 1 ? ' active' : '');
+      document.getElementById('tag2').className = 'player-tag' + (turn === 2 ? ' active' : '');
+
+      const bd = document.getElementById('board');
+      bd.innerHTML = '';
+      const possSet = new Set(possibleMoves.map(m => `${m.r},${m.c}`));
+      
+      // Obtém as peças forçadas para aplicar a animação de piscar (Glow)
+      const forced = mustJumpFrom ? { pieces: [] } : getForcedJumps(turn);
+
+      for (let r = 0; r < SQ; r++) {
+        for (let c = 0; c < SQ; c++) {
+          const div = document.createElement('div');
+          div.className = 'cell ' + ((r + c) % 2 === 1 ? 'dark' : 'light');
+          
+          if (selected?.r === r && selected?.c === c) div.classList.add('selected-cell');
+          if (possSet.has(`${r},${c}`)) div.classList.add('possible');
+          
+          // Aplica o rastro da última jogada realizada
+          if (lastMove && ((lastMove.fr === r && lastMove.fc === c) || (lastMove.tr === r && lastMove.tc === c))) {
+            div.classList.add('last-move-cell');
+          }
+
+          div.addEventListener('click', () => selectCell(r, c));
+
+          if (board[r][c]) {
+            const p = board[r][c];
+            const piece = document.createElement('div');
+            piece.className = 'piece ' + (p.p === 1 ? 'p1' : 'p2');
+            
+            if (p.k) piece.classList.add('king');
+            if (selected?.r === r && selected?.c === c) piece.classList.add('selected-piece');
+            
+            // Destaca visualmente a peça se ela tiver captura obrigatória por lei da maioria
+            if (forced.maxCount > 0 && forced.pieces.some(fp => fp.r === r && fp.c === c)) {
+              piece.classList.add('forced-to-jump');
+            }
+
+            if (p.k) piece.innerHTML = '<span class="king-crown">♛</span>';
+            piece.addEventListener('click', e => { e.stopPropagation(); selectCell(r, c); });
+            div.appendChild(piece);
+          }
+          bd.appendChild(div);
+        }
+      }
+    }
+
+    function restart() {
+      document.getElementById('msg-overlay').classList.remove('show');
+      initBoard();
+      render();
+    }
+
+    /* ---------- API DE TELA CHEIA (FULLSCREEN) ---------- */
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen()
+          .catch(err => {
+            console.error(`Erro ao tentar ativar tela cheia: ${err.message}`);
+          });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function updateFullscreenBtn() {
+      const game = document.getElementById('game');
+      if (document.fullscreenElement) {
+        fullscreenBtn.textContent = 'Sair da tela';
+        const scale = Math.min(
+          window.innerWidth  / game.offsetWidth,
+          window.innerHeight / game.offsetHeight
+        );
+        game.style.transform = 'scale(' + scale + ')';
+      } else {
+        fullscreenBtn.textContent = 'Tela cheia';
+        game.style.transform = '';
+      }
+    }
+
+    // Ouvintes de eventos para Tela Cheia
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', updateFullscreenBtn);
+
+    document.getElementById('reset-btn').addEventListener('click', restart);
+    document.getElementById('msg-btn').addEventListener('click', restart);
+
+    initBoard();
+    render();
+  </script>
+</body>
+</html>
