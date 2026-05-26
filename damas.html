@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Damas</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⛂</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90' fill='%23f1c40f'>⛂</text></svg>">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -288,8 +288,6 @@
 </head>
 <body>
 <div id="game">
-
-  <h1>Damas</h1>
 
   <div id="status-bar">
     <div class="player-tag" id="tag1">
@@ -651,6 +649,7 @@
     // Ouvintes de eventos para Tela Cheia
     fullscreenBtn.addEventListener('click', toggleFullscreen);
     document.addEventListener('fullscreenchange', updateFullscreenBtn);
+    document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') toggleFullscreen(); });
 
     document.getElementById('reset-btn').addEventListener('click', restart);
     document.getElementById('msg-btn').addEventListener('click', restart);
