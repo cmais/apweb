@@ -816,10 +816,11 @@ document.getElementById("confirm-cancel").addEventListener("click", function() {
 });
 
 var fsBtn = document.getElementById("fullscreen-btn");
-fsBtn.addEventListener("click", function() {
+function toggleFS() {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(function(){});
   else document.exitFullscreen();
-});
+}
+fsBtn.addEventListener("click", toggleFS);
 document.addEventListener("fullscreenchange", function() {
   var game = document.getElementById("game");
   if (document.fullscreenElement) {
