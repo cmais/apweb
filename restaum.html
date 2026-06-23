@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resta Um</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%236b4226'/%3E%3Ccircle cx='32' cy='32' r='14' fill='%232d6a4f'/%3E%3Ccircle cx='32' cy='28' r='5' fill='%2374c69d' opacity='.6'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --wood-dark: #4a2f1c;
+    --wood-mid: #6b4226;
+    --wood-light: #8b5a2b;
+    --wood-edge: #c9a876;
+    --hole-shadow: #2e1c10;
+    --peg-base: #1b4332;
+    --peg-mid: #2d6a4f;
+    --peg-shine: #74c69d;
+    --amber: #e8a33d;
+    --amber-glow: #ffcc66;
+    --parchment: #f1e6d2;
+    --ink: #2e1c10;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: radial-gradient(ellipse at top, #2b1d12 0%, #15100a 70%);
+    font-family: 'Georgia', 'Iowan Old Style', serif;
+    color: var(--parchment);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .stage {
+    width: 100%;
+    max-width: 640px;
+    padding: 28px 16px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 2.4rem;
+    letter-spacing: 0.04em;
+    margin: 0;
+    color: var(--amber-glow);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  }
+
+  .subtitle {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #b89a72;
+    margin-top: 4px;
+  }
+
+  .hud {
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    margin: 18px 0 14px;
+    font-size: 0.95rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hud .count {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--wood-edge);
+    border-radius: 30px;
+    padding: 6px 18px;
+    letter-spacing: 0.05em;
+  }
+
+  .hud .count strong {
+    color: var(--amber-glow);
+    font-size: 1.05rem;
+  }
+
+  button {
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+    border: 1px solid var(--wood-edge);
+    color: var(--parchment);
+    padding: 7px 16px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+
+  button:hover { filter: brightness(1.18); }
+  button:active { transform: scale(0.96); }
+  button:focus-visible {
+    outline: 2px solid var(--amber-glow);
+    outline-offset: 2px;
+  }
+
+  /* Botão de tela cheia com ícone SVG */
+  #fullscreenBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    title: "Tela cheia (F)";
+  }
+
+  #fullscreenBtn svg {
+    width: 15px;
+    height: 15px;
+    fill: var(--parchment);
+    flex-shrink: 0;
+    transition: fill 0.15s;
+  }
+
+  #fullscreenBtn:hover svg { fill: var(--amber-glow); }
+
+  /* Ícones de tela cheia / sair */
+  .icon-expand, .icon-compress { display: none; }
+  body:not(.is-fullscreen) .icon-expand { display: block; }
+  body.is-fullscreen .icon-compress { display: block; }
+
+  .board-wrap {
+    position: relative;
+    padding: 22px;
+    border-radius: 18px;
+    background: linear-gradient(155deg, var(--wood-light) 0%, var(--wood-dark) 100%);
+    box-shadow:
+      0 18px 40px rgba(0,0,0,0.55),
+      inset 0 0 0 2px rgba(0,0,0,0.25),
+      inset 0 2px 6px rgba(255,210,150,0.18);
+  }
+
+  .board-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border-radius: 12px;
+    border: 2px solid rgba(0,0,0,0.2);
+    background:
+      repeating-linear-gradient(95deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 2px, transparent 2px, transparent 14px);
+    pointer-events: none;
+  }
+
+  .board {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, var(--cell));
+    grid-template-rows: repeat(7, var(--cell));
+    gap: 6px;
+    --cell: 56px;
+  }
+
+  @media (max-width: 480px) {
+    .board { --cell: 42px; gap: 5px; }
+    h1 { font-size: 1.8rem; }
+  }
+
+  /* Em tela cheia, centraliza tudo verticalmente */
+  :fullscreen body,
+  :-webkit-full-screen body,
+  :-moz-full-screen body {
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .cell {
+    width: var(--cell);
+    height: var(--cell);
+    border-radius: 50%;
+    position: relative;
+  }
+
+  .cell.void { background: transparent; }
+
+  .cell.hole {
+    background: radial-gradient(circle at 38% 32%, var(--wood-light) 0%, var(--wood-mid) 45%, var(--hole-shadow) 100%);
+    box-shadow:
+      inset 0 3px 6px rgba(0,0,0,0.65),
+      inset 0 -2px 3px rgba(255,220,170,0.15);
+  }
+
+  .cell.hole.target {
+    box-shadow:
+      inset 0 3px 6px rgba(0,0,0,0.65),
+      inset 0 -2px 3px rgba(255,220,170,0.15),
+      0 0 0 3px var(--amber-glow),
+      0 0 14px 2px var(--amber-glow);
+  }
+
+  .peg {
+    position: absolute;
+    inset: 8%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, var(--peg-shine) 0%, var(--peg-mid) 42%, var(--peg-base) 88%);
+    box-shadow:
+      0 4px 8px rgba(0,0,0,0.55),
+      inset 0 2px 4px rgba(255,255,255,0.35),
+      inset 0 -6px 10px rgba(0,0,0,0.45);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .peg:hover {
+    transform: scale(1.08);
+  }
+
+  .peg.selected {
+    box-shadow:
+      0 4px 8px rgba(0,0,0,0.55),
+      inset 0 2px 4px rgba(255,255,255,0.35),
+      inset 0 -6px 10px rgba(0,0,0,0.45),
+      0 0 0 3px var(--amber-glow),
+      0 0 16px 4px var(--amber-glow);
+    transform: scale(1.1);
+  }
+
+  .peg.hop {
+    animation: hop 0.28s ease;
+  }
+
+  @keyframes hop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.25) translateY(-10px); }
+    100% { transform: scale(1); }
+  }
+
+  .peg.removed {
+    animation: vanish 0.25s ease forwards;
+  }
+
+  @keyframes vanish {
+    to { transform: scale(0); opacity: 0; }
+  }
+
+  .message {
+    margin-top: 18px;
+    min-height: 1.4em;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.95rem;
+    text-align: center;
+    color: var(--amber-glow);
+    letter-spacing: 0.03em;
+  }
+
+  .rules {
+    margin-top: 26px;
+    max-width: 420px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: #c9b693;
+    text-align: center;
+  }
+
+  .rules strong { color: var(--amber-glow); }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,7,4,0.78);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  .overlay.show { display: flex; }
+
+  .overlay-card {
+    background: linear-gradient(155deg, var(--wood-light), var(--wood-dark));
+    border: 1px solid var(--wood-edge);
+    border-radius: 16px;
+    padding: 32px 36px;
+    text-align: center;
+    max-width: 320px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  }
+
+  .overlay-card h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    color: var(--amber-glow);
+    margin: 0 0 10px;
+  }
+
+  .overlay-card p {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.9rem;
+    color: var(--parchment);
+    margin: 0 0 18px;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <header>
+    <h1>Resta Um</h1>
+    <div class="subtitle">tabuleiro em cruz · 33 buracos</div>
+  </header>
+
+  <div class="hud">
+    <div class="count">Peças: <strong id="pegCount">32</strong></div>
+    <button id="restartBtn">Reiniciar</button>
+    <button id="undoBtn">Desfazer</button>
+    <button id="fullscreenBtn" title="Tela cheia (F)">
+      <!-- Ícone expandir -->
+      <svg class="icon-expand" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/>
+      </svg>
+      <!-- Ícone comprimir -->
+      <svg class="icon-compress" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 3H7v4H3v2h6V3zm6 0v6h6V7h-4V3h-2zM3 13v2h4v4h2v-6H3zm14 6v-4h4v-2h-6v6h2z"/>
+      </svg>
+      Tela cheia
+    </button>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="message" id="message">Escolha uma peça para começar.</div>
+
+  <p class="rules">
+    Clique numa peça e depois num buraco vazio para saltar sobre uma peça vizinha,
+    capturando-a. <strong>Objetivo:</strong> restar apenas <strong>uma</strong> peça,
+    de preferência no centro. · Tecla <strong>F</strong> alterna tela cheia.
+  </p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <h2 id="overlayTitle">Fim de jogo</h2>
+    <p id="overlayText"></p>
+    <button id="overlayBtn">Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Tela cheia ----
+  const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+  function isFullscreen() {
+    return !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement
+    );
+  }
+
+  function updateFullscreenClass() {
+    document.body.classList.toggle("is-fullscreen", isFullscreen());
+  }
+
+  function toggleFullscreen() {
+    if (isFullscreen()) {
+      (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen)
+        .call(document);
+    } else {
+      const el = document.documentElement;
+      (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen)
+        .call(el);
+    }
+  }
+
+  fullscreenBtn.addEventListener("click", toggleFullscreen);
+
+  document.addEventListener("fullscreenchange", updateFullscreenClass);
+  document.addEventListener("webkitfullscreenchange", updateFullscreenClass);
+  document.addEventListener("mozfullscreenchange", updateFullscreenClass);
+
+  // Atalho de teclado: F
+  document.addEventListener("keydown", (e) => {
+    // Ignora quando o foco está em campos de texto
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (e.key === "f" || e.key === "F") {
+      e.preventDefault();
+      toggleFullscreen();
+    }
+  });
+
+  // ---- Construção do tabuleiro em cruz (formato europeu, 33 buracos) ----
+  const LAYOUT = [
+    [0,0,1,1,1,0,0],
+    [0,0,1,1,1,0,0],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [0,0,1,1,1,0,0],
+    [0,0,1,1,1,0,0],
+  ];
+
+  const SIZE = 7;
+  const CENTER = { r: 3, c: 3 };
+
+  let board = [];
+  let selected = null;
+  let history = [];
+  let gameOver = false;
+
+  const boardEl = document.getElementById("board");
+  const pegCountEl = document.getElementById("pegCount");
+  const messageEl = document.getElementById("message");
+  const overlayEl = document.getElementById("overlay");
+  const overlayTitle = document.getElementById("overlayTitle");
+  const overlayText = document.getElementById("overlayText");
+
+  function cloneBoard(b) {
+    return b.map(row => row.slice());
+  }
+
+  function initBoard() {
+    board = [];
+    for (let r = 0; r < SIZE; r++) {
+      const row = [];
+      for (let c = 0; c < SIZE; c++) {
+        if (LAYOUT[r][c] === 0) {
+          row.push("void");
+        } else if (r === CENTER.r && c === CENTER.c) {
+          row.push("empty");
+        } else {
+          row.push("peg");
+        }
+      }
+      board.push(row);
+    }
+    selected = null;
+    history = [];
+    gameOver = false;
+    overlayEl.classList.remove("show");
+    setMessage("Escolha uma peça para começar.");
+  }
+
+  function inBounds(r, c) {
+    return r >= 0 && r < SIZE && c >= 0 && c < SIZE;
+  }
+
+  function valid(r, c) {
+    return inBounds(r, c) && board[r][c] !== "void";
+  }
+
+  function movesFrom(r, c) {
+    const dirs = [[-1,0,-2,0],[1,0,2,0],[0,-1,0,-2],[0,1,0,2]];
+    const moves = [];
+    for (const [dr, dc, jr, jc] of dirs) {
+      const mr = r + dr, mc = c + dc;
+      const tr = r + jr, tc = c + jc;
+      if (valid(mr, mc) && valid(tr, tc) &&
+          board[mr][mc] === "peg" && board[tr][tc] === "empty") {
+        moves.push({ to: { r: tr, c: tc }, over: { r: mr, c: mc } });
+      }
+    }
+    return moves;
+  }
+
+  function anyMoveExists() {
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] === "peg" && movesFrom(r, c).length > 0) return true;
+      }
+    }
+    return false;
+  }
+
+  function countPegs() {
+    let n = 0;
+    for (let r = 0; r < SIZE; r++)
+      for (let c = 0; c < SIZE; c++)
+        if (board[r][c] === "peg") n++;
+    return n;
+  }
+
+  function setMessage(text) {
+    messageEl.textContent = text;
+  }
+
+  function render(lastMove) {
+    boardEl.innerHTML = "";
+    const legalTargets = selected ? movesFrom(selected.r, selected.c).map(m => m.to) : [];
+
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const cellType = board[r][c];
+        const cellEl = document.createElement("div");
+        cellEl.className = "cell";
+
+        if (cellType === "void") {
+          cellEl.classList.add("void");
+          boardEl.appendChild(cellEl);
+          continue;
+        }
+
+        cellEl.classList.add("hole");
+        cellEl.dataset.r = r;
+        cellEl.dataset.c = c;
+
+        const isTarget = legalTargets.some(t => t.r === r && t.c === c);
+        if (isTarget) cellEl.classList.add("target");
+
+        if (cellType === "peg") {
+          const pegEl = document.createElement("div");
+          pegEl.className = "peg";
+          if (selected && selected.r === r && selected.c === c) {
+            pegEl.classList.add("selected");
+          }
+          if (lastMove && lastMove.landedPeg && lastMove.landedPeg.r === r && lastMove.landedPeg.c === c) {
+            pegEl.classList.add("hop");
+          }
+          pegEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            onPegClick(r, c);
+          });
+          cellEl.appendChild(pegEl);
+        }
+
+        cellEl.addEventListener("click", () => onCellClick(r, c));
+        boardEl.appendChild(cellEl);
+      }
+    }
+
+    pegCountEl.textContent = countPegs();
+  }
+
+  function onPegClick(r, c) {
+    if (gameOver) return;
+    if (selected && selected.r === r && selected.c === c) {
+      selected = null;
+      render();
+      setMessage("Escolha uma peça para começar.");
+      return;
+    }
+    if (movesFrom(r, c).length === 0) {
+      selected = null;
+      render();
+      setMessage("Essa peça não tem movimentos disponíveis.");
+      return;
+    }
+    selected = { r, c };
+    render();
+    setMessage("Agora clique num buraco vazio em destaque para saltar.");
+  }
+
+  function onCellClick(r, c) {
+    if (gameOver || !selected) return;
+    const moves = movesFrom(selected.r, selected.c);
+    const move = moves.find(m => m.to.r === r && m.to.c === c);
+    if (!move) return;
+
+    history.push(cloneBoard(board));
+
+    board[selected.r][selected.c] = "empty";
+    board[move.over.r][move.over.c] = "empty";
+    board[r][c] = "peg";
+
+    const landedPeg = { r, c };
+    selected = null;
+    render({ landedPeg });
+
+    checkEndState();
+  }
+
+  function checkEndState() {
+    const remaining = countPegs();
+    if (remaining === 1) {
+      gameOver = true;
+      const onCenter = board[CENTER.r][CENTER.c] === "peg";
+      showOverlay(
+        "Vitória!",
+        onCenter
+          ? "Sobrou apenas uma peça, exatamente no centro. Resultado perfeito!"
+          : "Sobrou apenas uma peça. Você venceu o jogo!"
+      );
+      setMessage("Parabéns! Restou apenas uma peça.");
+      return;
+    }
+    if (!anyMoveExists()) {
+      gameOver = true;
+      showOverlay(
+        "Sem mais jogadas",
+        `O jogo terminou com ${remaining} peças restantes. Tente reorganizar sua estratégia na próxima partida.`
+      );
+      setMessage(`Não há mais movimentos possíveis. Restaram ${remaining} peças.`);
+      return;
+    }
+    setMessage("Escolha uma peça para começar.");
+  }
+
+  function showOverlay(title, text) {
+    overlayTitle.textContent = title;
+    overlayText.textContent = text;
+    overlayEl.classList.add("show");
+  }
+
+  function undo() {
+    if (history.length === 0) return;
+    board = history.pop();
+    selected = null;
+    gameOver = false;
+    overlayEl.classList.remove("show");
+    render();
+    setMessage("Jogada desfeita.");
+  }
+
+  document.getElementById("restartBtn").addEventListener("click", initBoard);
+  document.getElementById("undoBtn").addEventListener("click", undo);
+  document.getElementById("overlayBtn").addEventListener("click", () => {
+    overlayEl.classList.remove("show");
+    initBoard();
+    render();
+  });
+
+  initBoard();
+  render();
+})();
+</script>
+
+</body>
+</html>
