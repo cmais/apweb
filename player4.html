@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimal Video Player v5.9</title>
+<title>Minimal Video Player v6.0</title>
     
     <link rel="icon" href="/apweb/favmvp.png" type="image/png">
     <link rel="icon" href="/apweb/favmvp.png" type="image/png" sizes="64x64">
@@ -17,8 +17,9 @@ body {
     color: #e5e5e5;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
+    padding-top: 6vh;
 }
 
 .container {
@@ -26,14 +27,15 @@ body {
     max-width: 800px;
     text-align: center;
     background: #000000;
-    padding: 20px;
+    padding: 8px 20px;
 }
 
-h1 {
-    font-size: 1.4rem;
-    font-weight: 500;
-    margin-bottom: 20px;
-    color: #ffffff;
+.controls-panel {
+    display: inline-block;
+    border: 1px solid #ffffff;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
 }
 
 .controls {
@@ -41,7 +43,6 @@ h1 {
     justify-content: center;
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 15px;
 }
 
 label, button {
@@ -139,20 +140,113 @@ video.ready {
     height: 16px;
     stroke: currentColor;
 }
+
+/* ===== HISTÓRICO ===== */
+
+.history {
+    margin-top: 24px;
+    text-align: left;
+}
+
+.history-heading {
+    font-size: 0.8rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+
+.history-row {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.history-card {
+    flex: 0 0 110px;
+    min-width: 0; /* evita que nomes longos (white-space: nowrap) estiquem o card */
+    cursor: pointer;
+}
+
+.history-poster-wrap {
+    position: relative;
+    width: 110px;
+    aspect-ratio: 2 / 3;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #4a4a4a; /* thumb default (cinza sólido) quando não há capa */
+}
+
+.history-poster-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.history-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.history-remove:hover {
+    background: rgba(0, 0, 0, 0.85);
+}
+
+.history-card:hover .history-remove {
+    opacity: 1;
+}
+
+.history-name {
+    width: 100%;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-progress-track {
+    margin-top: 4px;
+    height: 3px;
+    border-radius: 2px;
+    background: #333;
+    overflow: hidden;
+}
+
+.history-progress-fill {
+    height: 100%;
+    background: #e5e5e5;
+}
 </style>
 </head>
 
 <body>
 
 <div class="container theme-white-1" id="playerApp">
-<h1>Player de Vídeo</h1>
 
+<div class="controls-panel">
 <div class="controls">
-    <label for="videoInput" title="Carregar vídeo">
+    <button id="loadVideoBtn" type="button" title="Carregar vídeo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5 5-5-5"/>
         </svg>
-    </label>
+    </button>
     <input type="file" id="videoInput" accept="video/*">
 
     <label for="subtitleInput" title="Carregar legenda">
@@ -178,7 +272,7 @@ video.ready {
     <!-- MELHORIA 8: fullscreenBtn inicia desabilitado -->
     <button id="fullscreenBtn" disabled title="Tela Cheia (F)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0a2 2 0 0 0-2-2h-3m0 18a2 2 0 0 0 2-2v-3m-18 0a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
     </button>
     
@@ -188,11 +282,17 @@ video.ready {
         </svg>
     </button>
 </div>
+</div>
 
 <video id="videoPlayer" controls crossorigin="anonymous"></video>
 
 <div id="status" role="status" aria-live="polite">
     Selecione um vídeo.
+</div>
+
+<div class="history" id="historySection" style="display:none;">
+    <div class="history-heading">Continuar assistindo</div>
+    <div class="history-row" id="historyRow"></div>
 </div>
 
 <div id="shortcut-feedback">Atalho</div>
@@ -210,6 +310,9 @@ const fullscreenBtn  = document.getElementById('fullscreenBtn');
 const playerApp      = document.getElementById('playerApp');
 const status         = document.getElementById('status');
 const shortcutFeedback = document.getElementById('shortcut-feedback');
+const loadVideoBtn   = document.getElementById('loadVideoBtn');
+const historySection = document.getElementById('historySection');
+const historyRow     = document.getElementById('historyRow');
 
 /* VARIÁVEIS DE ESTADO */
 let currentVideoKey       = null;
@@ -342,6 +445,7 @@ function saveProgress() {
     );
 
     pruneOldProgressEntries();
+    updateHistoryProgress(videoPlayer.currentTime, videoPlayer.duration);
 }
 
 function restoreProgress() {
@@ -375,9 +479,272 @@ function restoreProgress() {
     }
 }
 
+/* ===== HISTÓRICO (IndexedDB + OMDb) ===== */
+
+// Chave da OMDb (http://www.omdbapi.com/). Free tier: 1000 requisições/dia,
+// mais que suficiente para uso pessoal.
+const OMDB_API_KEY = 'c26a374c';
+
+const DB_NAME    = 'player4DB';
+const DB_VERSION = 2;
+let dbPromise = null;
+
+function openDB() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains('history')) {
+                db.createObjectStore('history', { keyPath: 'key' });
+            }
+            if (!db.objectStoreNames.contains('posters')) {
+                db.createObjectStore('posters', { keyPath: 'titleYear' });
+            }
+            if (!db.objectStoreNames.contains('subtitles')) {
+                db.createObjectStore('subtitles', { keyPath: 'key' });
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror   = () => reject(req.error);
+    });
+    return dbPromise;
+}
+
+async function idbGet(storeName, key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const req = db.transaction(storeName, 'readonly').objectStore(storeName).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror   = () => reject(req.error);
+    });
+}
+
+async function idbGetAll(storeName) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const req = db.transaction(storeName, 'readonly').objectStore(storeName).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror   = () => reject(req.error);
+    });
+}
+
+async function idbPut(storeName, value) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.objectStore(storeName).put(value);
+        tx.oncomplete = () => resolve();
+        tx.onerror    = () => reject(tx.error);
+    });
+}
+
+async function idbDelete(storeName, key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        tx.objectStore(storeName).delete(key);
+        tx.oncomplete = () => resolve();
+        tx.onerror    = () => reject(tx.error);
+    });
+}
+
+// Extrai título e ano a partir de "Nome (Ano).ext". Sem esse padrão, usa o nome
+// inteiro (sem extensão) como título e não manda ano na busca.
+function parseTitleYear(fileName) {
+    const nameNoExt = fileName.replace(/\.[^/.]+$/, '');
+    const match = nameNoExt.match(/^(.*?)\s*\((\d{4})\)\s*$/);
+    if (match) {
+        return { title: match[1].trim(), year: match[2] };
+    }
+    return { title: nameNoExt.trim(), year: null };
+}
+
+// Busca a capa na OMDb, com cache em IndexedDB por "titulo|ano" (independe do
+// arquivo específico, então filmes repetidos não geram nova requisição).
+async function fetchPosterUrl(title, year) {
+    if (!OMDB_API_KEY || !title) return null;
+
+    const cacheKey = title.toLowerCase() + '|' + (year || '');
+    const cached = await idbGet('posters', cacheKey);
+    if (cached) return cached.posterUrl; // pode ser null: já buscado, sem resultado
+
+    let url = `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}`
+             + `&t=${encodeURIComponent(title)}&type=movie`;
+    if (year) url += `&y=${year}`;
+
+    let posterUrl = null;
+    try {
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.Response === 'True' && data.Poster && data.Poster !== 'N/A') {
+            posterUrl = data.Poster;
+        }
+    } catch (e) {
+        // offline ou erro de rede: fica null, thumb cai no cinza default
+    }
+
+    await idbPut('posters', { titleYear: cacheKey, posterUrl });
+    return posterUrl;
+}
+
+// Cria/atualiza a entrada do histórico e dispara a busca da capa em segundo plano.
+async function upsertHistoryEntry(file, handle) {
+    const key = currentVideoKey;
+    const { title, year } = parseTitleYear(file.name);
+    const existing = (await idbGet('history', key)) || {};
+
+    const entry = {
+        key,
+        fileName:      file.name,
+        title,
+        year,
+        time:          existing.time || 0,
+        duration:      existing.duration || null,
+        posterUrl:     existing.posterUrl || null,
+        posterChecked: existing.posterChecked || false,
+        handle:        handle || existing.handle || null,
+        lastPlayed:    Date.now()
+    };
+
+    await idbPut('history', entry);
+    renderHistory();
+
+    if (!entry.posterChecked) {
+        const posterUrl = await fetchPosterUrl(title, year);
+        const latest = await idbGet('history', key);
+        if (latest) {
+            latest.posterUrl     = posterUrl;
+            latest.posterChecked = true;
+            await idbPut('history', latest);
+            renderHistory();
+        }
+    }
+}
+
+async function updateHistoryProgress(time, duration) {
+    if (!currentVideoKey) return;
+    const entry = await idbGet('history', currentVideoKey);
+    if (!entry) return;
+
+    entry.time = time;
+    if (duration && !isNaN(duration)) entry.duration = duration;
+
+    await idbPut('history', entry);
+    renderHistory();
+}
+
+async function removeHistoryEntry(key) {
+    await idbDelete('history', key);
+    await idbDelete('subtitles', key); // legenda associada não faz mais sentido sem a entrada
+    renderHistory();
+}
+
+// Controla a exibição da fileira de histórico: só aparece se houver itens E
+// nenhum vídeo estiver tocando no momento.
+let historyHasEntries = false;
+
+function setHistoryVisible(visible) {
+    historySection.style.display = (visible && historyHasEntries) ? 'block' : 'none';
+}
+
+// Tenta reabrir o vídeo direto pelo handle (Chrome/Edge). Sem handle ou sem
+// permissão (ex: Firefox, que não suporta showOpenFilePicker), pede pra
+// selecionar o arquivo de novo.
+async function attemptReopenFromHistory(entry) {
+    if (entry.handle) {
+        try {
+            let perm = await entry.handle.queryPermission({ mode: 'read' });
+            if (perm !== 'granted') {
+                perm = await entry.handle.requestPermission({ mode: 'read' });
+            }
+            if (perm === 'granted') {
+                const file = await entry.handle.getFile();
+                loadVideo(file, entry.handle);
+                return;
+            }
+            // Chrome não persiste a permissão do handle entre recarregamentos de
+            // página para sites comuns; "prompt"/"denied" aqui é esperado às vezes.
+            console.warn('Permissão de leitura não concedida para', entry.fileName, '- status:', perm);
+        } catch (e) {
+            console.warn('Falha ao reabrir via handle salvo para', entry.fileName, e);
+        }
+    }
+
+    updateStatus(`Selecione o arquivo "${entry.fileName}" novamente para continuar.`);
+    if (window.showOpenFilePicker) {
+        loadVideoBtn.click();
+    } else {
+        videoInput.click();
+    }
+}
+
+async function renderHistory() {
+    const entries = await idbGetAll('history');
+    entries.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+
+    historyHasEntries = entries.length > 0;
+
+    if (entries.length === 0) {
+        historySection.style.display = 'none';
+        historyRow.innerHTML = '';
+        return;
+    }
+
+    setHistoryVisible(videoPlayer.paused || videoPlayer.ended || !videoPlayer.src);
+    historyRow.innerHTML = '';
+
+    entries.forEach(entry => {
+        const card = document.createElement('div');
+        card.className = 'history-card';
+
+        const posterWrap = document.createElement('div');
+        posterWrap.className = 'history-poster-wrap';
+
+        if (entry.posterUrl) {
+            const img = document.createElement('img');
+            img.src = entry.posterUrl;
+            img.alt = entry.title || entry.fileName;
+            posterWrap.appendChild(img);
+        }
+        // sem posterUrl: mantém o fundo cinza sólido (thumb default) do CSS
+
+        const removeBtn = document.createElement('div');
+        removeBtn.className = 'history-remove';
+        removeBtn.textContent = '×';
+        removeBtn.title = 'Remover do histórico';
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removeHistoryEntry(entry.key);
+        });
+        posterWrap.appendChild(removeBtn);
+
+        const name = document.createElement('div');
+        name.className = 'history-name';
+        name.textContent = entry.title || entry.fileName;
+        name.title = entry.title || entry.fileName;
+
+        const progressTrack = document.createElement('div');
+        progressTrack.className = 'history-progress-track';
+        const progressFill = document.createElement('div');
+        progressFill.className = 'history-progress-fill';
+        const pct = entry.duration ? Math.min(100, (entry.time / entry.duration) * 100) : 0;
+        progressFill.style.width = pct + '%';
+        progressTrack.appendChild(progressFill);
+
+        card.appendChild(posterWrap);
+        card.appendChild(name);
+        card.appendChild(progressTrack);
+
+        card.addEventListener('click', () => attemptReopenFromHistory(entry));
+
+        historyRow.appendChild(card);
+    });
+}
+
 /* ===== VÍDEO ===== */
 
-function loadVideo(file) {
+function loadVideo(file, handle = null) {
     cleanupVideo(false);
 
     subtitleInput.value = "";
@@ -390,6 +757,9 @@ function loadVideo(file) {
     currentVideoBlobUrl = videoURL;
     currentVideoKey     = file.name + "-" + file.size + "-" + file.lastModified;
 
+    upsertHistoryEntry(file, handle);
+    loadPersistedSubtitle(currentVideoKey);
+
     cinemaBtn.disabled    = false;
     fullscreenBtn.disabled = false;
     styleBtn.disabled     = true;
@@ -399,6 +769,7 @@ function loadVideo(file) {
     videoPlayer.addEventListener("loadedmetadata", () => {
         restoreProgress();
         applySubtitleStyle();
+        updateHistoryProgress(videoPlayer.currentTime, videoPlayer.duration);
     }, { once: true });
 
     updateStatus("Vídeo carregado. Adicione legenda (opcional).");
@@ -419,6 +790,48 @@ function stripSrtHtmlTags(text) {
         .replace(/<\/u>/gi, '');
 }
 
+// Cria a <track> a partir de um texto VTT já pronto e anexa ao player.
+// Compartilhada entre "carreguei um .srt agora" e "recuperei do histórico".
+function attachSubtitleTrack(vttText) {
+    if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
+
+    const blob = new Blob([vttText], { type: 'text/vtt' });
+    const url  = URL.createObjectURL(blob);
+
+    currentSubtitleBlobUrl = url;
+
+    removeSubtitleTracks();
+
+    const track   = document.createElement('track');
+    track.kind    = "subtitles";
+    track.label   = "Legenda";
+    track.srclang = "pt";
+    track.src     = url;
+    track.default = true;
+
+    track.onload = function() {
+        this.mode = "showing";
+        if (videoPlayer.textTracks[0]) videoPlayer.textTracks[0].mode = "showing";
+    };
+
+    videoPlayer.appendChild(track);
+
+    if (videoPlayer.textTracks.length > 0) {
+        videoPlayer.textTracks[0].mode = "showing";
+    }
+
+    videoPlayer.classList.add("ready");
+    styleBtn.disabled = false;
+}
+
+// Remove as <track> atuais. Desativa o modo antes de remover para forçar o
+// navegador a apagar imediatamente o texto da legenda que estava na tela
+// (removê-la do DOM sozinho às vezes deixa o último texto "pendurado").
+function removeSubtitleTracks() {
+    Array.from(videoPlayer.textTracks).forEach(t => t.mode = "disabled");
+    Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
+}
+
 function loadSubtitle(file) {
     if (!currentVideoKey) {
         updateStatus("Carregue um vídeo antes da legenda.");
@@ -426,8 +839,7 @@ function loadSubtitle(file) {
         return;
     }
 
-    if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
-
+    const videoKeyAtLoadTime = currentVideoKey;
     const reader = new FileReader();
 
     reader.onload = function(e) {
@@ -450,37 +862,26 @@ function loadSubtitle(file) {
         const vtt = "WEBVTT\n\n" +
             text.replace(/(\d{2}:\d{2}:\d{2})[.,](\d{3})/g, '$1.$2');
 
-        const blob = new Blob([vtt], { type: 'text/vtt' });
-        const url  = URL.createObjectURL(blob);
-
-        currentSubtitleBlobUrl = url;
-
-        Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
-
-        const track      = document.createElement('track');
-        track.kind       = "subtitles";
-        track.label      = "Legenda";
-        track.srclang    = "pt";
-        track.src        = url;
-        track.default    = true;
-
-        track.onload = function() {
-            this.mode = "showing";
-            if (videoPlayer.textTracks[0]) videoPlayer.textTracks[0].mode = "showing";
-        };
-
-        videoPlayer.appendChild(track);
-
-        if (videoPlayer.textTracks.length > 0) {
-            videoPlayer.textTracks[0].mode = "showing";
-        }
-
-        videoPlayer.classList.add("ready");
-        styleBtn.disabled = false;
+        attachSubtitleTrack(vtt);
         updateStatus("Legenda carregada.", true);
+
+        // Persiste o conteúdo já processado, associado ao vídeo atual, para
+        // recarregar sozinha da próxima vez (mesmo em uma sessão nova).
+        idbPut('subtitles', { key: videoKeyAtLoadTime, vtt, fileName: file.name })
+            .catch(err => console.error('Falha ao salvar legenda no IndexedDB:', err));
     };
 
     reader.readAsArrayBuffer(file);
+}
+
+// Ao carregar um vídeo, verifica se já existe legenda salva para ele e,
+// se sim, anexa automaticamente sem precisar selecionar o arquivo de novo.
+async function loadPersistedSubtitle(key) {
+    const saved = await idbGet('subtitles', key);
+    if (!saved || key !== currentVideoKey) return; // vídeo pode ter trocado nesse meio-tempo
+
+    attachSubtitleTrack(saved.vtt);
+    updateStatus("Legenda carregada automaticamente.", true);
 }
 
 /* ===== LIMPEZA ===== */
@@ -492,15 +893,12 @@ function cleanupVideo(fullReset = true) {
         cinemaMode = false;
         updateAudioRouting();
 
-        // MELHORIA 7: fecha o AudioContext no reset completo para liberar recursos
-        if (fullReset) {
-            audioContext.close();
-            audioContext       = null;
-            sourceNode         = null;
-            bassFilter         = null;
-            gainNode           = null;
-            isAudioInitialized = false;
-        }
+        // Não fechamos o AudioContext aqui: um HTMLMediaElement só pode ser
+        // conectado a um MediaElementSourceNode UMA vez na vida (o navegador
+        // recusa criar um segundo, mesmo com um novo AudioContext). Como o
+        // player reaproveita sempre a mesma tag <video>, fechar e recriar o
+        // contexto no reset causava "InvalidStateError" ao carregar o próximo
+        // vídeo. Mantemos o contexto vivo e só resetamos o roteamento acima.
     }
 
     if (currentVideoBlobUrl)   URL.revokeObjectURL(currentVideoBlobUrl);
@@ -508,14 +906,17 @@ function cleanupVideo(fullReset = true) {
 
     currentVideoBlobUrl    = null;
     currentSubtitleBlobUrl = null;
-    currentVideoKey        = null;
+
+    // Remove/desativa a legenda ANTES de resetar o <video>, para não deixar
+    // o texto da legenda anterior "pendurado" na tela durante a troca.
+    removeSubtitleTracks();
+
+    currentVideoKey = null;
 
     videoPlayer.removeAttribute("src");
     videoPlayer.load();
     videoPlayer.style.display = "none";
     videoPlayer.classList.remove("ready");
-
-    Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
 
     if (fullReset) {
         videoInput.value    = "";
@@ -530,11 +931,32 @@ function cleanupVideo(fullReset = true) {
         applySubtitleStyle();
         applyCinemaMode();
 
+        setHistoryVisible(true);
         updateStatus("Arquivos removidos.");
     }
 }
 
 /* ===== EVENTOS ===== */
+
+loadVideoBtn.addEventListener('click', async () => {
+    if (window.showOpenFilePicker) {
+        try {
+            const [handle] = await window.showOpenFilePicker({
+                types: [{
+                    description: 'Vídeos',
+                    accept: { 'video/*': ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.m4v'] }
+                }]
+            });
+            const file = await handle.getFile();
+            loadVideo(file, handle);
+        } catch (e) {
+            // usuário cancelou o seletor de arquivo
+        }
+    } else {
+        // Firefox e navegadores sem File System Access API: seletor tradicional
+        videoInput.click();
+    }
+});
 
 videoInput.addEventListener('change', e => {
     if (e.target.files[0]) loadVideo(e.target.files[0]);
@@ -578,6 +1000,8 @@ resetBtn.addEventListener('click', () => {
 });
 
 videoPlayer.addEventListener("pause", saveProgress);
+videoPlayer.addEventListener("pause", () => setHistoryVisible(true));
+videoPlayer.addEventListener("play",  () => setHistoryVisible(false));
 
 videoPlayer.addEventListener("timeupdate", () => {
     const currentSecond = Math.floor(videoPlayer.currentTime);
@@ -592,8 +1016,12 @@ window.addEventListener("beforeunload", saveProgress);
 videoPlayer.addEventListener("ended", () => {
     if (currentVideoKey) {
         localStorage.removeItem(STORAGE_PREFIX + currentVideoKey);
+        updateHistoryProgress(videoPlayer.duration, videoPlayer.duration);
     }
+    setHistoryVisible(true);
 });
+
+renderHistory();
 
 /* ===== ATALHOS DE TECLADO ===== */
 document.addEventListener("keydown", (event) => {
