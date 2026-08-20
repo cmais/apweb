@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPv4, IPv6 e Operadora</title>
+    <!-- Fonte Noto Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #000;          /* fundo preto total */
+            color: #fff;               /* letras brancas */
+            font-family: 'Noto Sans', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;   /* centralização horizontal */
+            align-items: center;       /* centralização vertical */
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .info {
+            font-size: 2rem;
+            font-weight: 400;
+        }
+        .label {
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+        button {
+            background: #000;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 0.8rem 2rem;
+            font-family: 'Noto Sans', sans-serif;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.3s, color 0.3s;
+            margin-top: 1rem;
+        }
+        button:hover {
+            background: #fff;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="info">IPv4: <span id="ipv4-value">Carregando...</span></div>
+        <div class="info">IPv6: <span id="ipv6-value">Carregando...</span></div>
+        <div class="info">Operadora: <span id="operadora-value">Carregando...</span></div>
+        <button id="refresh-btn">Atualizar</button>
+    </div>
+
+    <script>
+        const ipv4Value = document.getElementById('ipv4-value');
+        const ipv6Value = document.getElementById('ipv6-value');
+        const operadoraValue = document.getElementById('operadora-value');
+        const refreshBtn = document.getElementById('refresh-btn');
+
+        // Função para buscar com timeout (evita espera indefinida)
+        async function fetchWithTimeout(url, timeout = 5000) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(url, { signal: controller.signal });
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                return await response.json();
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        // Obtém IPv4 (via api.ipify.org)
+        async function getIPv4() {
+            try {
+                const data = await fetchWithTimeout('https://api.ipify.org?format=json');
+                return data.ip;
+            } catch (e) {
+                return 'Indisponível';
+            }
+        }
+
+        // Obtém IPv6 (via api6.ipify.org, que resolve apenas para IPv6)
+        async function getIPv6() {
+            try {
+                const data = await fetchWithTimeout('https://api6.ipify.org?format=json', 5000);
+                return data.ip;
+            } catch (e) {
+                return 'Indisponível';
+            }
+        }
+
+        // Obtém operadora (nome comercial) com fallback
+        async function getOperadora() {
+            // Tentativa 1: ipwho.is (campo connection.org)
+            try {
+                const data = await fetchWithTimeout('https://ipwho.is/');
+                if (data.success && data.connection && data.connection.org) {
+                    return data.connection.org;
+                }
+            } catch (e) {
+                // Ignora e tenta fallback
+            }
+            // Tentativa 2: ipapi.co (campo org)
+            try {
+                const data = await fetchWithTimeout('https://ipapi.co/json/');
+                if (data && data.org) {
+                    return data.org;
+                }
+            } catch (e) {
+                // Ignora
+            }
+            return 'Indisponível';
+        }
+
+        // Carrega todos os dados
+        async function loadData() {
+            // Exibe "Carregando..." enquanto busca
+            ipv4Value.textContent = 'Carregando...';
+            ipv6Value.textContent = 'Carregando...';
+            operadoraValue.textContent = 'Carregando...';
+
+            // Busca em paralelo
+            const [ipv4, ipv6, operadora] = await Promise.all([
+                getIPv4(),
+                getIPv6(),
+                getOperadora()
+            ]);
+
+            // Atualiza a interface
+            ipv4Value.textContent = ipv4;
+            ipv6Value.textContent = ipv6;
+            operadoraValue.textContent = operadora;
+        }
+
+        // Carrega ao abrir a página
+        loadData();
+
+        // Botão para atualizar (útil ao trocar de rede)
+        refreshBtn.addEventListener('click', loadData);
+    </script>
+</body>
+</html>
