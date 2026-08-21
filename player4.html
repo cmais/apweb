@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimal Video Player v6.0</title>
+<title>MVP</title>
     
     <link rel="icon" href="/apweb/favmvp.png" type="image/png">
     <link rel="icon" href="/apweb/favmvp.png" type="image/png" sizes="64x64">
@@ -32,7 +32,7 @@ body {
 
 .controls-panel {
     display: inline-block;
-    border: 1px solid #ffffff;
+    border: 1px solid #333333;
     border-radius: 14px;
     padding: 12px 14px;
     margin-bottom: 8px;
@@ -66,6 +66,12 @@ label:hover, button:hover {
 button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/* Botão histórico: tom levemente diferente quando o histórico está aberto */
+#historyBtn.history-btn-active {
+    background: #3a3a3a;
+    border-color: #6a6a6a;
 }
 
 input[type="file"] {
@@ -116,6 +122,7 @@ video.ready {
     margin-top: 10px;
     color: #888;
     min-height: 20px;
+    transition: opacity 0.4s ease;
 }
 
 #shortcut-feedback {
@@ -276,6 +283,13 @@ video.ready {
         </svg>
     </button>
     
+    <button id="historyBtn" disabled title="Histórico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
+
     <button id="resetBtn" title="Limpar tudo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/>
@@ -311,6 +325,7 @@ const playerApp      = document.getElementById('playerApp');
 const status         = document.getElementById('status');
 const shortcutFeedback = document.getElementById('shortcut-feedback');
 const loadVideoBtn   = document.getElementById('loadVideoBtn');
+const historyBtn     = document.getElementById('historyBtn');
 const historySection = document.getElementById('historySection');
 const historyRow     = document.getElementById('historyRow');
 
@@ -324,6 +339,9 @@ let lastSavedTime         = -1;
 
 // MELHORIA 2: feedbackTimeout declarado como variável de estado, não como propriedade de DOM
 let feedbackTimeout = null;
+
+// Timeout para o auto-desaparecimento das mensagens de status
+let statusHideTimeout = null;
 
 /* ===== AUDIO CINEMA (WEB AUDIO API) ===== */
 let audioContext      = null;
@@ -378,9 +396,20 @@ function updateAudioRouting() {
 
 /* ===== STATUS & UI ===== */
 
-function updateStatus(message, ready = false) {
+// MELHORIA: mensagens de status somem sozinhas depois de 10s, exceto quando
+// marcadas como "persistent" (ex: pedido de ação do usuário, como reselecionar
+// um arquivo) — essas ficam até a próxima mensagem substituí-las.
+function updateStatus(message, ready = false, persistent = false) {
     status.textContent = message;
     status.style.color = ready ? "#9aa09a" : "#888";
+    status.style.opacity = "1";
+
+    clearTimeout(statusHideTimeout);
+    if (!persistent) {
+        statusHideTimeout = setTimeout(() => {
+            status.style.opacity = "0";
+        }, 10000);
+    }
 }
 
 function applySubtitleStyle() {
@@ -640,12 +669,28 @@ async function removeHistoryEntry(key) {
     renderHistory();
 }
 
-// Controla a exibição da fileira de histórico: só aparece se houver itens E
-// nenhum vídeo estiver tocando no momento.
+// Controla a exibição da fileira de histórico. Diferente da versão anterior,
+// a visibilidade agora é um estado manual (historyOpen), não é mais deduzida
+// do estado de pause/play/ended do vídeo a cada renderização — isso evitava
+// que o histórico reaparecesse sozinho (ex: durante o auto-save de progresso
+// no pause). Os únicos gatilhos que mudam historyOpen são: clique no botão
+// histórico, clique no botão "X" (reset), o vídeo chegar ao fim (ended), dar
+// play (sempre fecha) e o estado inicial da página (sem vídeo = aberto).
 let historyHasEntries = false;
+let historyOpen       = true; // estado inicial: sem vídeo carregado, histórico visível
 
 function setHistoryVisible(visible) {
-    historySection.style.display = (visible && historyHasEntries) ? 'block' : 'none';
+    historyOpen = visible;
+    historySection.style.display = (historyOpen && historyHasEntries) ? 'block' : 'none';
+    updateHistoryBtnState();
+}
+
+// Botão histórico: desabilitado (com o mesmo tom de "disabled" já usado nos
+// outros botões) quando não há nada no histórico; fica com um tom levemente
+// diferente quando o histórico está aberto.
+function updateHistoryBtnState() {
+    historyBtn.disabled = !historyHasEntries;
+    historyBtn.classList.toggle('history-btn-active', historyOpen && historyHasEntries);
 }
 
 // Tenta reabrir o vídeo direto pelo handle (Chrome/Edge). Sem handle ou sem
@@ -671,7 +716,7 @@ async function attemptReopenFromHistory(entry) {
         }
     }
 
-    updateStatus(`Selecione o arquivo "${entry.fileName}" novamente para continuar.`);
+    updateStatus(`Selecione o arquivo "${entry.fileName}" novamente para continuar.`, false, true);
     if (window.showOpenFilePicker) {
         loadVideoBtn.click();
     } else {
@@ -686,12 +731,11 @@ async function renderHistory() {
     historyHasEntries = entries.length > 0;
 
     if (entries.length === 0) {
-        historySection.style.display = 'none';
         historyRow.innerHTML = '';
+        setHistoryVisible(historyOpen); // reaplica (fica oculto pois historyHasEntries é false) e atualiza o botão
         return;
     }
 
-    setHistoryVisible(videoPlayer.paused || videoPlayer.ended || !videoPlayer.src);
     historyRow.innerHTML = '';
 
     entries.forEach(entry => {
@@ -740,6 +784,8 @@ async function renderHistory() {
 
         historyRow.appendChild(card);
     });
+
+    setHistoryVisible(historyOpen); // reaplica o estado atual (não força reabertura)
 }
 
 /* ===== VÍDEO ===== */
@@ -1000,8 +1046,24 @@ resetBtn.addEventListener('click', () => {
 });
 
 videoPlayer.addEventListener("pause", saveProgress);
-videoPlayer.addEventListener("pause", () => setHistoryVisible(true));
+// O pause (via controles nativos, atalho, etc.) só habilita o botão histórico
+// (feito em saveProgress -> updateHistoryProgress -> renderHistory), mas não
+// exibe o histórico sozinho — só o clique no botão histórico faz isso.
 videoPlayer.addEventListener("play",  () => setHistoryVisible(false));
+
+historyBtn.addEventListener('click', () => {
+    if (!historyHasEntries) return;
+
+    const isPlaying = currentVideoKey && !videoPlayer.paused && !videoPlayer.ended;
+    if (isPlaying) {
+        // Clique durante a reprodução: pausa o vídeo e abre o histórico juntos
+        videoPlayer.pause();
+        setHistoryVisible(true);
+    } else {
+        // Pausado (ou sem vídeo): alterna entre mostrar/ocultar
+        setHistoryVisible(!historyOpen);
+    }
+});
 
 videoPlayer.addEventListener("timeupdate", () => {
     const currentSecond = Math.floor(videoPlayer.currentTime);
