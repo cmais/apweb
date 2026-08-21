@@ -1,24 +1,72 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>web apps</title>
-  <style>
-    body {
-      margin:0;
-      height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:#000;
-      color:#fff;
-      font-family:Arial, sans-serif;
-      font-size:5vw;
-      font-weight:bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppWeb</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #000000;
+            color: #ffffff;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 {
+            text-align: center;
+            margin: 0 0 40px;
+            font-size: 32px;
+        }
+        .links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .links a {
+            display: block;
+            padding: 15px 10px;
+            text-align: center;
+            color: #ffffff;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .links a:hover,
+        .links a:focus-visible {
+            color: #ffb570;
+        }
+    </style>
 </head>
 <body>
-  web apps
+    <div class="container">
+        <header>
+            <h1>AppWeb</h1>
+        </header>
+        <nav aria-label="Ferramentas do AppWeb">
+            <div class="links">
+                <a href="https://cmais.github.io/apweb/comic8.html" target="_blank" rel="noopener noreferrer">Comic Web Reader</a>
+                <a href="https://cmais.github.io/apweb/player4.html" target="_blank" rel="noopener noreferrer">Minimal Web Player</a>
+                <a href="https://cmais.github.io/apweb/damas.html" target="_blank" rel="noopener noreferrer">Tabuleiro de Damas</a>
+                <a href="https://cmais.github.io/apweb/xadrez.html" target="_blank" rel="noopener noreferrer">Tabuleiro de Xadrez</a>
+                <a href="https://cmais.github.io/apweb/acessosclaude3.html" target="_blank" rel="noopener noreferrer">Gerador de Acessos</a>
+                <a href="https://cmais.github.io/apweb/ipv4.html" target="_blank" rel="noopener noreferrer">IPV4 & Operadora</a>
+                <a href="https://www.exemplo7.com" target="_blank" rel="noopener noreferrer">Site 7</a>
+                <a href="https://www.exemplo8.com" target="_blank" rel="noopener noreferrer">Site 8</a>
+                <a href="https://www.exemplo9.com" target="_blank" rel="noopener noreferrer">Site 9</a>
+                <a href="https://www.exemplo10.com" target="_blank" rel="noopener noreferrer">Site 10</a>
+                <a href="https://www.exemplo8.com" target="_blank" rel="noopener noreferrer">Site 11</a>
+                <a href="https://www.exemplo9.com" target="_blank" rel="noopener noreferrer">Site 12</a>
+                <a href="https://www.exemplo10.com" target="_blank" rel="noopener noreferrer">Site 13</a>
+            </div>
+        </nav>
+    </div>
 </body>
 </html>
