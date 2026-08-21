@@ -4,72 +4,153 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IPv4, IPv6 e Operadora</title>
-    <!-- Fonte Noto Sans -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #000;
+            --fg: #fff;
+            --muted: #999;
+            --border: #fff;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         body {
-            background: #000;          /* fundo preto total */
-            color: #fff;               /* letras brancas */
-            font-family: 'Noto Sans', sans-serif;
-            height: 100vh;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
             display: flex;
-            justify-content: center;   /* centralização horizontal */
-            align-items: center;       /* centralização vertical */
+            justify-content: center;
+            align-items: center;
             text-align: center;
+            padding: 1.5rem;
         }
         .container {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1.25rem;
+            max-width: 90vw;
         }
-        .info {
-            font-size: 2rem;
-            font-weight: 400;
+        dl.info-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
-        .label {
+        .info-row {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            font-size: clamp(1.1rem, 4vw, 2rem);
+            transition: opacity 0.2s ease;
+        }
+        .info-row.loading {
+            opacity: 0.5;
+        }
+        dt.label {
             font-weight: 700;
-            margin-right: 0.5rem;
         }
-        button {
-            background: #000;
-            color: #fff;
-            border: 2px solid #fff;
+        dd.value {
+            font-weight: 400;
+            word-break: break-all;
+        }
+        .copy-btn {
+            background: none;
+            border: 1px solid var(--muted);
+            color: var(--fg);
+            font-size: 0.85rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .copy-btn:hover {
+            background: var(--fg);
+            color: var(--bg);
+        }
+        .copy-btn:disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
+        .copy-btn.copied {
+            border-color: #4caf50;
+        }
+        button#refresh-btn {
+            background: var(--bg);
+            color: var(--fg);
+            border: 2px solid var(--border);
             padding: 0.8rem 2rem;
-            font-family: 'Noto Sans', sans-serif;
+            font-family: inherit;
             font-size: 1.2rem;
             cursor: pointer;
             border-radius: 4px;
             transition: background 0.3s, color 0.3s;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
         }
-        button:hover {
-            background: #fff;
-            color: #000;
+        button#refresh-btn:hover:not(:disabled) {
+            background: var(--fg);
+            color: var(--bg);
+        }
+        button#refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+        .privacy-note {
+            font-size: 0.75rem;
+            color: var(--muted);
+            max-width: 40ch;
+            margin: 0 auto;
+        }
+        @media (max-width: 480px) {
+            .info-row {
+                flex-direction: column;
+                gap: 0.15rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="info">IPv4: <span id="ipv4-value">Carregando...</span></div>
-        <div class="info">IPv6: <span id="ipv6-value">Carregando...</span></div>
-        <div class="info">Operadora: <span id="operadora-value">Carregando...</span></div>
-        <button id="refresh-btn">Atualizar</button>
+        <dl class="info-list">
+            <div class="info-row" id="row-ipv4">
+                <dt class="label">IPv4:</dt>
+                <dd class="value" id="ipv4-value" aria-live="polite">Carregando...</dd>
+                <button class="copy-btn" data-target="ipv4-value" aria-label="Copiar IPv4" disabled>copiar</button>
+            </div>
+            <div class="info-row" id="row-ipv6">
+                <dt class="label">IPv6:</dt>
+                <dd class="value" id="ipv6-value" aria-live="polite">Carregando...</dd>
+                <button class="copy-btn" data-target="ipv6-value" aria-label="Copiar IPv6" disabled>copiar</button>
+            </div>
+            <div class="info-row" id="row-operadora">
+                <dt class="label">Operadora:</dt>
+                <dd class="value" id="operadora-value" aria-live="polite">Carregando...</dd>
+                <button class="copy-btn" data-target="operadora-value" aria-label="Copiar operadora" disabled>copiar</button>
+            </div>
+        </dl>
+
+        <button id="refresh-btn" aria-label="Atualizar informações de IP e operadora">Atualizar</button>
+
+        <p class="privacy-note">
+            Os dados são consultados em tempo real nos serviços ipify, ipwho.is e ipapi.co, que recebem seu IP público para responder a esta página.
+        </p>
     </div>
 
     <script>
-        const ipv4Value = document.getElementById('ipv4-value');
-        const ipv6Value = document.getElementById('ipv6-value');
-        const operadoraValue = document.getElementById('operadora-value');
         const refreshBtn = document.getElementById('refresh-btn');
+        const REFRESH_COOLDOWN_MS = 3000;
+        let lastRefreshAt = 0;
 
-        // Função para buscar com timeout (evita espera indefinida)
+        const fields = {
+            ipv4: { valueEl: document.getElementById('ipv4-value'), rowEl: document.getElementById('row-ipv4') },
+            ipv6: { valueEl: document.getElementById('ipv6-value'), rowEl: document.getElementById('row-ipv6') },
+            operadora: { valueEl: document.getElementById('operadora-value'), rowEl: document.getElementById('row-operadora') }
+        };
+
+        // Busca com timeout (evita espera indefinida); expõe se foi abort (timeout) ou outro erro
         async function fetchWithTimeout(url, timeout = 5000) {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -82,74 +163,115 @@
             }
         }
 
-        // Obtém IPv4 (via api.ipify.org)
         async function getIPv4() {
             try {
                 const data = await fetchWithTimeout('https://api.ipify.org?format=json');
                 return data.ip;
             } catch (e) {
+                console.error('Falha ao obter IPv4:', e);
                 return 'Indisponível';
             }
         }
 
-        // Obtém IPv6 (via api6.ipify.org, que resolve apenas para IPv6)
         async function getIPv6() {
             try {
                 const data = await fetchWithTimeout('https://api6.ipify.org?format=json', 5000);
                 return data.ip;
             } catch (e) {
+                if (e.name === 'AbortError') {
+                    console.warn('IPv6 sem resposta dentro do timeout (provável falta de suporte na rede):', e);
+                    return 'Sem suporte a IPv6 nesta rede';
+                }
+                console.error('Falha ao obter IPv6:', e);
                 return 'Indisponível';
             }
         }
 
-        // Obtém operadora (nome comercial) com fallback
         async function getOperadora() {
-            // Tentativa 1: ipwho.is (campo connection.org)
             try {
                 const data = await fetchWithTimeout('https://ipwho.is/');
                 if (data.success && data.connection && data.connection.org) {
                     return data.connection.org;
                 }
             } catch (e) {
-                // Ignora e tenta fallback
+                console.warn('ipwho.is falhou, tentando fallback ipapi.co:', e);
             }
-            // Tentativa 2: ipapi.co (campo org)
             try {
                 const data = await fetchWithTimeout('https://ipapi.co/json/');
                 if (data && data.org) {
                     return data.org;
                 }
             } catch (e) {
-                // Ignora
+                console.error('Falha ao obter operadora (ipapi.co também falhou):', e);
             }
             return 'Indisponível';
         }
 
-        // Carrega todos os dados
-        async function loadData() {
-            // Exibe "Carregando..." enquanto busca
-            ipv4Value.textContent = 'Carregando...';
-            ipv6Value.textContent = 'Carregando...';
-            operadoraValue.textContent = 'Carregando...';
+        const fetchers = { ipv4: getIPv4, ipv6: getIPv6, operadora: getOperadora };
 
-            // Busca em paralelo
-            const [ipv4, ipv6, operadora] = await Promise.all([
-                getIPv4(),
-                getIPv6(),
-                getOperadora()
-            ]);
+        // Helper genérico: marca a linha como carregando, busca o valor e atualiza a UI
+        async function loadField(key) {
+            const { valueEl, rowEl } = fields[key];
+            rowEl.classList.add('loading');
+            valueEl.textContent = 'Carregando...';
+            setCopyEnabled(key, false);
 
-            // Atualiza a interface
-            ipv4Value.textContent = ipv4;
-            ipv6Value.textContent = ipv6;
-            operadoraValue.textContent = operadora;
+            const value = await fetchers[key]();
+
+            valueEl.textContent = value;
+            rowEl.classList.remove('loading');
+            setCopyEnabled(key, value !== 'Indisponível' && value !== 'Sem suporte a IPv6 nesta rede');
         }
 
-        // Carrega ao abrir a página
-        loadData();
+        function setCopyEnabled(key, enabled) {
+            const btn = document.querySelector(`.copy-btn[data-target="${key}-value"]`);
+            if (btn) btn.disabled = !enabled;
+        }
 
-        // Botão para atualizar (útil ao trocar de rede)
-        refreshBtn.addEventListener('click', loadData);
+        async function loadData() {
+            await Promise.all(Object.keys(fields).map(loadField));
+        }
+
+        function updateRefreshButtonState() {
+            const elapsed = Date.now() - lastRefreshAt;
+            const remaining = REFRESH_COOLDOWN_MS - elapsed;
+            if (remaining > 0) {
+                refreshBtn.disabled = true;
+                setTimeout(updateRefreshButtonState, remaining);
+            } else {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        async function handleRefresh() {
+            lastRefreshAt = Date.now();
+            updateRefreshButtonState();
+            await loadData();
+        }
+
+        // Copiar valor ao clicar no botão correspondente
+        document.querySelectorAll('.copy-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const targetId = btn.getAttribute('data-target');
+                const text = document.getElementById(targetId).textContent;
+                try {
+                    await navigator.clipboard.writeText(text);
+                    btn.textContent = 'copiado!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = 'copiar';
+                        btn.classList.remove('copied');
+                    }, 1500);
+                } catch (e) {
+                    console.error('Falha ao copiar para a área de transferência:', e);
+                }
+            });
+        });
+
+        refreshBtn.addEventListener('click', handleRefresh);
+
+        // Carrega ao abrir a página
+        handleRefresh();
     </script>
 </body>
 </html>
