@@ -256,11 +256,11 @@ video.ready {
     </button>
     <input type="file" id="videoInput" accept="video/*">
 
-    <label for="subtitleInput" title="Carregar legenda">
+    <button id="subtitleBtn" type="button" title="Carregar legenda">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
         </svg>
-    </label>
+    </button>
     <input type="file" id="subtitleInput" accept=".srt">
 
     <button id="styleBtn" disabled title="Estilo de legenda (L)">
@@ -273,6 +273,13 @@ video.ready {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="2" y="7" width="20" height="10" rx="2"/>
             <path d="M10 12h4" stroke-linecap="round"/>
+        </svg>
+    </button>
+
+    <button id="audioBtn" disabled title="Áudio Cinema (A)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke-linecap="round"/>
         </svg>
     </button>
     
@@ -317,9 +324,11 @@ video.ready {
 const videoPlayer    = document.getElementById('videoPlayer');
 const videoInput     = document.getElementById('videoInput');
 const subtitleInput  = document.getElementById('subtitleInput');
+const subtitleBtn    = document.getElementById('subtitleBtn');
 const resetBtn       = document.getElementById('resetBtn');
 const styleBtn       = document.getElementById('styleBtn');
 const cinemaBtn      = document.getElementById('cinemaBtn');
+const audioBtn       = document.getElementById('audioBtn');
 const fullscreenBtn  = document.getElementById('fullscreenBtn');
 const playerApp      = document.getElementById('playerApp');
 const status         = document.getElementById('status');
@@ -335,6 +344,7 @@ let currentVideoBlobUrl   = null;
 let currentSubtitleBlobUrl = null;
 let subtitleStyleIndex    = 0;
 let cinemaMode            = false;
+let audioCinemaMode       = false;
 let lastSavedTime         = -1;
 
 // MELHORIA 2: feedbackTimeout declarado como variável de estado, não como propriedade de DOM
@@ -343,11 +353,16 @@ let feedbackTimeout = null;
 // Timeout para o auto-desaparecimento das mensagens de status
 let statusHideTimeout = null;
 
-/* ===== AUDIO CINEMA (WEB AUDIO API) ===== */
+/* ===== ÁUDIO CINEMA (WEB AUDIO API) =====
+   Antes, o boost de grave (lowshelf) ficava acoplado ao Modo Cinema visual.
+   Foi removido de lá para manter o Cinema só como ajuste de imagem (mais
+   coerente com o projeto). Este grafo agora é independente, ligado pelo
+   botão de Áudio: nivela dinâmica (sussurro vs. susto) e realça diálogo. */
 let audioContext      = null;
 let sourceNode        = null;
-let bassFilter        = null;
-let gainNode          = null;
+let compressorNode    = null;
+let dialogueFilter    = null;
+let audioGainNode     = null;
 let isAudioInitialized = false;
 
 function initAudioContext() {
@@ -359,14 +374,26 @@ function initAudioContext() {
     audioContext = new AudioContext();
     sourceNode   = audioContext.createMediaElementSource(videoPlayer);
 
-    bassFilter = audioContext.createBiquadFilter();
-    bassFilter.type = "lowshelf";
-    bassFilter.frequency.value = 200;
-    bassFilter.gain.value = 4;
+    // Nivela dinâmica: sobe o volume de trechos baixos (diálogo, sussurro) e
+    // contém picos (sustos, ação), sem comprimir demais o restante.
+    compressorNode = audioContext.createDynamicsCompressor();
+    compressorNode.threshold.value = -24;
+    compressorNode.knee.value      = 30;
+    compressorNode.ratio.value     = 12;
+    compressorNode.attack.value    = 0.003;
+    compressorNode.release.value   = 0.25;
 
-    gainNode = audioContext.createGain();
-    // MELHORIA 6: ganho condicionado ao volume atual para evitar distorção
-    gainNode.gain.value = Math.min(1.0 / videoPlayer.volume, 1.1);
+    // Realça a faixa de diálogo (voz), que costuma ficar "enterrada" quando
+    // a trilha/efeitos sonoros competem com a fala.
+    dialogueFilter = audioContext.createBiquadFilter();
+    dialogueFilter.type = "peaking";
+    dialogueFilter.frequency.value = 2500;
+    dialogueFilter.Q.value = 1;
+    dialogueFilter.gain.value = 5;
+
+    // Compensa o volume percebido, que o compressor tende a reduzir um pouco.
+    audioGainNode = audioContext.createGain();
+    audioGainNode.gain.value = Math.min(1.0 / videoPlayer.volume, 1.1);
 
     isAudioInitialized = true;
     updateAudioRouting();
@@ -379,17 +406,19 @@ function updateAudioRouting() {
         audioContext.resume();
     }
 
-    try { sourceNode.disconnect();  } catch(e) {}
-    try { bassFilter.disconnect();  } catch(e) {}
-    try { gainNode.disconnect();    } catch(e) {}
+    try { sourceNode.disconnect();     } catch(e) {}
+    try { compressorNode.disconnect(); } catch(e) {}
+    try { dialogueFilter.disconnect(); } catch(e) {}
+    try { audioGainNode.disconnect();  } catch(e) {}
 
-    if (cinemaMode) {
-        // Modo Cinema: Vídeo → Bass → Gain → Destino
-        sourceNode.connect(bassFilter);
-        bassFilter.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+    if (audioCinemaMode) {
+        // Áudio Cinema: Vídeo → Compressor → Realce de diálogo → Gain → Destino
+        sourceNode.connect(compressorNode);
+        compressorNode.connect(dialogueFilter);
+        dialogueFilter.connect(audioGainNode);
+        audioGainNode.connect(audioContext.destination);
     } else {
-        // Modo Normal: Vídeo → Destino
+        // Normal: Vídeo → Destino
         sourceNode.connect(audioContext.destination);
     }
 }
@@ -424,6 +453,10 @@ function applySubtitleStyle() {
 function applyCinemaMode() {
     playerApp.classList.toggle("cinema-mode", cinemaMode);
     cinemaBtn.title = cinemaMode ? "Modo Cinema: On (C)" : "Modo Cinema: Off (C)";
+}
+
+function applyAudioCinemaMode() {
+    audioBtn.title = audioCinemaMode ? "Áudio Cinema: On (A)" : "Áudio Cinema: Off (A)";
     updateAudioRouting();
 }
 
@@ -469,7 +502,8 @@ function saveProgress() {
         JSON.stringify({
             time:   videoPlayer.currentTime,
             style:  subtitleStyleIndex,
-            cinema: cinemaMode
+            cinema: cinemaMode,
+            audioCinema: audioCinemaMode
         })
     );
 
@@ -485,6 +519,7 @@ function restoreProgress() {
     let savedTime   = 0;
     let savedStyle  = 0;
     let savedCinema = false;
+    let savedAudioCinema = false;
 
     if (saved) {
         try {
@@ -492,6 +527,7 @@ function restoreProgress() {
             savedTime   = data.time   || 0;
             savedStyle  = data.style  ?? 0;
             savedCinema = data.cinema ?? false;
+            savedAudioCinema = data.audioCinema ?? false;
         } catch {
             localStorage.removeItem(STORAGE_PREFIX + currentVideoKey);
         }
@@ -499,9 +535,11 @@ function restoreProgress() {
 
     subtitleStyleIndex = savedStyle;
     cinemaMode         = savedCinema;
+    audioCinemaMode    = savedAudioCinema;
 
     applySubtitleStyle();
     applyCinemaMode();
+    applyAudioCinemaMode();
 
     if (savedTime > 0 && savedTime < videoPlayer.duration) {
         videoPlayer.currentTime = savedTime;
@@ -807,6 +845,7 @@ function loadVideo(file, handle = null) {
     loadPersistedSubtitle(currentVideoKey);
 
     cinemaBtn.disabled    = false;
+    audioBtn.disabled     = false;
     fullscreenBtn.disabled = false;
     styleBtn.disabled     = true;
 
@@ -936,7 +975,8 @@ function cleanupVideo(fullReset = true) {
     videoPlayer.pause();
 
     if (isAudioInitialized) {
-        cinemaMode = false;
+        cinemaMode      = false;
+        audioCinemaMode = false;
         updateAudioRouting();
 
         // Não fechamos o AudioContext aqui: um HTMLMediaElement só pode ser
@@ -969,13 +1009,16 @@ function cleanupVideo(fullReset = true) {
         subtitleInput.value = "";
         styleBtn.disabled      = true;
         cinemaBtn.disabled     = true;
+        audioBtn.disabled      = true;
         fullscreenBtn.disabled = true;
 
         subtitleStyleIndex = 0;
         cinemaMode         = false;
+        audioCinemaMode    = false;
         lastSavedTime      = -1;
         applySubtitleStyle();
         applyCinemaMode();
+        applyAudioCinemaMode();
 
         setHistoryVisible(true);
         updateStatus("Arquivos removidos.");
@@ -984,10 +1027,17 @@ function cleanupVideo(fullReset = true) {
 
 /* ===== EVENTOS ===== */
 
+// Um "id" fixo no picker faz o navegador lembrar a última pasta usada para
+// esse id específico (persiste entre recarregamentos de página). Vídeo e
+// legenda compartilham o mesmo id de propósito: legendas costumam estar na
+// mesma pasta do filme, então abrir a legenda já cai direto lá.
+const FOLDER_PICKER_ID = 'mvp-media-folder';
+
 loadVideoBtn.addEventListener('click', async () => {
     if (window.showOpenFilePicker) {
         try {
             const [handle] = await window.showOpenFilePicker({
+                id: FOLDER_PICKER_ID,
                 types: [{
                     description: 'Vídeos',
                     accept: { 'video/*': ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.m4v'] }
@@ -1008,6 +1058,32 @@ videoInput.addEventListener('change', e => {
     if (e.target.files[0]) loadVideo(e.target.files[0]);
 });
 
+subtitleBtn.addEventListener('click', async () => {
+    if (!currentVideoKey) {
+        updateStatus("Carregue um vídeo antes da legenda.");
+        return;
+    }
+
+    if (window.showOpenFilePicker) {
+        try {
+            const [handle] = await window.showOpenFilePicker({
+                id: FOLDER_PICKER_ID,
+                types: [{
+                    description: 'Legendas',
+                    accept: { 'text/plain': ['.srt'] }
+                }]
+            });
+            const file = await handle.getFile();
+            loadSubtitle(file);
+        } catch (e) {
+            // usuário cancelou o seletor de arquivo
+        }
+    } else {
+        // Firefox e navegadores sem File System Access API: seletor tradicional
+        subtitleInput.click();
+    }
+});
+
 subtitleInput.addEventListener('change', e => {
     if (e.target.files[0]) loadSubtitle(e.target.files[0]);
 });
@@ -1024,6 +1100,13 @@ cinemaBtn.addEventListener('click', () => {
     applyCinemaMode();
     saveProgress();
     showShortcutFeedback(cinemaMode ? "Cinema: On" : "Cinema: Off");
+});
+
+audioBtn.addEventListener('click', () => {
+    audioCinemaMode = !audioCinemaMode;
+    applyAudioCinemaMode();
+    saveProgress();
+    showShortcutFeedback(audioCinemaMode ? "Áudio Cinema: On" : "Áudio Cinema: Off");
 });
 
 fullscreenBtn.addEventListener('click', () => {
@@ -1130,6 +1213,11 @@ document.addEventListener("keydown", (event) => {
 
     if (key === "c" && !cinemaBtn.disabled) {
         cinemaBtn.click();
+        event.preventDefault();
+    }
+
+    if (key === "a" && !audioBtn.disabled) {
+        audioBtn.click();
         event.preventDefault();
     }
 
