@@ -3,1231 +3,1430 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MVP v6.6</title>
-    
-    <link rel="icon" href="/apweb/favmvp.png" type="image/png">
-    <link rel="icon" href="/apweb/favmvp.png" type="image/png" sizes="64x64">
-    <link rel="icon" href="/apweb/favmvp.ico" type="image/x-icon" sizes="16x16 32x32">
-
+<title>MVP v7.0</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2309090b'/%3E%3Cpolygon points='12,8 24,16 12,24' fill='%23c8ccd4'/%3E%3C/svg%3E" type="image/svg+xml">
 <style>
+:root {
+  --bg: #09090b;
+  --surface: #141416;
+  --surface-2: #1c1c20;
+  --fg: #ececec;
+  --muted: #9a9aa3;
+  --subtle: #6e6e76;
+  --border: #2a2a30;
+  --accent: #c8ccd4;
+}
+* { box-sizing: border-box; }
 body {
-    margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
-    background: #000000;
-    color: #e5e5e5;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding-top: 6vh;
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 3vh 12px 40px;
+  -webkit-font-smoothing: antialiased;
 }
-
 .container {
-    width: 95%;
-    max-width: 800px;
-    text-align: center;
-    background: #000000;
-    padding: 8px 20px;
+  width: 100%;
+  max-width: 800px;
+  text-align: center;
 }
-
 .controls-panel {
-    display: inline-block;
-    border: 1px solid #333333;
-    border-radius: 14px;
-    padding: 12px 14px;
-    margin-bottom: 8px;
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--bg);
 }
-
 .controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-
-label, button {
-    background: #1f1f1f;
-    border: 1px solid #2c2c2c;
-    color: #e5e5e5;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
-
-label:hover, button:hover {
-    background: #2a2a2a;
+button:hover:not(:disabled) { background: var(--surface-2); }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
+button.active {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--fg) 30%, transparent);
 }
+button svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+input[type="file"] { display: none; }
 
-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+.video-wrap {
+  position: relative;
+  margin-top: 4px;
 }
-
-/* Botão histórico: tom levemente diferente quando o histórico está aberto */
-#historyBtn.history-btn-active {
-    background: #3a3a3a;
-    border-color: #6a6a6a;
-}
-
-input[type="file"] {
-    display: none;
-}
-
 video {
-    width: 100%;
-    max-height: 65vh;
-    border-radius: 8px;
-    background: black;
-    display: none;
-    transition: all 0.3s ease;
+  width: 100%;
+  max-height: 65vh;
+  border-radius: 8px;
+  background: #000;
+  display: none;
 }
-
-video.ready {
-    box-shadow: 0 0 12px rgba(80, 80, 80, 0.35);
+video.is-visible { display: block; }
+video.cinema-on {
+  filter: contrast(1.08) saturate(1.06) brightness(0.97);
 }
-
-.cinema-mode video {
-    filter:
-        contrast(1.08)
-        saturate(1.06)
-        brightness(0.97);
-    box-shadow: 0 0 15px rgba(100, 100, 100, 0.4);
+video.theme-white-1::cue {
+  color: #fff;
+  background-color: rgba(0,0,0,0.8);
 }
-
-/* Legendas */
-.theme-white-1 video::cue {
-    color: #ffffff;
-    background-color: rgba(0, 0, 0, 0.8);
+video.theme-white-2::cue {
+  color: #fff;
+  background-color: transparent;
+  text-shadow: 0 0 5px #000;
 }
-
-.theme-white-2 video::cue {
-    color: #ffffff;
-    background-color: transparent;
-    text-shadow: 0 0 5px rgba(0,0,0,1);
-}
-
-.theme-yellow video::cue {
-    color: #FFEA00;
-    background-color: transparent;
-    text-shadow: 0 0 5px rgba(0,0,0,1);
+video.theme-yellow::cue {
+  color: #FFEA00;
+  background-color: transparent;
+  text-shadow: 0 0 5px #000;
 }
 
 #status {
-    font-size: 0.85rem;
-    margin-top: 10px;
-    color: #888;
-    min-height: 20px;
-    transition: opacity 0.4s ease;
+  font-size: 0.85rem;
+  margin-top: 10px;
+  color: var(--subtle);
+  min-height: 20px;
+  transition: opacity 0.4s;
 }
+#status.ready { color: var(--muted); }
 
 #shortcut-feedback {
-    position: fixed;
-    bottom: 50%;
-    left: 50%;
-    transform: translate(-50%, 50%);
-    background: rgba(0,0,0,0.7);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 30px;
-    font-size: 1.2rem;
-    font-weight: 500;
-    pointer-events: none;
-    transition: opacity 0.2s;
-    z-index: 1000;
-    opacity: 0;
+  position: fixed;
+  bottom: 50%;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  background: rgba(0,0,0,0.75);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-size: 1.15rem;
+  font-weight: 500;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 1000;
+  opacity: 0;
 }
 
-.controls svg {
-    width: 16px;
-    height: 16px;
-    stroke: currentColor;
-}
-
-/* ===== HISTÓRICO ===== */
-
-.history {
-    margin-top: 24px;
-    text-align: left;
-}
-
+.history { margin-top: 28px; text-align: left; }
 .history-heading {
-    font-size: 0.8rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 10px;
+  font-size: 0.7rem;
+  color: var(--subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+  font-weight: 600;
 }
-
 .history-row {
-    display: flex;
-    gap: 14px;
-    overflow-x: auto;
-    padding-bottom: 8px;
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
-
 .history-card {
-    flex: 0 0 110px;
-    min-width: 0; /* evita que nomes longos (white-space: nowrap) estiquem o card */
-    cursor: pointer;
+  flex: 0 0 110px;
+  min-width: 0;
 }
-
 .history-poster-wrap {
-    position: relative;
-    width: 110px;
-    aspect-ratio: 2 / 3;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #4a4a4a; /* thumb default (cinza sólido) quando não há capa */
+  position: relative;
+  width: 110px;
+  height: 165px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-2);
 }
-
+.history-poster-wrap .letter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 500;
+  color: var(--subtle);
+}
 .history-poster-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
-
+.history-open {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
 .history-remove {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.65);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    line-height: 1;
-    opacity: 0;
-    transition: opacity 0.2s ease, background 0.2s ease;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s;
+  cursor: pointer;
+  padding: 0;
 }
-
-.history-remove:hover {
-    background: rgba(0, 0, 0, 0.85);
-}
-
-.history-card:hover .history-remove {
-    opacity: 1;
-}
-
+.history-card:hover .history-remove,
+.history-card:focus-within .history-remove { opacity: 1; }
 .history-name {
-    width: 100%;
-    margin-top: 6px;
-    font-size: 0.75rem;
-    color: #ccc;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
 .history-progress-track {
-    margin-top: 4px;
-    height: 3px;
-    border-radius: 2px;
-    background: #333;
-    overflow: hidden;
+  margin-top: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: #333;
+  overflow: hidden;
+}
+.history-progress-fill {
+  height: 100%;
+  background: #e5e5e5;
+  width: 0%;
 }
 
-.history-progress-fill {
-    height: 100%;
-    background: #e5e5e5;
+.help-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.help-backdrop.open { display: flex; }
+.help-panel {
+  width: min(92vw, 28rem);
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: left;
+  position: relative;
+}
+.help-panel h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+.help-panel p.desc {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.help-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.help-panel li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.help-panel kbd {
+  font-family: inherit;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--fg);
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.help-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+}
+.help-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.help-toggle-row .label { font-size: 0.85rem; }
+.help-toggle-row .label small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+.switch {
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.switch.on {
+  background: var(--fg);
+  border-color: color-mix(in srgb, var(--fg) 30%, transparent);
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s;
+}
+.switch.on::after {
+  transform: translateX(18px);
+  background: var(--bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>
 </head>
-
 <body>
+<div class="container" id="app">
 
-<div class="container theme-white-1" id="playerApp">
+  <div class="controls-panel">
+    <div class="controls">
+      <button type="button" id="loadVideoBtn" title="Carregar vídeo (O)" aria-label="Carregar vídeo">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5 5-5-5M12 13V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <input type="file" id="videoInput" accept="video/*,.mkv,.avi,.mov,.m4v">
 
-<div class="controls-panel">
-<div class="controls">
-    <button id="loadVideoBtn" type="button" title="Carregar vídeo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5 5-5-5"/>
-        </svg>
-    </button>
-    <input type="file" id="videoInput" accept="video/*">
+      <button type="button" id="subtitleBtn" title="Carregar legenda (S)" aria-label="Carregar legenda" disabled>
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <input type="file" id="subtitleInput" accept=".srt,.vtt,text/vtt">
 
-    <button id="subtitleBtn" type="button" title="Carregar legenda">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-    </button>
-    <input type="file" id="subtitleInput" accept=".srt">
+      <button type="button" id="styleBtn" title="Estilo de legenda (L)" aria-label="Estilo de legenda" disabled>
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h8" stroke-linecap="round"/></svg>
+      </button>
 
-    <button id="styleBtn" disabled title="Estilo de legenda (L)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 7h16M4 12h16M4 17h8" stroke-linecap="round"/>
-        </svg>
-    </button>
-    
-    <button id="cinemaBtn" disabled title="Modo Cinema (C)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="7" width="20" height="10" rx="2"/>
-            <path d="M10 12h4" stroke-linecap="round"/>
-        </svg>
-    </button>
+      <button type="button" id="cinemaBtn" title="Modo Cinema (C)" aria-label="Modo cinema" disabled>
+        <svg viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M10 12h4" stroke-linecap="round"/></svg>
+      </button>
+      <button type="button" id="audioBtn" title="Áudio Cinema (A)" aria-label="Áudio cinema" disabled>
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke-linecap="round"/></svg>
+      </button>
+      <button type="button" id="fullscreenBtn" title="Tela cheia (F)" aria-label="Tela cheia" disabled>
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" id="historyBtn" title="Histórico (H)" aria-label="Histórico" disabled>
+        <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" id="helpBtn" title="Atalhos e capas (?)" aria-label="Atalhos e capas">
+        <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" stroke-linecap="round"/></svg>
+      </button>
+      <button type="button" id="closeBtn" title="Fechar vídeo" aria-label="Fechar vídeo" disabled>
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
 
-    <button id="audioBtn" disabled title="Áudio Cinema (A)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke-linecap="round"/>
-        </svg>
-    </button>
-    
-    <!-- MELHORIA 8: fullscreenBtn inicia desabilitado -->
-    <button id="fullscreenBtn" disabled title="Tela Cheia (F)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    </button>
-    
-    <button id="historyBtn" disabled title="Histórico">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    </button>
+  <div class="video-wrap" id="videoWrap">
+    <video id="videoPlayer" controls playsinline crossorigin="anonymous"></video>
+  </div>
 
-    <button id="resetBtn" title="Limpar tudo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/>
-        </svg>
-    </button>
-</div>
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <div class="history" id="historySection" hidden>
+    <div id="continueBlock" hidden>
+      <div class="history-heading">Continuar assistindo</div>
+      <div class="history-row" id="continueRow"></div>
+    </div>
+    <div id="watchedBlock" hidden>
+      <div class="history-heading">Assistidos</div>
+      <div class="history-row" id="watchedRow"></div>
+    </div>
+  </div>
 </div>
 
-<video id="videoPlayer" controls crossorigin="anonymous"></video>
+<div id="shortcut-feedback" aria-live="polite">Atalho</div>
 
-<div id="status" role="status" aria-live="polite">
-    Selecione um vídeo.
-</div>
-
-<div class="history" id="historySection" style="display:none;">
-    <div class="history-heading">Continuar assistindo</div>
-    <div class="history-row" id="historyRow"></div>
-</div>
-
-<div id="shortcut-feedback">Atalho</div>
+<div class="help-backdrop" id="helpBackdrop" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <div class="help-panel">
+    <button type="button" class="help-close" id="helpClose" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" stroke-width="2" width="16" height="16"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg>
+    </button>
+    <h2 id="helpTitle">Atalhos</h2>
+    <p class="desc">Os vídeos não saem do seu aparelho. Capas, se ligadas, consultam a OMDb pelo título do arquivo.</p>
+    <ul>
+      <li><span>Abrir vídeo</span><kbd>O</kbd></li>
+      <li><span>Carregar legenda</span><kbd>S</kbd></li>
+      <li><span>Play / Pause</span><kbd>Espaço</kbd></li>
+      <li><span>−10s / +10s</span><kbd>← →</kbd></li>
+      <li><span>Volume</span><kbd>↑ ↓</kbd></li>
+      <li><span>Mudo</span><kbd>M</kbd></li>
+      <li><span>Estilo da legenda</span><kbd>L</kbd></li>
+      <li><span>Atraso da legenda</span><kbd>[ ]</kbd></li>
+      <li><span>Velocidade</span><kbd>, .</kbd></li>
+      <li><span>Modo cinema</span><kbd>C</kbd></li>
+      <li><span>Áudio cinema</span><kbd>A</kbd></li>
+      <li><span>Tela cheia</span><kbd>F</kbd></li>
+      <li><span>Picture-in-picture</span><kbd>P</kbd></li>
+      <li><span>Histórico</span><kbd>H</kbd></li>
+      <li><span>Este painel</span><kbd>?</kbd></li>
+      <li><span>Sair da tela cheia</span><kbd>Esc</kbd></li>
+    </ul>
+    <div class="help-toggle-row">
+      <div class="label">
+        Buscar capas
+        <small>Envia o título do arquivo para a OMDb</small>
+      </div>
+      <button type="button" class="switch on" id="postersSwitch" role="switch" aria-checked="true" aria-label="Buscar capas"></button>
+    </div>
+  </div>
 </div>
 
 <script>
-/* ELEMENTOS DOM */
-const videoPlayer    = document.getElementById('videoPlayer');
-const videoInput     = document.getElementById('videoInput');
-const subtitleInput  = document.getElementById('subtitleInput');
-const subtitleBtn    = document.getElementById('subtitleBtn');
-const resetBtn       = document.getElementById('resetBtn');
-const styleBtn       = document.getElementById('styleBtn');
-const cinemaBtn      = document.getElementById('cinemaBtn');
-const audioBtn       = document.getElementById('audioBtn');
-const fullscreenBtn  = document.getElementById('fullscreenBtn');
-const playerApp      = document.getElementById('playerApp');
-const status         = document.getElementById('status');
-const shortcutFeedback = document.getElementById('shortcut-feedback');
-const loadVideoBtn   = document.getElementById('loadVideoBtn');
-const historyBtn     = document.getElementById('historyBtn');
-const historySection = document.getElementById('historySection');
-const historyRow     = document.getElementById('historyRow');
+(() => {
+  "use strict";
 
-/* VARIÁVEIS DE ESTADO */
-let currentVideoKey       = null;
-let currentVideoBlobUrl   = null;
-let currentSubtitleBlobUrl = null;
-let subtitleStyleIndex    = 0;
-let cinemaMode            = false;
-let audioCinemaMode       = false;
-let lastSavedTime         = -1;
+  /* ===== DOM ===== */
+  const video = document.getElementById("videoPlayer");
+  const videoInput = document.getElementById("videoInput");
+  const subtitleInput = document.getElementById("subtitleInput");
+  const loadVideoBtn = document.getElementById("loadVideoBtn");
+  const subtitleBtn = document.getElementById("subtitleBtn");
+  const styleBtn = document.getElementById("styleBtn");
+  const cinemaBtn = document.getElementById("cinemaBtn");
+  const audioBtn = document.getElementById("audioBtn");
+  const fullscreenBtn = document.getElementById("fullscreenBtn");
+  const historyBtn = document.getElementById("historyBtn");
+  const helpBtn = document.getElementById("helpBtn");
+  const closeBtn = document.getElementById("closeBtn");
+  const statusEl = document.getElementById("status");
+  const feedbackEl = document.getElementById("shortcut-feedback");
+  const historySection = document.getElementById("historySection");
+  const continueBlock = document.getElementById("continueBlock");
+  const watchedBlock = document.getElementById("watchedBlock");
+  const continueRow = document.getElementById("continueRow");
+  const watchedRow = document.getElementById("watchedRow");
+  const helpBackdrop = document.getElementById("helpBackdrop");
+  const helpClose = document.getElementById("helpClose");
+  const postersSwitch = document.getElementById("postersSwitch");
 
-// MELHORIA 2: feedbackTimeout declarado como variável de estado, não como propriedade de DOM
-let feedbackTimeout = null;
+  /* ===== STATE ===== */
+  let currentKey = null;
+  let videoBlobUrl = null;
+  let subBlobUrl = null;
+  let styleIndex = 0;
+  let cinemaMode = false;
+  let audioCinemaMode = false;
+  let offsetMs = 0;
+  let appliedOffsetMs = 0;
+  let rate = 1;
+  let lastSavedSecond = -1;
+  let historyOpen = true;
+  let historyHasEntries = false;
+  let fetchPosters = true;
+  let pendingHistoryKey = null;
+  let originalVtt = null;
+  let feedbackTimer = null;
+  let statusTimer = null;
+  let entryCache = new Map(); // key -> entry (for incremental progress updates)
 
-// Timeout para o auto-desaparecimento das mensagens de status
-let statusHideTimeout = null;
+  const STYLE_LABELS = ["Branco 01", "Branco 02", "Amarelo"];
+  const STYLE_CLASSES = ["theme-white-1", "theme-white-2", "theme-yellow"];
+  const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
+  const HISTORY_MAX = 40;
+  const POSTERS_MAX = 80;
+  const CONTINUE_THRESHOLD = 0.95;
+  const FOLDER_ID = "mvp-media-folder";
+  const OMDB_KEY = "c26a374c";
+  const DB_NAME = "mvpPlayerDB";
+  const DB_VERSION = 1;
 
-/* ===== ÁUDIO CINEMA (WEB AUDIO API) =====
-   Antes, o boost de grave (lowshelf) ficava acoplado ao Modo Cinema visual.
-   Foi removido de lá para manter o Cinema só como ajuste de imagem (mais
-   coerente com o projeto). Este grafo agora é independente, ligado pelo
-   botão de Áudio: nivela dinâmica (sussurro vs. susto) e realça diálogo. */
-let audioContext      = null;
-let sourceNode        = null;
-let compressorNode    = null;
-let dialogueFilter    = null;
-let audioGainNode     = null;
-let isAudioInitialized = false;
+  /* ===== AUDIO (wet/dry, sem disconnect) ===== */
+  let audioCtx = null;
+  let sourceNode = null;
+  let dryGain = null;
+  let wetGain = null;
+  let boundVideo = null;
+  const WET = 1.08;
 
-function initAudioContext() {
-    if (isAudioInitialized) return;
-
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-
-    audioContext = new AudioContext();
-    sourceNode   = audioContext.createMediaElementSource(videoPlayer);
-
-    // Nivela dinâmica: sobe o volume de trechos baixos (diálogo, sussurro) e
-    // contém picos (sustos, ação), sem comprimir demais o restante.
-    compressorNode = audioContext.createDynamicsCompressor();
-    compressorNode.threshold.value = -24;
-    compressorNode.knee.value      = 30;
-    compressorNode.ratio.value     = 12;
-    compressorNode.attack.value    = 0.003;
-    compressorNode.release.value   = 0.25;
-
-    // Realça a faixa de diálogo (voz), que costuma ficar "enterrada" quando
-    // a trilha/efeitos sonoros competem com a fala.
-    dialogueFilter = audioContext.createBiquadFilter();
-    dialogueFilter.type = "peaking";
-    dialogueFilter.frequency.value = 2500;
-    dialogueFilter.Q.value = 1;
-    dialogueFilter.gain.value = 5;
-
-    // Compensa o volume percebido, que o compressor tende a reduzir um pouco.
-    audioGainNode = audioContext.createGain();
-    audioGainNode.gain.value = Math.min(1.0 / videoPlayer.volume, 1.1);
-
-    isAudioInitialized = true;
-    updateAudioRouting();
-}
-
-function updateAudioRouting() {
-    if (!isAudioInitialized) return;
-
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
+  function initAudio() {
+    if (boundVideo === video && audioCtx) return;
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return;
+    try {
+      if (!audioCtx) audioCtx = new Ctor();
+      sourceNode = audioCtx.createMediaElementSource(video);
+      const compressor = audioCtx.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value = 30;
+      compressor.ratio.value = 12;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+      const dialogue = audioCtx.createBiquadFilter();
+      dialogue.type = "peaking";
+      dialogue.frequency.value = 2500;
+      dialogue.Q.value = 1;
+      dialogue.gain.value = 5;
+      dryGain = audioCtx.createGain();
+      wetGain = audioCtx.createGain();
+      dryGain.gain.value = 1;
+      wetGain.gain.value = 0;
+      sourceNode.connect(dryGain);
+      dryGain.connect(audioCtx.destination);
+      sourceNode.connect(compressor);
+      compressor.connect(dialogue);
+      dialogue.connect(wetGain);
+      wetGain.connect(audioCtx.destination);
+      boundVideo = video;
+    } catch (e) {
+      console.warn("Áudio cinema indisponível:", e);
     }
+  }
 
-    try { sourceNode.disconnect();     } catch(e) {}
-    try { compressorNode.disconnect(); } catch(e) {}
-    try { dialogueFilter.disconnect(); } catch(e) {}
-    try { audioGainNode.disconnect();  } catch(e) {}
+  function setAudioCinema(on) {
+    if (!audioCtx || !dryGain || !wetGain) return;
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    const now = audioCtx.currentTime;
+    dryGain.gain.cancelScheduledValues(now);
+    wetGain.gain.cancelScheduledValues(now);
+    dryGain.gain.setTargetAtTime(on ? 0 : 1, now, 0.04);
+    wetGain.gain.setTargetAtTime(on ? WET : 0, now, 0.04);
+  }
 
-    if (audioCinemaMode) {
-        // Áudio Cinema: Vídeo → Compressor → Realce de diálogo → Gain → Destino
-        sourceNode.connect(compressorNode);
-        compressorNode.connect(dialogueFilter);
-        dialogueFilter.connect(audioGainNode);
-        audioGainNode.connect(audioContext.destination);
-    } else {
-        // Normal: Vídeo → Destino
-        sourceNode.connect(audioContext.destination);
-    }
-}
-
-/* ===== STATUS & UI ===== */
-
-// MELHORIA: mensagens de status somem sozinhas depois de 10s, exceto quando
-// marcadas como "persistent" (ex: pedido de ação do usuário, como reselecionar
-// um arquivo) — essas ficam até a próxima mensagem substituí-las.
-function updateStatus(message, ready = false, persistent = false) {
-    status.textContent = message;
-    status.style.color = ready ? "#9aa09a" : "#888";
-    status.style.opacity = "1";
-
-    clearTimeout(statusHideTimeout);
+  /* ===== STATUS / FEEDBACK ===== */
+  function updateStatus(msg, ready = false, persistent = false) {
+    statusEl.textContent = msg;
+    statusEl.classList.toggle("ready", ready);
+    statusEl.style.opacity = "1";
+    clearTimeout(statusTimer);
     if (!persistent) {
-        statusHideTimeout = setTimeout(() => {
-            status.style.opacity = "0";
-        }, 10000);
+      statusTimer = setTimeout(() => { statusEl.style.opacity = "0"; }, 10000);
     }
-}
+  }
 
-function applySubtitleStyle() {
-    playerApp.classList.remove("theme-white-1", "theme-white-2", "theme-yellow");
-    const labels  = ["Branco 01", "Branco 02", "Amarelo"];
-    const classes = ["theme-white-1", "theme-white-2", "theme-yellow"];
+  function showFeedback(text) {
+    feedbackEl.textContent = text;
+    feedbackEl.style.opacity = "1";
+    clearTimeout(feedbackTimer);
+    feedbackTimer = setTimeout(() => { feedbackEl.style.opacity = "0"; }, 800);
+  }
 
-    playerApp.classList.add(classes[subtitleStyleIndex]);
-    styleBtn.title = `Estilo: ${labels[subtitleStyleIndex]} (L)`;
-}
+  /* ===== PARSE TITLE ===== */
+  const JUNK = /^(?:1080p|720p|2160p|480p|360p|4k|8k|uhd|hdr10\+?|hdr|dolby|vision|web-?dl|webrip|web|bluray|blu-ray|bdrip|brrip|dvdrip|hdtv|hdrip|x264|x265|h264|h265|hevc|avc|av1|xvid|divx|aac|ac3|dts|truehd|atmos|flac|mp3|opus|10bit|8bit|6ch|5\.1|7\.1|2\.0|proper|repack|extended|unrated|remux|internal|limited|multi|dual|audio|sub(?:s|title)?s?|pt-?br|eng|por|yify|rarbg|amzn|nf|dsnp|atvp|hmax|hulu|directors?|cut|criterion|imax|hybrid|sample|nfo|readnfo)$/i;
+  const YEAR_RE = /^(?:19|20)\d{2}$/;
 
-function applyCinemaMode() {
-    playerApp.classList.toggle("cinema-mode", cinemaMode);
-    cinemaBtn.title = cinemaMode ? "Modo Cinema: On (C)" : "Modo Cinema: Off (C)";
-}
-
-function applyAudioCinemaMode() {
-    audioBtn.title = audioCinemaMode ? "Áudio Cinema: On (A)" : "Áudio Cinema: Off (A)";
-    updateAudioRouting();
-}
-
-/* ===== FEEDBACK VISUAL PARA ATALHOS ===== */
-function showShortcutFeedback(text) {
-    shortcutFeedback.textContent = text;
-    shortcutFeedback.style.opacity = "1";
-
-    // MELHORIA 2: usa variável de estado dedicada, sem poluir o objeto DOM
-    clearTimeout(feedbackTimeout);
-    feedbackTimeout = setTimeout(() => {
-        shortcutFeedback.style.opacity = "0";
-    }, 800);
-}
-
-/* ===== PERSISTÊNCIA ===== */
-
-// MELHORIA 9: limite de entradas no localStorage para evitar acúmulo indefinido
-const STORAGE_PREFIX = "videoProgress_";
-const STORAGE_MAX_ENTRIES = 20;
-
-function pruneOldProgressEntries() {
-    const keys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith(STORAGE_PREFIX)) {
-            keys.push(k);
-        }
+  function tokenize(raw) {
+    return raw.replace(/[._]+/g, " ").replace(/[\[\](){}]/g, " ")
+      .split(/[\s-]+/).map(t => t.trim()).filter(Boolean);
+  }
+  function stripJunk(tokens) {
+    const t = [...tokens];
+    while (t.length && JUNK.test(t[t.length - 1])) t.pop();
+    return t;
+  }
+  function parseTitleYear(fileName) {
+    const nameNoExt = fileName.replace(/\.[^/.]+$/, "").trim();
+    let season = null, episode = null, working = nameNoExt;
+    const se = working.match(/[. _\-]*S(\d{1,2})E(\d{1,2})\b/i);
+    if (se) {
+      season = Number(se[1]);
+      episode = Number(se[2]);
+      working = working.slice(0, se.index);
     }
-    // Remove as entradas mais antigas quando passa do limite
-    if (keys.length > STORAGE_MAX_ENTRIES) {
-        keys.slice(0, keys.length - STORAGE_MAX_ENTRIES)
-            .forEach(k => localStorage.removeItem(k));
+    let year = null, titleSource = working;
+    const paren = working.match(/^(.*?)\s*[\(\[]((?:19|20)\d{2})[\)\]]\s*(.*)$/);
+    if (paren) {
+      year = paren[2];
+      titleSource = `${paren[1]} ${paren[3]}`;
+    } else {
+      const tokens = stripJunk(tokenize(working));
+      if (tokens.length && YEAR_RE.test(tokens[tokens.length - 1])) {
+        year = tokens[tokens.length - 1];
+        titleSource = tokens.slice(0, -1).join(" ");
+      }
     }
-}
-
-function saveProgress() {
-    if (!currentVideoKey) return;
-    if (isNaN(videoPlayer.duration)) return;
-
-    localStorage.setItem(
-        STORAGE_PREFIX + currentVideoKey,
-        JSON.stringify({
-            time:   videoPlayer.currentTime,
-            style:  subtitleStyleIndex,
-            cinema: cinemaMode,
-            audioCinema: audioCinemaMode
-        })
-    );
-
-    pruneOldProgressEntries();
-    updateHistoryProgress(videoPlayer.currentTime, videoPlayer.duration);
-}
-
-function restoreProgress() {
-    if (!currentVideoKey) return;
-
-    const saved = localStorage.getItem(STORAGE_PREFIX + currentVideoKey);
-
-    let savedTime   = 0;
-    let savedStyle  = 0;
-    let savedCinema = false;
-    let savedAudioCinema = false;
-
-    if (saved) {
-        try {
-            const data  = JSON.parse(saved);
-            savedTime   = data.time   || 0;
-            savedStyle  = data.style  ?? 0;
-            savedCinema = data.cinema ?? false;
-            savedAudioCinema = data.audioCinema ?? false;
-        } catch {
-            localStorage.removeItem(STORAGE_PREFIX + currentVideoKey);
-        }
+    let title = stripJunk(tokenize(titleSource)).join(" ").trim();
+    if (!title) title = stripJunk(tokenize(working)).join(" ").trim() || nameNoExt.replace(/[._]/g, " ").trim();
+    if (!title) title = nameNoExt;
+    return { title, year, season, episode };
+  }
+  function displayTitle(entry) {
+    if (entry.season != null && entry.episode != null) {
+      return `${entry.title} S${String(entry.season).padStart(2,"0")}E${String(entry.episode).padStart(2,"0")}`;
     }
+    if (entry.year && entry.title !== entry.year) return `${entry.title} (${entry.year})`;
+    return entry.title || entry.fileName;
+  }
+  function fileKey(file) {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  }
 
-    subtitleStyleIndex = savedStyle;
-    cinemaMode         = savedCinema;
-    audioCinemaMode    = savedAudioCinema;
-
-    applySubtitleStyle();
-    applyCinemaMode();
-    applyAudioCinemaMode();
-
-    if (savedTime > 0 && savedTime < videoPlayer.duration) {
-        videoPlayer.currentTime = savedTime;
+  /* ===== SRT / VTT ===== */
+  function stripBom(bytes) {
+    if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return bytes.subarray(3);
+    return bytes;
+  }
+  function decodeSubtitle(buffer) {
+    const bytes = stripBom(new Uint8Array(buffer));
+    if (bytes.length >= 2 && ((bytes[0] === 0xff && bytes[1] === 0xfe) || (bytes[0] === 0xfe && bytes[1] === 0xff))) {
+      try {
+        return new TextDecoder(bytes[0] === 0xff ? "utf-16le" : "utf-16be").decode(bytes);
+      } catch {}
     }
-}
+    try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+    catch {
+      try { return new TextDecoder("windows-1252").decode(bytes); }
+      catch { return new TextDecoder("iso-8859-1").decode(bytes); }
+    }
+  }
+  function stripMarkup(text) {
+    return text
+      .replace(/\{[^}]*\}/g, "")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/\\N/g, "\n")
+      .replace(/<\/?(font|b|i|u|span)[^>]*>/gi, "");
+  }
+  const TS = /(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[.,](\d{1,3})/;
+  function parseTs(m) {
+    const h = m[1] ? Number(m[1]) : 0;
+    const min = Number(m[2]), s = Number(m[3]), ms = Number(m[4].padEnd(3, "0").slice(0, 3));
+    return ((h * 60 + min) * 60 + s) * 1000 + ms;
+  }
+  function fmtTs(totalMs) {
+    const t = Math.max(0, totalMs);
+    const h = Math.floor(t / 3600000);
+    const m = Math.floor((t % 3600000) / 60000);
+    const s = Math.floor((t % 60000) / 1000);
+    const ms = t % 1000;
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}.${String(ms).padStart(3,"0")}`;
+  }
+  function srtOrVttToVtt(raw, offset = 0) {
+    let text = raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    text = stripMarkup(text);
+    const isVtt = /^\s*WEBVTT/i.test(text);
+    const body = isVtt ? text.replace(/^\s*WEBVTT[^\n]*\n?/, "") : text;
+    const blocks = body.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
+    const cues = [];
+    for (const block of blocks) {
+      const lines = block.split("\n").filter(l => l.length > 0);
+      const ti = lines.findIndex(l => l.includes("-->"));
+      if (ti < 0) continue;
+      const parts = lines[ti].split(/\s*-->\s*/);
+      if (parts.length < 2) continue;
+      const sm = parts[0].trim().match(TS);
+      const em = parts[1].trim().match(TS);
+      if (!sm || !em) continue;
+      const payload = lines.slice(ti + 1).join("\n").trim();
+      if (!payload) continue;
+      const start = parseTs(sm) + offset;
+      const end = Math.max(start + 50, parseTs(em) + offset);
+      cues.push(`${fmtTs(start)} --> ${fmtTs(end)}\n${payload}`);
+    }
+    return `WEBVTT\n\n${cues.join("\n\n")}\n`;
+  }
+  function shiftCues(deltaSec) {
+    const track = video.textTracks[0];
+    if (!track || !track.cues || deltaSec === 0) return;
+    for (let i = 0; i < track.cues.length; i++) {
+      const c = track.cues[i];
+      const nextStart = Math.max(0, c.startTime + deltaSec);
+      const dur = Math.max(0.05, c.endTime - c.startTime);
+      c.startTime = nextStart;
+      c.endTime = nextStart + dur;
+    }
+  }
 
-/* ===== HISTÓRICO (IndexedDB + OMDb) ===== */
-
-// Chave da OMDb (http://www.omdbapi.com/). Free tier: 1000 requisições/dia,
-// mais que suficiente para uso pessoal.
-const OMDB_API_KEY = 'c26a374c';
-
-const DB_NAME    = 'player4DB';
-const DB_VERSION = 2;
-let dbPromise = null;
-
-function openDB() {
+  /* ===== INDEXEDDB ===== */
+  let dbPromise = null;
+  function openDB() {
     if (dbPromise) return dbPromise;
     dbPromise = new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = () => {
-            const db = req.result;
-            if (!db.objectStoreNames.contains('history')) {
-                db.createObjectStore('history', { keyPath: 'key' });
-            }
-            if (!db.objectStoreNames.contains('posters')) {
-                db.createObjectStore('posters', { keyPath: 'titleYear' });
-            }
-            if (!db.objectStoreNames.contains('subtitles')) {
-                db.createObjectStore('subtitles', { keyPath: 'key' });
-            }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror   = () => reject(req.error);
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("history")) db.createObjectStore("history", { keyPath: "key" });
+        if (!db.objectStoreNames.contains("posters")) db.createObjectStore("posters", { keyPath: "titleYear" });
+        if (!db.objectStoreNames.contains("subtitles")) db.createObjectStore("subtitles", { keyPath: "key" });
+        if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings", { keyPath: "key" });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
     });
     return dbPromise;
-}
-
-async function idbGet(storeName, key) {
+  }
+  function idbReq(req) {
+    return new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+  }
+  async function idbGet(store, key) {
     const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const req = db.transaction(storeName, 'readonly').objectStore(storeName).get(key);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror   = () => reject(req.error);
-    });
-}
-
-async function idbGetAll(storeName) {
+    return (await idbReq(db.transaction(store, "readonly").objectStore(store).get(key))) || null;
+  }
+  async function idbGetAll(store) {
     const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const req = db.transaction(storeName, 'readonly').objectStore(storeName).getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror   = () => reject(req.error);
-    });
-}
-
-async function idbPut(storeName, value) {
+    return (await idbReq(db.transaction(store, "readonly").objectStore(store).getAll())) || [];
+  }
+  async function idbPut(store, value) {
     const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, 'readwrite');
-        tx.objectStore(storeName).put(value);
-        tx.oncomplete = () => resolve();
-        tx.onerror    = () => reject(tx.error);
-    });
-}
-
-async function idbDelete(storeName, key) {
+    const tx = db.transaction(store, "readwrite");
+    tx.objectStore(store).put(value);
+    return new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+  }
+  async function idbDelete(store, key) {
     const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, 'readwrite');
-        tx.objectStore(storeName).delete(key);
-        tx.oncomplete = () => resolve();
-        tx.onerror    = () => reject(tx.error);
-    });
-}
+    const tx = db.transaction(store, "readwrite");
+    tx.objectStore(store).delete(key);
+    return new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+  }
 
-// Extrai título e ano a partir de "Nome (Ano).ext". Sem esse padrão, usa o nome
-// inteiro (sem extensão) como título e não manda ano na busca.
-function parseTitleYear(fileName) {
-    const nameNoExt = fileName.replace(/\.[^/.]+$/, '');
-    const match = nameNoExt.match(/^(.*?)\s*\((\d{4})\)\s*$/);
-    if (match) {
-        return { title: match[1].trim(), year: match[2] };
+  async function getSettings() {
+    const s = await idbGet("settings", "app");
+    return s || { key: "app", fetchPosters: true };
+  }
+  async function saveSettings(partial) {
+    const cur = await getSettings();
+    const next = { ...cur, ...partial, key: "app" };
+    await idbPut("settings", next);
+    return next;
+  }
+
+  async function findByFile(file) {
+    const exact = await idbGet("history", fileKey(file));
+    if (exact) return exact;
+    const all = await idbGetAll("history");
+    return all.find(e => e.fileName === file.name && e.fileSize === file.size) || null;
+  }
+
+  async function pruneHistory() {
+    const all = await idbGetAll("history");
+    all.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+    if (all.length <= HISTORY_MAX) return;
+    for (const e of all.slice(HISTORY_MAX)) {
+      await idbDelete("history", e.key);
+      await idbDelete("subtitles", e.key);
+      entryCache.delete(e.key);
     }
-    return { title: nameNoExt.trim(), year: null };
-}
+  }
 
-// Busca a capa na OMDb, com cache em IndexedDB por "titulo|ano" (independe do
-// arquivo específico, então filmes repetidos não geram nova requisição).
-async function fetchPosterUrl(title, year) {
-    if (!OMDB_API_KEY || !title) return null;
+  /* ===== OMDB ===== */
+  function posterCacheKey(title, year, season) {
+    return `${title.toLowerCase()}|${year || ""}|${season ?? ""}`;
+  }
+  async function fetchPoster(title, year, season) {
+    if (!title || !fetchPosters) return { url: null, networkError: false };
+    const key = posterCacheKey(title, year, season);
+    const cached = await idbGet("posters", key);
+    if (cached && !cached.networkError) return { url: cached.posterUrl, networkError: false };
 
-    const cacheKey = title.toLowerCase() + '|' + (year || '');
-    const cached = await idbGet('posters', cacheKey);
-    if (cached) return cached.posterUrl; // pode ser null: já buscado, sem resultado
+    const attempts = season
+      ? [{ t: title, type: "series", ...(year ? { y: year } : {}) }, { t: title, ...(year ? { y: year } : {}) }, { s: title, type: "series" }]
+      : [{ t: title, type: "movie", ...(year ? { y: year } : {}) }, { t: title, ...(year ? { y: year } : {}) }, ...(year ? [{ t: title }] : []), { s: title, ...(year ? { y: year } : {}) }];
 
-    let url = `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}`
-             + `&t=${encodeURIComponent(title)}&type=movie`;
-    if (year) url += `&y=${year}`;
-
-    let posterUrl = null;
     try {
-        const res  = await fetch(url);
+      let posterUrl = null;
+      for (const params of attempts) {
+        const url = new URL("https://www.omdbapi.com/");
+        url.searchParams.set("apikey", OMDB_KEY);
+        Object.entries(params).forEach(([k, v]) => v && url.searchParams.set(k, v));
+        const res = await fetch(url.toString());
+        if (!res.ok) throw new Error("omdb " + res.status);
         const data = await res.json();
-        if (data.Response === 'True' && data.Poster && data.Poster !== 'N/A') {
-            posterUrl = data.Poster;
+        if (data.Response === "True" && data.Poster && data.Poster !== "N/A") {
+          posterUrl = data.Poster;
+          break;
         }
-    } catch (e) {
-        // offline ou erro de rede: fica null, thumb cai no cinza default
+        const first = data.Search?.[0]?.Poster;
+        if (first && first !== "N/A") { posterUrl = first; break; }
+      }
+      await idbPut("posters", { titleYear: key, posterUrl, networkError: false, checkedAt: Date.now() });
+      return { url: posterUrl, networkError: false };
+    } catch {
+      await idbPut("posters", {
+        titleYear: key,
+        posterUrl: cached?.posterUrl ?? null,
+        networkError: true,
+        checkedAt: Date.now()
+      });
+      return { url: cached?.posterUrl ?? null, networkError: true };
+    }
+  }
+
+  /* ===== HISTORY UI (incremental) ===== */
+  function isCompleted(e) {
+    if (e.completed) return true;
+    if (e.duration && e.duration > 0) return e.time / e.duration >= CONTINUE_THRESHOLD;
+    return false;
+  }
+
+  function updateProgressBarOnly(key, time, duration) {
+    const fill = historySection.querySelector(`[data-progress-key="${CSS.escape(key)}"]`);
+    if (!fill) return;
+    const pct = duration && duration > 0 ? Math.min(100, (time / duration) * 100) : 0;
+    fill.style.width = pct + "%";
+  }
+
+  function makeCard(entry) {
+    const card = document.createElement("div");
+    card.className = "history-card";
+    card.dataset.key = entry.key;
+
+    const wrap = document.createElement("div");
+    wrap.className = "history-poster-wrap";
+
+    const letter = document.createElement("span");
+    letter.className = "letter";
+    letter.textContent = ((entry.title || entry.fileName).replace(/[^A-Za-z0-9À-ÿ]/g, "").charAt(0) || "·").toUpperCase();
+    wrap.appendChild(letter);
+
+    if (entry.posterUrl) {
+      const img = document.createElement("img");
+      img.src = entry.posterUrl;
+      img.alt = "";
+      img.referrerPolicy = "no-referrer";
+      img.onerror = () => { img.remove(); };
+      wrap.appendChild(img);
     }
 
-    await idbPut('posters', { titleYear: cacheKey, posterUrl });
-    return posterUrl;
-}
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "history-open";
+    openBtn.setAttribute("aria-label", "Continuar " + displayTitle(entry));
+    openBtn.appendChild(wrap);
+    openBtn.addEventListener("click", () => attemptReopen(entry));
 
-// Cria/atualiza a entrada do histórico e dispara a busca da capa em segundo plano.
-async function upsertHistoryEntry(file, handle) {
-    const key = currentVideoKey;
-    const { title, year } = parseTitleYear(file.name);
-    const existing = (await idbGet('history', key)) || {};
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "history-remove";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Remover do histórico";
+    removeBtn.setAttribute("aria-label", "Remover " + displayTitle(entry));
+    removeBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await idbDelete("history", entry.key);
+      await idbDelete("subtitles", entry.key);
+      entryCache.delete(entry.key);
+      await renderHistory();
+    });
+    wrap.appendChild(removeBtn);
 
-    const entry = {
-        key,
-        fileName:      file.name,
-        title,
-        year,
-        time:          existing.time || 0,
-        duration:      existing.duration || null,
-        posterUrl:     existing.posterUrl || null,
-        posterChecked: existing.posterChecked || false,
-        handle:        handle || existing.handle || null,
-        lastPlayed:    Date.now()
-    };
+    const name = document.createElement("div");
+    name.className = "history-name";
+    name.textContent = displayTitle(entry);
+    name.title = displayTitle(entry);
 
-    await idbPut('history', entry);
-    renderHistory();
+    const track = document.createElement("div");
+    track.className = "history-progress-track";
+    const fill = document.createElement("div");
+    fill.className = "history-progress-fill";
+    fill.dataset.progressKey = entry.key;
+    const pct = entry.duration ? Math.min(100, (entry.time / entry.duration) * 100) : 0;
+    fill.style.width = pct + "%";
+    track.appendChild(fill);
 
-    if (!entry.posterChecked) {
-        const posterUrl = await fetchPosterUrl(title, year);
-        const latest = await idbGet('history', key);
-        if (latest) {
-            latest.posterUrl     = posterUrl;
-            latest.posterChecked = true;
-            await idbPut('history', latest);
-            renderHistory();
-        }
-    }
-}
+    card.appendChild(openBtn);
+    card.appendChild(name);
+    card.appendChild(track);
+    return card;
+  }
 
-async function updateHistoryProgress(time, duration) {
-    if (!currentVideoKey) return;
-    const entry = await idbGet('history', currentVideoKey);
-    if (!entry) return;
-
-    entry.time = time;
-    if (duration && !isNaN(duration)) entry.duration = duration;
-
-    await idbPut('history', entry);
-    renderHistory();
-}
-
-async function removeHistoryEntry(key) {
-    await idbDelete('history', key);
-    await idbDelete('subtitles', key); // legenda associada não faz mais sentido sem a entrada
-    renderHistory();
-}
-
-// Controla a exibição da fileira de histórico. Diferente da versão anterior,
-// a visibilidade agora é um estado manual (historyOpen), não é mais deduzida
-// do estado de pause/play/ended do vídeo a cada renderização — isso evitava
-// que o histórico reaparecesse sozinho (ex: durante o auto-save de progresso
-// no pause). Os únicos gatilhos que mudam historyOpen são: clique no botão
-// histórico, clique no botão "X" (reset), o vídeo chegar ao fim (ended), dar
-// play (sempre fecha) e o estado inicial da página (sem vídeo = aberto).
-let historyHasEntries = false;
-let historyOpen       = true; // estado inicial: sem vídeo carregado, histórico visível
-
-function setHistoryVisible(visible) {
-    historyOpen = visible;
-    historySection.style.display = (historyOpen && historyHasEntries) ? 'block' : 'none';
-    updateHistoryBtnState();
-}
-
-// Botão histórico: desabilitado (com o mesmo tom de "disabled" já usado nos
-// outros botões) quando não há nada no histórico; fica com um tom levemente
-// diferente quando o histórico está aberto.
-function updateHistoryBtnState() {
-    historyBtn.disabled = !historyHasEntries;
-    historyBtn.classList.toggle('history-btn-active', historyOpen && historyHasEntries);
-}
-
-// Tenta reabrir o vídeo direto pelo handle (Chrome/Edge). Sem handle ou sem
-// permissão (ex: Firefox, que não suporta showOpenFilePicker), pede pra
-// selecionar o arquivo de novo.
-async function attemptReopenFromHistory(entry) {
-    if (entry.handle) {
-        try {
-            let perm = await entry.handle.queryPermission({ mode: 'read' });
-            if (perm !== 'granted') {
-                perm = await entry.handle.requestPermission({ mode: 'read' });
-            }
-            if (perm === 'granted') {
-                const file = await entry.handle.getFile();
-                loadVideo(file, entry.handle);
-                return;
-            }
-            // Chrome não persiste a permissão do handle entre recarregamentos de
-            // página para sites comuns; "prompt"/"denied" aqui é esperado às vezes.
-            console.warn('Permissão de leitura não concedida para', entry.fileName, '- status:', perm);
-        } catch (e) {
-            console.warn('Falha ao reabrir via handle salvo para', entry.fileName, e);
-        }
-    }
-
-    updateStatus(`Selecione o arquivo "${entry.fileName}" novamente para continuar.`, false, true);
-    if (window.showOpenFilePicker) {
-        loadVideoBtn.click();
-    } else {
-        videoInput.click();
-    }
-}
-
-async function renderHistory() {
-    const entries = await idbGetAll('history');
+  async function renderHistory() {
+    const entries = await idbGetAll("history");
     entries.sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0));
+    entryCache.clear();
+    entries.forEach(e => entryCache.set(e.key, e));
 
     historyHasEntries = entries.length > 0;
+    historyBtn.disabled = !historyHasEntries;
+    historyBtn.classList.toggle("active", historyOpen && historyHasEntries);
 
-    if (entries.length === 0) {
-        historyRow.innerHTML = '';
-        setHistoryVisible(historyOpen); // reaplica (fica oculto pois historyHasEntries é false) e atualiza o botão
-        return;
-    }
+    const watching = entries.filter(e => !isCompleted(e));
+    const watched = entries.filter(isCompleted);
 
-    historyRow.innerHTML = '';
+    continueRow.innerHTML = "";
+    watchedRow.innerHTML = "";
+    watching.forEach(e => continueRow.appendChild(makeCard(e)));
+    watched.forEach(e => watchedRow.appendChild(makeCard(e)));
 
-    entries.forEach(entry => {
-        const card = document.createElement('div');
-        card.className = 'history-card';
+    continueBlock.hidden = watching.length === 0;
+    watchedBlock.hidden = watched.length === 0;
+    historySection.hidden = !(historyOpen && historyHasEntries);
+  }
 
-        const posterWrap = document.createElement('div');
-        posterWrap.className = 'history-poster-wrap';
+  function setHistoryVisible(visible) {
+    historyOpen = visible;
+    historySection.hidden = !(historyOpen && historyHasEntries);
+    historyBtn.classList.toggle("active", historyOpen && historyHasEntries);
+  }
 
-        if (entry.posterUrl) {
-            const img = document.createElement('img');
-            img.src = entry.posterUrl;
-            img.alt = entry.title || entry.fileName;
-            posterWrap.appendChild(img);
-        }
-        // sem posterUrl: mantém o fundo cinza sólido (thumb default) do CSS
+  /* ===== SUBTITLES ===== */
+  function removeTracks() {
+    Array.from(video.textTracks).forEach(t => { t.mode = "disabled"; });
+    Array.from(video.getElementsByTagName("track")).forEach(t => t.remove());
+    if (subBlobUrl) { URL.revokeObjectURL(subBlobUrl); subBlobUrl = null; }
+    appliedOffsetMs = 0;
+    originalVtt = null;
+    styleBtn.disabled = true;
+    styleBtn.classList.remove("active");
+  }
 
-        const removeBtn = document.createElement('div');
-        removeBtn.className = 'history-remove';
-        removeBtn.textContent = '×';
-        removeBtn.title = 'Remover do histórico';
-        removeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            removeHistoryEntry(entry.key);
-        });
-        posterWrap.appendChild(removeBtn);
-
-        const name = document.createElement('div');
-        name.className = 'history-name';
-        name.textContent = entry.title || entry.fileName;
-        name.title = entry.title || entry.fileName;
-
-        const progressTrack = document.createElement('div');
-        progressTrack.className = 'history-progress-track';
-        const progressFill = document.createElement('div');
-        progressFill.className = 'history-progress-fill';
-        const pct = entry.duration ? Math.min(100, (entry.time / entry.duration) * 100) : 0;
-        progressFill.style.width = pct + '%';
-        progressTrack.appendChild(progressFill);
-
-        card.appendChild(posterWrap);
-        card.appendChild(name);
-        card.appendChild(progressTrack);
-
-        card.addEventListener('click', () => attemptReopenFromHistory(entry));
-
-        historyRow.appendChild(card);
+  function attachSubtitle(vttText, startOffset = 0) {
+    removeTracks();
+    originalVtt = vttText;
+    const shifted = startOffset ? srtOrVttToVtt(vttText, startOffset) : vttText;
+    const url = URL.createObjectURL(new Blob([shifted], { type: "text/vtt" }));
+    subBlobUrl = url;
+    const track = document.createElement("track");
+    track.kind = "subtitles";
+    track.label = "Legenda";
+    track.srclang = "pt";
+    track.src = url;
+    track.default = true;
+    track.addEventListener("load", () => {
+      if (video.textTracks[0]) video.textTracks[0].mode = "showing";
+      appliedOffsetMs = startOffset;
     });
+    video.appendChild(track);
+    if (video.textTracks[0]) video.textTracks[0].mode = "showing";
+    appliedOffsetMs = startOffset;
+    offsetMs = startOffset;
+    styleBtn.disabled = false;
+    video.classList.add("ready");
+    applyStyle();
+  }
 
-    setHistoryVisible(historyOpen); // reaplica o estado atual (não força reabertura)
-}
+  async function loadSubtitleFile(file) {
+    if (!currentKey) {
+      updateStatus("Carregue um vídeo antes da legenda.", false, true);
+      return;
+    }
+    const keyAtLoad = currentKey;
+    const buf = await file.arrayBuffer();
+    const raw = decodeSubtitle(buf);
+    const vtt = srtOrVttToVtt(raw, 0);
+    attachSubtitle(vtt, offsetMs);
+    showFeedback("Legenda");
+    await idbPut("subtitles", { key: keyAtLoad, vtt, fileName: file.name });
+  }
 
-/* ===== VÍDEO ===== */
+  /* ===== VIDEO ===== */
+  function applyStyle() {
+    video.classList.remove(...STYLE_CLASSES);
+    video.classList.add(STYLE_CLASSES[styleIndex]);
+    styleBtn.title = `Estilo: ${STYLE_LABELS[styleIndex]} (L)`;
+  }
+  function applyCinema() {
+    video.classList.toggle("cinema-on", cinemaMode);
+    cinemaBtn.classList.toggle("active", cinemaMode);
+    cinemaBtn.title = cinemaMode ? "Modo Cinema: On (C)" : "Modo Cinema: Off (C)";
+  }
+  function applyAudio() {
+    setAudioCinema(audioCinemaMode);
+    audioBtn.classList.toggle("active", audioCinemaMode);
+    audioBtn.title = audioCinemaMode ? "Áudio Cinema: On (A)" : "Áudio Cinema: Off (A)";
+  }
+  function applyRate() {
+    video.playbackRate = rate;
+  }
 
-function loadVideo(file, handle = null) {
-    cleanupVideo(false);
+  async function persistProgress() {
+    if (!currentKey || isNaN(video.duration)) return;
+    const partial = {
+      time: video.currentTime,
+      duration: video.duration,
+      style: styleIndex,
+      cinema: cinemaMode,
+      audioCinema: audioCinemaMode,
+      subtitleOffsetMs: offsetMs,
+      playbackRate: rate
+    };
+    const existing = entryCache.get(currentKey) || (await idbGet("history", currentKey));
+    if (!existing) return;
+    const next = { ...existing, ...partial };
+    entryCache.set(currentKey, next);
+    await idbPut("history", next);
+    updateProgressBarOnly(currentKey, partial.time, partial.duration);
+  }
 
-    subtitleInput.value = "";
-    lastSavedTime       = -1;
+  function clearStatus() {
+    statusEl.textContent = "";
+    statusEl.style.opacity = "0";
+    statusEl.classList.remove("ready");
+    clearTimeout(statusTimer);
+  }
 
-    const videoURL = URL.createObjectURL(file);
-    videoPlayer.src = videoURL;
-    videoPlayer.style.display = "block";
+  async function loadVideo(file, handle = null) {
+    video.pause();
+    removeTracks();
+    clearStatus();
+    if (videoBlobUrl) { URL.revokeObjectURL(videoBlobUrl); videoBlobUrl = null; }
 
-    currentVideoBlobUrl = videoURL;
-    currentVideoKey     = file.name + "-" + file.size + "-" + file.lastModified;
+    const parsed = parseTitleYear(file.name);
+    let existing = await findByFile(file);
+    if (!existing && pendingHistoryKey) {
+      const pending = await idbGet("history", pendingHistoryKey);
+      if (pending && pending.fileName === file.name) existing = pending;
+    }
+    pendingHistoryKey = null;
 
-    upsertHistoryEntry(file, handle);
-    loadPersistedSubtitle(currentVideoKey);
+    const key = existing?.key || fileKey(file);
+    currentKey = key;
+    lastSavedSecond = -1;
 
-    cinemaBtn.disabled    = false;
-    audioBtn.disabled     = false;
+    const url = URL.createObjectURL(file);
+    videoBlobUrl = url;
+    video.src = url;
+    video.classList.add("is-visible");
+
+    subtitleBtn.disabled = false;
+    cinemaBtn.disabled = false;
+    audioBtn.disabled = false;
     fullscreenBtn.disabled = false;
-    styleBtn.disabled     = true;
+    closeBtn.disabled = false;
 
-    initAudioContext();
+    styleIndex = existing?.style ?? 0;
+    cinemaMode = existing?.cinema ?? false;
+    audioCinemaMode = existing?.audioCinema ?? false;
+    offsetMs = existing?.subtitleOffsetMs ?? 0;
+    rate = existing?.playbackRate ?? 1;
+    applyStyle();
+    applyCinema();
+    applyAudio();
+    applyRate();
 
-    videoPlayer.addEventListener("loadedmetadata", () => {
-        restoreProgress();
-        applySubtitleStyle();
-        updateHistoryProgress(videoPlayer.currentTime, videoPlayer.duration);
+    initAudio();
+    setAudioCinema(audioCinemaMode);
+
+    const entry = {
+      key,
+      fileName: file.name,
+      fileSize: file.size,
+      title: parsed.title,
+      year: parsed.year,
+      season: parsed.season,
+      episode: parsed.episode,
+      time: existing?.time ?? 0,
+      duration: existing?.duration ?? null,
+      posterUrl: existing?.posterUrl ?? null,
+      posterChecked: existing?.posterChecked ?? false,
+      posterNetworkError: existing?.posterNetworkError ?? false,
+      handle: handle || existing?.handle || null,
+      lastPlayed: Date.now(),
+      style: styleIndex,
+      cinema: cinemaMode,
+      audioCinema: audioCinemaMode,
+      subtitleOffsetMs: offsetMs,
+      playbackRate: rate,
+      completed: existing?.completed ?? false
+    };
+    await idbPut("history", entry);
+    entryCache.set(key, entry);
+    await pruneHistory();
+    await renderHistory();
+
+    video.addEventListener("loadedmetadata", () => {
+      const completed = entry.completed ||
+        (entry.duration && entry.duration > 0 && entry.time / entry.duration >= CONTINUE_THRESHOLD);
+      if (!completed && entry.time > 0 && entry.time < video.duration - 2) {
+        video.currentTime = entry.time;
+      }
+      video.playbackRate = rate;
+      void persistProgress();
     }, { once: true });
 
-    updateStatus("Vídeo carregado. Adicione legenda (opcional).");
-}
-
-/* ===== LEGENDA ===== */
-
-// MELHORIA 5: remove tags HTML comuns em arquivos SRT brasileiros antes da conversão
-function stripSrtHtmlTags(text) {
-    return text
-        .replace(/<font[^>]*>/gi, '')
-        .replace(/<\/font>/gi, '')
-        .replace(/<b>/gi, '')
-        .replace(/<\/b>/gi, '')
-        .replace(/<i>/gi, '')
-        .replace(/<\/i>/gi, '')
-        .replace(/<u>/gi, '')
-        .replace(/<\/u>/gi, '');
-}
-
-// Cria a <track> a partir de um texto VTT já pronto e anexa ao player.
-// Compartilhada entre "carreguei um .srt agora" e "recuperei do histórico".
-function attachSubtitleTrack(vttText) {
-    if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
-
-    const blob = new Blob([vttText], { type: 'text/vtt' });
-    const url  = URL.createObjectURL(blob);
-
-    currentSubtitleBlobUrl = url;
-
-    removeSubtitleTracks();
-
-    const track   = document.createElement('track');
-    track.kind    = "subtitles";
-    track.label   = "Legenda";
-    track.srclang = "pt";
-    track.src     = url;
-    track.default = true;
-
-    track.onload = function() {
-        this.mode = "showing";
-        if (videoPlayer.textTracks[0]) videoPlayer.textTracks[0].mode = "showing";
-    };
-
-    videoPlayer.appendChild(track);
-
-    if (videoPlayer.textTracks.length > 0) {
-        videoPlayer.textTracks[0].mode = "showing";
+    const savedSub = await idbGet("subtitles", key);
+    if (savedSub && currentKey === key) {
+      attachSubtitle(savedSub.vtt, offsetMs);
     }
 
-    videoPlayer.classList.add("ready");
-    styleBtn.disabled = false;
-}
-
-// Remove as <track> atuais. Desativa o modo antes de remover para forçar o
-// navegador a apagar imediatamente o texto da legenda que estava na tela
-// (removê-la do DOM sozinho às vezes deixa o último texto "pendurado").
-function removeSubtitleTracks() {
-    Array.from(videoPlayer.textTracks).forEach(t => t.mode = "disabled");
-    Array.from(videoPlayer.getElementsByTagName('track')).forEach(t => t.remove());
-}
-
-function loadSubtitle(file) {
-    if (!currentVideoKey) {
-        updateStatus("Carregue um vídeo antes da legenda.");
-        subtitleInput.value = "";
-        return;
+    if (fetchPosters && (!entry.posterChecked || entry.posterNetworkError)) {
+      const poster = await fetchPoster(parsed.title, parsed.year, parsed.season);
+      if (currentKey !== key) return;
+      const latest = await idbGet("history", key);
+      if (latest) {
+        latest.posterUrl = poster.url ?? latest.posterUrl;
+        latest.posterChecked = !poster.networkError;
+        latest.posterNetworkError = poster.networkError;
+        await idbPut("history", latest);
+        entryCache.set(key, latest);
+        await renderHistory();
+      }
     }
+  }
 
-    const videoKeyAtLoadTime = currentVideoKey;
-    const reader = new FileReader();
+  function closeVideo() {
+    video.pause();
+    void persistProgress();
+    removeTracks();
+    clearStatus();
+    if (videoBlobUrl) { URL.revokeObjectURL(videoBlobUrl); videoBlobUrl = null; }
+    video.removeAttribute("src");
+    video.load();
+    video.classList.remove("is-visible", "ready", "cinema-on", ...STYLE_CLASSES);
+    currentKey = null;
+    cinemaMode = false;
+    audioCinemaMode = false;
+    styleIndex = 0;
+    offsetMs = 0;
+    rate = 1;
+    setAudioCinema(false);
+    applyCinema();
+    applyAudio();
+    applyRate();
+    subtitleBtn.disabled = true;
+    cinemaBtn.disabled = true;
+    audioBtn.disabled = true;
+    fullscreenBtn.disabled = true;
+    closeBtn.disabled = true;
+    setHistoryVisible(true);
+    showFeedback("Fechado");
+  }
 
-    reader.onload = function(e) {
-        let text;
-        try {
-            text = new TextDecoder("utf-8", { fatal: true }).decode(e.target.result);
-        } catch {
-            try {
-                text = new TextDecoder("windows-1252").decode(e.target.result);
-            } catch {
-                text = new TextDecoder("iso-8859-1").decode(e.target.result);
-            }
+  async function attemptReopen(entry) {
+    if (entry.handle) {
+      try {
+        let perm = await entry.handle.queryPermission?.({ mode: "read" });
+        if (perm !== "granted") perm = await entry.handle.requestPermission?.({ mode: "read" });
+        if (perm === "granted") {
+          const file = await entry.handle.getFile();
+          await loadVideo(file, entry.handle);
+          return;
         }
-
-        text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-        // MELHORIA 5: limpa tags HTML antes de converter para VTT
-        text = stripSrtHtmlTags(text);
-
-        const vtt = "WEBVTT\n\n" +
-            text.replace(/(\d{2}:\d{2}:\d{2})[.,](\d{3})/g, '$1.$2');
-
-        attachSubtitleTrack(vtt);
-        updateStatus("Legenda carregada.", true);
-
-        // Persiste o conteúdo já processado, associado ao vídeo atual, para
-        // recarregar sozinha da próxima vez (mesmo em uma sessão nova).
-        idbPut('subtitles', { key: videoKeyAtLoadTime, vtt, fileName: file.name })
-            .catch(err => console.error('Falha ao salvar legenda no IndexedDB:', err));
-    };
-
-    reader.readAsArrayBuffer(file);
-}
-
-// Ao carregar um vídeo, verifica se já existe legenda salva para ele e,
-// se sim, anexa automaticamente sem precisar selecionar o arquivo de novo.
-async function loadPersistedSubtitle(key) {
-    const saved = await idbGet('subtitles', key);
-    if (!saved || key !== currentVideoKey) return; // vídeo pode ter trocado nesse meio-tempo
-
-    attachSubtitleTrack(saved.vtt);
-    updateStatus("Legenda carregada automaticamente.", true);
-}
-
-/* ===== LIMPEZA ===== */
-
-function cleanupVideo(fullReset = true) {
-    videoPlayer.pause();
-
-    if (isAudioInitialized) {
-        cinemaMode      = false;
-        audioCinemaMode = false;
-        updateAudioRouting();
-
-        // Não fechamos o AudioContext aqui: um HTMLMediaElement só pode ser
-        // conectado a um MediaElementSourceNode UMA vez na vida (o navegador
-        // recusa criar um segundo, mesmo com um novo AudioContext). Como o
-        // player reaproveita sempre a mesma tag <video>, fechar e recriar o
-        // contexto no reset causava "InvalidStateError" ao carregar o próximo
-        // vídeo. Mantemos o contexto vivo e só resetamos o roteamento acima.
+      } catch {}
     }
+    pendingHistoryKey = entry.key;
+    updateStatus(`Selecione o arquivo "${entry.fileName}" novamente para continuar.`, false, true);
+    openVideoPicker();
+  }
 
-    if (currentVideoBlobUrl)   URL.revokeObjectURL(currentVideoBlobUrl);
-    if (currentSubtitleBlobUrl) URL.revokeObjectURL(currentSubtitleBlobUrl);
-
-    currentVideoBlobUrl    = null;
-    currentSubtitleBlobUrl = null;
-
-    // Remove/desativa a legenda ANTES de resetar o <video>, para não deixar
-    // o texto da legenda anterior "pendurado" na tela durante a troca.
-    removeSubtitleTracks();
-
-    currentVideoKey = null;
-
-    videoPlayer.removeAttribute("src");
-    videoPlayer.load();
-    videoPlayer.style.display = "none";
-    videoPlayer.classList.remove("ready");
-
-    if (fullReset) {
-        videoInput.value    = "";
-        subtitleInput.value = "";
-        styleBtn.disabled      = true;
-        cinemaBtn.disabled     = true;
-        audioBtn.disabled      = true;
-        fullscreenBtn.disabled = true;
-
-        subtitleStyleIndex = 0;
-        cinemaMode         = false;
-        audioCinemaMode    = false;
-        lastSavedTime      = -1;
-        applySubtitleStyle();
-        applyCinemaMode();
-        applyAudioCinemaMode();
-
-        setHistoryVisible(true);
-        updateStatus("Arquivos removidos.");
-    }
-}
-
-/* ===== EVENTOS ===== */
-
-// Um "id" fixo no picker faz o navegador lembrar a última pasta usada para
-// esse id específico (persiste entre recarregamentos de página). Vídeo e
-// legenda compartilham o mesmo id de propósito: legendas costumam estar na
-// mesma pasta do filme, então abrir a legenda já cai direto lá.
-const FOLDER_PICKER_ID = 'mvp-media-folder';
-
-loadVideoBtn.addEventListener('click', async () => {
+  /* ===== FILE PICKERS ===== */
+  async function openVideoPicker() {
     if (window.showOpenFilePicker) {
-        try {
-            const [handle] = await window.showOpenFilePicker({
-                id: FOLDER_PICKER_ID,
-                types: [{
-                    description: 'Vídeos',
-                    accept: { 'video/*': ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.m4v'] }
-                }]
-            });
-            const file = await handle.getFile();
-            loadVideo(file, handle);
-        } catch (e) {
-            // usuário cancelou o seletor de arquivo
-        }
-    } else {
-        // Firefox e navegadores sem File System Access API: seletor tradicional
-        videoInput.click();
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          id: FOLDER_ID,
+          types: [{ description: "Vídeos", accept: { "video/*": [".mp4", ".mkv", ".avi", ".webm", ".mov", ".m4v", ".ogv"] } }]
+        });
+        const file = await handle.getFile();
+        await loadVideo(file, handle);
+      } catch { /* cancelou */ }
+      return;
     }
-});
+    videoInput.click();
+  }
 
-videoInput.addEventListener('change', e => {
-    if (e.target.files[0]) loadVideo(e.target.files[0]);
-});
-
-subtitleBtn.addEventListener('click', async () => {
-    if (!currentVideoKey) {
-        updateStatus("Carregue um vídeo antes da legenda.");
-        return;
+  async function openSubtitlePicker() {
+    if (!currentKey) {
+      updateStatus("Carregue um vídeo antes da legenda.", false, true);
+      return;
     }
-
     if (window.showOpenFilePicker) {
-        try {
-            const [handle] = await window.showOpenFilePicker({
-                id: FOLDER_PICKER_ID,
-                types: [{
-                    description: 'Legendas',
-                    accept: { 'text/plain': ['.srt'] }
-                }]
-            });
-            const file = await handle.getFile();
-            loadSubtitle(file);
-        } catch (e) {
-            // usuário cancelou o seletor de arquivo
-        }
-    } else {
-        // Firefox e navegadores sem File System Access API: seletor tradicional
-        subtitleInput.click();
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          id: FOLDER_ID,
+          types: [{ description: "Legendas", accept: { "text/plain": [".srt", ".vtt"], "text/vtt": [".vtt"] } }]
+        });
+        const file = await handle.getFile();
+        await loadSubtitleFile(file);
+      } catch {}
+      return;
     }
-});
+    subtitleInput.click();
+  }
 
-subtitleInput.addEventListener('change', e => {
-    if (e.target.files[0]) loadSubtitle(e.target.files[0]);
-});
+  /* ===== EVENTS ===== */
+  loadVideoBtn.addEventListener("click", () => openVideoPicker());
+  subtitleBtn.addEventListener("click", () => openSubtitlePicker());
+  videoInput.addEventListener("change", e => {
+    if (e.target.files[0]) void loadVideo(e.target.files[0]);
+    e.target.value = "";
+  });
+  subtitleInput.addEventListener("change", e => {
+    if (e.target.files[0]) void loadSubtitleFile(e.target.files[0]);
+    e.target.value = "";
+  });
 
-styleBtn.addEventListener('click', () => {
-    subtitleStyleIndex = (subtitleStyleIndex + 1) % 3;
-    applySubtitleStyle();
-    saveProgress();
-    showShortcutFeedback("Estilo: " + ["Branco 01", "Branco 02", "Amarelo"][subtitleStyleIndex]);
-});
-
-cinemaBtn.addEventListener('click', () => {
+  styleBtn.addEventListener("click", () => {
+    styleIndex = (styleIndex + 1) % 3;
+    applyStyle();
+    void persistProgress();
+    showFeedback("Estilo: " + STYLE_LABELS[styleIndex]);
+  });
+  cinemaBtn.addEventListener("click", () => {
     cinemaMode = !cinemaMode;
-    applyCinemaMode();
-    saveProgress();
-    showShortcutFeedback(cinemaMode ? "Cinema: On" : "Cinema: Off");
-});
-
-audioBtn.addEventListener('click', () => {
+    applyCinema();
+    void persistProgress();
+    showFeedback(cinemaMode ? "Cinema: On" : "Cinema: Off");
+  });
+  audioBtn.addEventListener("click", () => {
     audioCinemaMode = !audioCinemaMode;
-    applyAudioCinemaMode();
-    saveProgress();
-    showShortcutFeedback(audioCinemaMode ? "Áudio Cinema: On" : "Áudio Cinema: Off");
-});
-
-fullscreenBtn.addEventListener('click', () => {
-    if (!currentVideoKey) return;
-    if (!document.fullscreenElement) {
-        videoPlayer.requestFullscreen().catch(() => {});
-    } else {
-        document.exitFullscreen();
-    }
-});
-
-// MELHORIA 3: feedback de tela cheia via evento fullscreenchange (estado correto, sem race condition)
-document.addEventListener('fullscreenchange', () => {
-    showShortcutFeedback(document.fullscreenElement ? "Tela Cheia" : "Janela");
-});
-
-resetBtn.addEventListener('click', () => {
-    cleanupVideo(true);
-    showShortcutFeedback("Limpo");
-});
-
-videoPlayer.addEventListener("pause", saveProgress);
-// O pause (via controles nativos, atalho, etc.) só habilita o botão histórico
-// (feito em saveProgress -> updateHistoryProgress -> renderHistory), mas não
-// exibe o histórico sozinho — só o clique no botão histórico faz isso.
-videoPlayer.addEventListener("play",  () => setHistoryVisible(false));
-
-historyBtn.addEventListener('click', () => {
+    applyAudio();
+    void persistProgress();
+    showFeedback(audioCinemaMode ? "Áudio cinema: On" : "Áudio cinema: Off");
+  });
+  fullscreenBtn.addEventListener("click", async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (video.requestFullscreen) await video.requestFullscreen();
+      else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    } catch {}
+  });
+  historyBtn.addEventListener("click", () => {
     if (!historyHasEntries) return;
-
-    const isPlaying = currentVideoKey && !videoPlayer.paused && !videoPlayer.ended;
-    if (isPlaying) {
-        // Clique durante a reprodução: pausa o vídeo e abre o histórico juntos
-        videoPlayer.pause();
-        setHistoryVisible(true);
+    const playing = currentKey && !video.paused && !video.ended;
+    if (playing) {
+      video.pause();
+      setHistoryVisible(true);
     } else {
-        // Pausado (ou sem vídeo): alterna entre mostrar/ocultar
-        setHistoryVisible(!historyOpen);
+      setHistoryVisible(!historyOpen);
     }
-});
+  });
+  closeBtn.addEventListener("click", () => closeVideo());
 
-videoPlayer.addEventListener("timeupdate", () => {
-    const currentSecond = Math.floor(videoPlayer.currentTime);
-    if (currentSecond > 0 && currentSecond % 5 === 0 && currentSecond !== lastSavedTime) {
-        saveProgress();
-        lastSavedTime = currentSecond;
+  helpBtn.addEventListener("click", () => openHelp(true));
+  helpClose.addEventListener("click", () => openHelp(false));
+  helpBackdrop.addEventListener("click", (e) => {
+    if (e.target === helpBackdrop) openHelp(false);
+  });
+  postersSwitch.addEventListener("click", async () => {
+    fetchPosters = !fetchPosters;
+    postersSwitch.classList.toggle("on", fetchPosters);
+    postersSwitch.setAttribute("aria-checked", String(fetchPosters));
+    await saveSettings({ fetchPosters });
+    showFeedback(fetchPosters ? "Capas: On" : "Capas: Off");
+  });
+
+  function openHelp(open) {
+    helpBackdrop.hidden = !open;
+    helpBackdrop.classList.toggle("open", open);
+  }
+
+  video.addEventListener("play", () => {
+    setHistoryVisible(false);
+    if (audioCtx?.state === "suspended") audioCtx.resume().catch(() => {});
+  });
+  video.addEventListener("pause", () => { void persistProgress(); });
+  video.addEventListener("timeupdate", () => {
+    if (!currentKey) return;
+    const sec = Math.floor(video.currentTime);
+    if (sec > 0 && sec % 5 === 0 && sec !== lastSavedSecond) {
+      lastSavedSecond = sec;
+      void persistProgress();
     }
-});
-
-window.addEventListener("beforeunload", saveProgress);
-
-videoPlayer.addEventListener("ended", () => {
-    if (currentVideoKey) {
-        localStorage.removeItem(STORAGE_PREFIX + currentVideoKey);
-        updateHistoryProgress(videoPlayer.duration, videoPlayer.duration);
+    if (historyOpen) updateProgressBarOnly(currentKey, video.currentTime, video.duration);
+  });
+  video.addEventListener("ended", async () => {
+    if (!currentKey) return;
+    const partial = { time: video.duration, duration: video.duration, completed: true };
+    const existing = entryCache.get(currentKey) || (await idbGet("history", currentKey));
+    if (existing) {
+      const next = { ...existing, ...partial };
+      entryCache.set(currentKey, next);
+      await idbPut("history", next);
     }
     setHistoryVisible(true);
-});
+    await renderHistory();
+  });
+  video.addEventListener("error", () => {
+    const code = video.error?.code;
+    let msg = "Não foi possível reproduzir este arquivo.";
+    if (code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED)
+      msg = "Este formato ou codec não é suportado. Tente MP4 (H.264) ou WebM.";
+    else if (code === MediaError.MEDIA_ERR_DECODE)
+      msg = "Não foi possível decodificar o vídeo. O arquivo pode estar corrompido.";
+    else if (code === MediaError.MEDIA_ERR_NETWORK)
+      msg = "Falha ao ler o arquivo.";
+    updateStatus(msg, false, true);
+  });
 
-renderHistory();
+  document.addEventListener("fullscreenchange", () => {
+    showFeedback(document.fullscreenElement ? "Tela cheia" : "Janela");
+  });
+  window.addEventListener("beforeunload", () => { void persistProgress(); });
 
-/* ===== ATALHOS DE TECLADO ===== */
-document.addEventListener("keydown", (event) => {
-    const tag = document.activeElement.tagName.toLowerCase();
-    if (tag === "input" || tag === "textarea") return;
+  /* keyboard (capture — evita briga com controles nativos) */
+  window.addEventListener("keydown", (event) => {
+    const tag = (event.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
+    if (event.target.isContentEditable) return;
 
     const key = event.key.toLowerCase();
+    const playing = Boolean(currentKey);
 
-    // MELHORIA 4: usa currentVideoKey como verificação de estado (mais confiável que videoPlayer.src)
-
-    // ESPAÇO: play/pause
-    if (key === ' ') {
-        if (!currentVideoKey) return;
+    if (key === "?" || (event.shiftKey && event.key === "/")) {
+      event.preventDefault();
+      event.stopPropagation();
+      openHelp(helpBackdrop.hidden);
+      return;
+    }
+    if (key === "escape") {
+      if (!helpBackdrop.hidden) { openHelp(false); event.preventDefault(); return; }
+      if (document.fullscreenElement) {
         event.preventDefault();
-        if (videoPlayer.paused) {
-            videoPlayer.play();
-            showShortcutFeedback("Play");
-        } else {
-            videoPlayer.pause();
-            showShortcutFeedback("Pause");
+        document.exitFullscreen().catch(() => {});
+      }
+      return;
+    }
+    if (!helpBackdrop.hidden) return;
+
+    if (key === "o") { event.preventDefault(); event.stopPropagation(); openVideoPicker(); return; }
+    if (key === "s") { event.preventDefault(); event.stopPropagation(); openSubtitlePicker(); return; }
+    if (key === "h") { event.preventDefault(); event.stopPropagation(); historyBtn.click(); return; }
+    if (!playing) return;
+    if (key === " " && tag === "button") return;
+
+    const actions = {
+      " ": () => {
+        if (video.paused) { video.play(); showFeedback("Play"); }
+        else { video.pause(); showFeedback("Pause"); }
+      },
+      arrowleft: () => { video.currentTime = Math.max(0, video.currentTime - 10); showFeedback("−10s"); },
+      arrowright: () => {
+        if (isNaN(video.duration)) return;
+        video.currentTime = Math.min(video.duration, video.currentTime + 10);
+        showFeedback("+10s");
+      },
+      arrowup: () => {
+        video.volume = Math.min(1, video.volume + 0.1);
+        showFeedback(Math.round(video.volume * 100) + "%");
+      },
+      arrowdown: () => {
+        video.volume = Math.max(0, video.volume - 0.1);
+        showFeedback(Math.round(video.volume * 100) + "%");
+      },
+      m: () => { video.muted = !video.muted; showFeedback(video.muted ? "Mudo" : "Som"); },
+      l: () => { if (!styleBtn.disabled) styleBtn.click(); },
+      c: () => { if (!cinemaBtn.disabled) cinemaBtn.click(); },
+      a: () => { if (!audioBtn.disabled) audioBtn.click(); },
+      f: () => { fullscreenBtn.click(); },
+      p: () => {
+        if (!document.pictureInPictureEnabled) {
+          showFeedback("PiP indisponível");
+          return;
         }
+        (async () => {
+          try {
+            if (document.pictureInPictureElement) {
+              await document.exitPictureInPicture();
+              showFeedback("PiP off");
+            } else {
+              await video.requestPictureInPicture();
+              showFeedback("PiP");
+            }
+          } catch { showFeedback("PiP indisponível"); }
+        })();
+      },
+      "[": () => {
+        if (styleBtn.disabled) return;
+        const next = offsetMs - 100;
+        shiftCues((next - appliedOffsetMs) / 1000);
+        appliedOffsetMs = next;
+        offsetMs = next;
+        void persistProgress();
+        showFeedback("Legenda " + (next / 1000 > 0 ? "+" : "") + (next / 1000).toFixed(1) + "s");
+      },
+      "]": () => {
+        if (styleBtn.disabled) return;
+        const next = offsetMs + 100;
+        shiftCues((next - appliedOffsetMs) / 1000);
+        appliedOffsetMs = next;
+        offsetMs = next;
+        void persistProgress();
+        showFeedback("Legenda " + (next / 1000 > 0 ? "+" : "") + (next / 1000).toFixed(1) + "s");
+      },
+      ",": () => {
+        const i = RATES.indexOf(rate);
+        const ni = Math.max(0, (i === -1 ? 1 : i) - 1);
+        rate = RATES[ni];
+        applyRate();
+        void persistProgress();
+        showFeedback(rate + "×");
+      },
+      ".": () => {
+        const i = RATES.indexOf(rate);
+        const ni = Math.min(RATES.length - 1, (i === -1 ? 1 : i) + 1);
+        rate = RATES[ni];
+        applyRate();
+        void persistProgress();
+        showFeedback(rate + "×");
+      }
+    };
+    const fn = actions[key];
+    if (fn) {
+      event.preventDefault();
+      event.stopPropagation();
+      fn();
     }
+  }, true);
 
-    // SETA ESQUERDA: -10s
-    if (key === 'arrowleft') {
-        if (!currentVideoKey) return;
-        event.preventDefault();
-        videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
-        showShortcutFeedback("-10s");
-    }
-
-    // SETA DIREITA: +10s
-    if (key === 'arrowright') {
-        if (!currentVideoKey || isNaN(videoPlayer.duration)) return;
-        event.preventDefault();
-        videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
-        showShortcutFeedback("+10s");
-    }
-
-    if (key === "l" && !styleBtn.disabled) {
-        styleBtn.click();
-        event.preventDefault();
-    }
-
-    if (key === "c" && !cinemaBtn.disabled) {
-        cinemaBtn.click();
-        event.preventDefault();
-    }
-
-    if (key === "a" && !audioBtn.disabled) {
-        audioBtn.click();
-        event.preventDefault();
-    }
-
-    if (key === "f") {
-        if (!currentVideoKey) return;
-        event.preventDefault();
-        fullscreenBtn.click();
-    }
-});
+  /* boot */
+  (async () => {
+    const settings = await getSettings();
+    fetchPosters = settings.fetchPosters !== false;
+    postersSwitch.classList.toggle("on", fetchPosters);
+    postersSwitch.setAttribute("aria-checked", String(fetchPosters));
+    await renderHistory();
+    setHistoryVisible(true);
+  })();
+})();
 </script>
-
 </body>
 </html>
