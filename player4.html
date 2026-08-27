@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MVP v7.0</title>
+<title>MVP v7.2</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2309090b'/%3E%3Cpolygon points='12,8 24,16 12,24' fill='%23c8ccd4'/%3E%3C/svg%3E" type="image/svg+xml">
 <style>
 :root {
@@ -69,6 +69,16 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 button.active {
   background: var(--surface-2);
   border-color: color-mix(in srgb, var(--fg) 30%, transparent);
+}
+button[data-level]::after {
+  content: attr(data-level);
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--fg);
 }
 button svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
 input[type="file"] { display: none; }
@@ -413,7 +423,7 @@ video.theme-yellow::cue {
       <svg viewBox="0 0 24 24" stroke-width="2" width="16" height="16"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"/></svg>
     </button>
     <h2 id="helpTitle">Atalhos</h2>
-    <p class="desc">Os vídeos não saem do seu aparelho. Capas, se ligadas, consultam a OMDb pelo título do arquivo.</p>
+    <p class="desc">Os vídeos não saem do seu aparelho. Capas, se ligadas, consultam o TMDB pelo título do arquivo.</p>
     <ul>
       <li><span>Abrir vídeo</span><kbd>O</kbd></li>
       <li><span>Carregar legenda</span><kbd>S</kbd></li>
@@ -435,7 +445,7 @@ video.theme-yellow::cue {
     <div class="help-toggle-row">
       <div class="label">
         Buscar capas
-        <small>Envia o título do arquivo para a OMDb</small>
+        <small>Envia o título do arquivo para o TMDB</small>
       </div>
       <button type="button" class="switch on" id="postersSwitch" role="switch" aria-checked="true" aria-label="Buscar capas"></button>
     </div>
@@ -476,7 +486,7 @@ video.theme-yellow::cue {
   let subBlobUrl = null;
   let styleIndex = 0;
   let cinemaMode = false;
-  let audioCinemaMode = false;
+  let audioCinemaLevel = 0;
   let offsetMs = 0;
   let appliedOffsetMs = 0;
   let rate = 1;
@@ -497,7 +507,8 @@ video.theme-yellow::cue {
   const POSTERS_MAX = 80;
   const CONTINUE_THRESHOLD = 0.95;
   const FOLDER_ID = "mvp-media-folder";
-  const OMDB_KEY = "c26a374c";
+  const TMDB_KEY = "d0824bef939a2ecda4733330de81b358";
+  const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/w500";
   const DB_NAME = "mvpPlayerDB";
   const DB_VERSION = 1;
 
@@ -506,8 +517,38 @@ video.theme-yellow::cue {
   let sourceNode = null;
   let dryGain = null;
   let wetGain = null;
+  let compressorNode = null;
+  let dialogueFilter = null;
+  let presenceFilter = null;
+  let lowCutFilter = null;
   let boundVideo = null;
-  const WET = 1.08;
+
+  // Nível 0 = Off (não usado diretamente aqui, tratado em setAudioCinema)
+  const AUDIO_LEVELS = [
+    null, // índice 0 reservado para "Off"
+    { // Nível 1: Cinema (comportamento original)
+      label: "Cinema",
+      wet: 1.08,
+      compThreshold: -24,
+      compRatio: 12,
+      dialogueFreq: 2500,
+      dialogueGain: 5,
+      presenceGain: 0,
+      presenceFreq: 4500,
+      lowCutFreq: 20
+    },
+    { // Nível 2: Fala (mais ênfase na inteligibilidade, ideal para treinar listening)
+      label: "Fala",
+      wet: 1.15,
+      compThreshold: -22,
+      compRatio: 14,
+      dialogueFreq: 2500,
+      dialogueGain: 9,
+      presenceGain: 4,
+      presenceFreq: 4800,
+      lowCutFreq: 150
+    }
+  ];
 
   function initAudio() {
     if (boundVideo === video && audioCtx) return;
@@ -516,26 +557,43 @@ video.theme-yellow::cue {
     try {
       if (!audioCtx) audioCtx = new Ctor();
       sourceNode = audioCtx.createMediaElementSource(video);
-      const compressor = audioCtx.createDynamicsCompressor();
-      compressor.threshold.value = -24;
-      compressor.knee.value = 30;
-      compressor.ratio.value = 12;
-      compressor.attack.value = 0.003;
-      compressor.release.value = 0.25;
-      const dialogue = audioCtx.createBiquadFilter();
-      dialogue.type = "peaking";
-      dialogue.frequency.value = 2500;
-      dialogue.Q.value = 1;
-      dialogue.gain.value = 5;
+
+      compressorNode = audioCtx.createDynamicsCompressor();
+      compressorNode.threshold.value = -24;
+      compressorNode.knee.value = 30;
+      compressorNode.ratio.value = 12;
+      compressorNode.attack.value = 0.003;
+      compressorNode.release.value = 0.25;
+
+      dialogueFilter = audioCtx.createBiquadFilter();
+      dialogueFilter.type = "peaking";
+      dialogueFilter.frequency.value = 2500;
+      dialogueFilter.Q.value = 1;
+      dialogueFilter.gain.value = 5;
+
+      presenceFilter = audioCtx.createBiquadFilter();
+      presenceFilter.type = "peaking";
+      presenceFilter.frequency.value = 4500;
+      presenceFilter.Q.value = 1.1;
+      presenceFilter.gain.value = 0;
+
+      lowCutFilter = audioCtx.createBiquadFilter();
+      lowCutFilter.type = "highpass";
+      lowCutFilter.frequency.value = 20;
+      lowCutFilter.Q.value = 0.7;
+
       dryGain = audioCtx.createGain();
       wetGain = audioCtx.createGain();
       dryGain.gain.value = 1;
       wetGain.gain.value = 0;
+
       sourceNode.connect(dryGain);
       dryGain.connect(audioCtx.destination);
-      sourceNode.connect(compressor);
-      compressor.connect(dialogue);
-      dialogue.connect(wetGain);
+      sourceNode.connect(compressorNode);
+      compressorNode.connect(dialogueFilter);
+      dialogueFilter.connect(presenceFilter);
+      presenceFilter.connect(lowCutFilter);
+      lowCutFilter.connect(wetGain);
       wetGain.connect(audioCtx.destination);
       boundVideo = video;
     } catch (e) {
@@ -543,14 +601,25 @@ video.theme-yellow::cue {
     }
   }
 
-  function setAudioCinema(on) {
-    if (!audioCtx || !dryGain || !wetGain) return;
+  function setAudioCinema(level) {
+    if (!audioCtx || !dryGain || !wetGain || !compressorNode || !dialogueFilter || !presenceFilter || !lowCutFilter) return;
     if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
     const now = audioCtx.currentTime;
+    const cfg = AUDIO_LEVELS[level] || null;
+
     dryGain.gain.cancelScheduledValues(now);
     wetGain.gain.cancelScheduledValues(now);
-    dryGain.gain.setTargetAtTime(on ? 0 : 1, now, 0.04);
-    wetGain.gain.setTargetAtTime(on ? WET : 0, now, 0.04);
+    dryGain.gain.setTargetAtTime(cfg ? 0 : 1, now, 0.04);
+    wetGain.gain.setTargetAtTime(cfg ? cfg.wet : 0, now, 0.04);
+
+    const active = cfg || AUDIO_LEVELS[1];
+    compressorNode.threshold.setTargetAtTime(active.compThreshold, now, 0.04);
+    compressorNode.ratio.setTargetAtTime(active.compRatio, now, 0.04);
+    dialogueFilter.frequency.setTargetAtTime(active.dialogueFreq, now, 0.04);
+    dialogueFilter.gain.setTargetAtTime(active.dialogueGain, now, 0.04);
+    presenceFilter.frequency.setTargetAtTime(active.presenceFreq, now, 0.04);
+    presenceFilter.gain.setTargetAtTime(active.presenceGain, now, 0.04);
+    lowCutFilter.frequency.setTargetAtTime(active.lowCutFreq, now, 0.04);
   }
 
   /* ===== STATUS / FEEDBACK ===== */
@@ -572,8 +641,7 @@ video.theme-yellow::cue {
   }
 
   /* ===== PARSE TITLE ===== */
-  const JUNK = /^(?:1080p|720p|2160p|480p|360p|4k|8k|uhd|hdr10\+?|hdr|dolby|vision|web-?dl|webrip|web|bluray|blu-ray|bdrip|brrip|dvdrip|hdtv|hdrip|x264|x265|h264|h265|hevc|avc|av1|xvid|divx|aac|ac3|dts|truehd|atmos|flac|mp3|opus|10bit|8bit|6ch|5\.1|7\.1|2\.0|proper|repack|extended|unrated|remux|internal|limited|multi|dual|audio|sub(?:s|title)?s?|pt-?br|eng|por|yify|rarbg|amzn|nf|dsnp|atvp|hmax|hulu|directors?|cut|criterion|imax|hybrid|sample|nfo|readnfo)$/i;
-  const YEAR_RE = /^(?:19|20)\d{2}$/;
+  const JUNK = /^(?:1080p|720p|2160p|480p|360p|4k|8k|uhd|hdr10\+?|hdr|dolby|vision|web-?dl|webrip|web|bluray|blu-ray|bdrip|brrip|dvdrip|hdtv|hdrip|x264|x265|h264|h265|hevc|avc|av1|xvid|divx|aac|ac3|dts|truehd|atmos|flac|mp3|opus|10bit|8bit|6ch|5\.1|7\.1|2\.0|proper|repack|extended|unrated|remux|internal|limited|multi|dual|audio|sub(?:s|title)?s?|pt-?br|eng|por|yify|yts|rarbg|amzn|nf|dsnp|atvp|hmax|hulu|directors?|cut|criterion|imax|hybrid|sample|nfo|readnfo|am|mx|eztv|1337x|rartv|tgx)$/i;
 
   function tokenize(raw) {
     return raw.replace(/[._]+/g, " ").replace(/[\[\](){}]/g, " ")
@@ -594,16 +662,10 @@ video.theme-yellow::cue {
       working = working.slice(0, se.index);
     }
     let year = null, titleSource = working;
-    const paren = working.match(/^(.*?)\s*[\(\[]((?:19|20)\d{2})[\)\]]\s*(.*)$/);
-    if (paren) {
-      year = paren[2];
-      titleSource = `${paren[1]} ${paren[3]}`;
-    } else {
-      const tokens = stripJunk(tokenize(working));
-      if (tokens.length && YEAR_RE.test(tokens[tokens.length - 1])) {
-        year = tokens[tokens.length - 1];
-        titleSource = tokens.slice(0, -1).join(" ");
-      }
+    const yearMatch = working.match(/(?<!\d)(19|20)\d{2}(?!\d)/);
+    if (yearMatch) {
+      year = yearMatch[0];
+      titleSource = working.slice(0, yearMatch.index);
     }
     let title = stripJunk(tokenize(titleSource)).join(" ").trim();
     if (!title) title = stripJunk(tokenize(working)).join(" ").trim() || nameNoExt.replace(/[._]/g, " ").trim();
@@ -767,47 +829,62 @@ video.theme-yellow::cue {
     }
   }
 
-  /* ===== OMDB ===== */
+  /* ===== TMDB ===== */
   function posterCacheKey(title, year, season) {
     return `${title.toLowerCase()}|${year || ""}|${season ?? ""}`;
   }
+
+  async function fetchPosterFromTmdb(title, year, season) {
+    const kind = season ? "tv" : "movie";
+    const url = new URL(`https://api.themoviedb.org/3/search/${kind}`);
+    url.searchParams.set("api_key", TMDB_KEY);
+    url.searchParams.set("query", title);
+    url.searchParams.set("language", "pt-BR");
+    if (year) {
+      url.searchParams.set(kind === "tv" ? "first_air_date_year" : "year", year);
+    }
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error("tmdb " + res.status);
+    const data = await res.json();
+    let hit = data.results?.[0];
+    // se veio ano e não achou nada, tenta de novo sem o filtro de ano
+    if (!hit && year) {
+      const url2 = new URL(`https://api.themoviedb.org/3/search/${kind}`);
+      url2.searchParams.set("api_key", TMDB_KEY);
+      url2.searchParams.set("query", title);
+      url2.searchParams.set("language", "pt-BR");
+      const res2 = await fetch(url2.toString());
+      if (res2.ok) {
+        const data2 = await res2.json();
+        hit = data2.results?.[0];
+      }
+    }
+    if (hit?.poster_path) return TMDB_IMG_BASE + hit.poster_path;
+    return null;
+  }
+
   async function fetchPoster(title, year, season) {
     if (!title || !fetchPosters) return { url: null, networkError: false };
     const key = posterCacheKey(title, year, season);
     const cached = await idbGet("posters", key);
     if (cached && !cached.networkError) return { url: cached.posterUrl, networkError: false };
 
-    const attempts = season
-      ? [{ t: title, type: "series", ...(year ? { y: year } : {}) }, { t: title, ...(year ? { y: year } : {}) }, { s: title, type: "series" }]
-      : [{ t: title, type: "movie", ...(year ? { y: year } : {}) }, { t: title, ...(year ? { y: year } : {}) }, ...(year ? [{ t: title }] : []), { s: title, ...(year ? { y: year } : {}) }];
+    let posterUrl = null;
+    let networkError = false;
 
     try {
-      let posterUrl = null;
-      for (const params of attempts) {
-        const url = new URL("https://www.omdbapi.com/");
-        url.searchParams.set("apikey", OMDB_KEY);
-        Object.entries(params).forEach(([k, v]) => v && url.searchParams.set(k, v));
-        const res = await fetch(url.toString());
-        if (!res.ok) throw new Error("omdb " + res.status);
-        const data = await res.json();
-        if (data.Response === "True" && data.Poster && data.Poster !== "N/A") {
-          posterUrl = data.Poster;
-          break;
-        }
-        const first = data.Search?.[0]?.Poster;
-        if (first && first !== "N/A") { posterUrl = first; break; }
-      }
-      await idbPut("posters", { titleYear: key, posterUrl, networkError: false, checkedAt: Date.now() });
-      return { url: posterUrl, networkError: false };
+      posterUrl = await fetchPosterFromTmdb(title, year, season);
     } catch {
-      await idbPut("posters", {
-        titleYear: key,
-        posterUrl: cached?.posterUrl ?? null,
-        networkError: true,
-        checkedAt: Date.now()
-      });
-      return { url: cached?.posterUrl ?? null, networkError: true };
+      networkError = true;
     }
+
+    await idbPut("posters", {
+      titleYear: key,
+      posterUrl: posterUrl ?? (cached?.posterUrl ?? null),
+      networkError,
+      checkedAt: Date.now()
+    });
+    return { url: posterUrl ?? (cached?.posterUrl ?? null), networkError };
   }
 
   /* ===== HISTORY UI (incremental) ===== */
@@ -979,9 +1056,15 @@ video.theme-yellow::cue {
     cinemaBtn.title = cinemaMode ? "Modo Cinema: On (C)" : "Modo Cinema: Off (C)";
   }
   function applyAudio() {
-    setAudioCinema(audioCinemaMode);
-    audioBtn.classList.toggle("active", audioCinemaMode);
-    audioBtn.title = audioCinemaMode ? "Áudio Cinema: On (A)" : "Áudio Cinema: Off (A)";
+    setAudioCinema(audioCinemaLevel);
+    const cfg = AUDIO_LEVELS[audioCinemaLevel];
+    audioBtn.classList.toggle("active", audioCinemaLevel > 0);
+    if (audioCinemaLevel > 0) {
+      audioBtn.dataset.level = String(audioCinemaLevel);
+    } else {
+      delete audioBtn.dataset.level;
+    }
+    audioBtn.title = cfg ? `Áudio Cinema: ${cfg.label} (A)` : "Áudio Cinema: Off (A)";
   }
   function applyRate() {
     video.playbackRate = rate;
@@ -994,7 +1077,7 @@ video.theme-yellow::cue {
       duration: video.duration,
       style: styleIndex,
       cinema: cinemaMode,
-      audioCinema: audioCinemaMode,
+      audioCinema: audioCinemaLevel,
       subtitleOffsetMs: offsetMs,
       playbackRate: rate
     };
@@ -1044,16 +1127,18 @@ video.theme-yellow::cue {
 
     styleIndex = existing?.style ?? 0;
     cinemaMode = existing?.cinema ?? false;
-    audioCinemaMode = existing?.audioCinema ?? false;
+    {
+      const storedAudio = existing?.audioCinema;
+      audioCinemaLevel = typeof storedAudio === "number" ? storedAudio : (storedAudio ? 1 : 0);
+    }
     offsetMs = existing?.subtitleOffsetMs ?? 0;
     rate = existing?.playbackRate ?? 1;
     applyStyle();
     applyCinema();
-    applyAudio();
     applyRate();
 
     initAudio();
-    setAudioCinema(audioCinemaMode);
+    applyAudio();
 
     const entry = {
       key,
@@ -1072,7 +1157,7 @@ video.theme-yellow::cue {
       lastPlayed: Date.now(),
       style: styleIndex,
       cinema: cinemaMode,
-      audioCinema: audioCinemaMode,
+      audioCinema: audioCinemaLevel,
       subtitleOffsetMs: offsetMs,
       playbackRate: rate,
       completed: existing?.completed ?? false
@@ -1123,11 +1208,10 @@ video.theme-yellow::cue {
     video.classList.remove("is-visible", "ready", "cinema-on", ...STYLE_CLASSES);
     currentKey = null;
     cinemaMode = false;
-    audioCinemaMode = false;
+    audioCinemaLevel = 0;
     styleIndex = 0;
     offsetMs = 0;
     rate = 1;
-    setAudioCinema(false);
     applyCinema();
     applyAudio();
     applyRate();
@@ -1217,10 +1301,11 @@ video.theme-yellow::cue {
     showFeedback(cinemaMode ? "Cinema: On" : "Cinema: Off");
   });
   audioBtn.addEventListener("click", () => {
-    audioCinemaMode = !audioCinemaMode;
+    audioCinemaLevel = (audioCinemaLevel + 1) % 3;
     applyAudio();
     void persistProgress();
-    showFeedback(audioCinemaMode ? "Áudio cinema: On" : "Áudio cinema: Off");
+    const cfg = AUDIO_LEVELS[audioCinemaLevel];
+    showFeedback(cfg ? `Áudio: ${cfg.label}` : "Áudio: Off");
   });
   fullscreenBtn.addEventListener("click", async () => {
     try {
