@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Acessos4</title>
+    <title>Acessos4+certo</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500&family=Roboto:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -843,7 +843,11 @@
         const rows = dadosAtuais.map((d, i) => `
             <tr>
                 <td class="coluna-num">${i + 1}</td>
-                <td class="coluna-aluno">${escHtml(d.nome)}</td>
+                <td class="coluna-aluno">
+                    <a href="https://login.plurall.net/" target="_blank" class="link-aluno"
+                       data-login="${escAttr(d.login)}"
+                       onclick="copiarLoginEAbrir(event, this)">${escHtml(d.nome)}</a>
+                </td>
                 <td class="cell-login">${escHtml(d.login)}
                     <button class="copy-btn" data-login="${escAttr(d.login)}">Copiar</button>
                 </td>
@@ -877,17 +881,19 @@ tbody tr:hover{background:#141414}
 td{padding:11px 14px;font-size:14px;vertical-align:middle}
 .coluna-num{font-family:'Share Tech Mono',monospace;font-size:11px;color:#555;width:36px;text-align:center}
 .coluna-aluno{text-transform:uppercase;font-weight:600;font-size:13px;color:#e8e8e8;font-family:'Roboto',sans-serif}
-.cell-login{font-family:'Inter',sans-serif;font-weight:500;font-size:14px;letter-spacing:0.03em;color:#22c55e}
+.coluna-aluno a.link-aluno{color:#e8e8e8;text-decoration:none;cursor:pointer;transition:color .15s}
+.coluna-aluno a.link-aluno:hover{color:#f59e0b;text-decoration:underline}
+.cell-login{font-family:'Inter',sans-serif;font-weight:500;font-size:14px;letter-spacing:0.03em;color:#f59e0b}
 .cell-senha{font-family:'Share Tech Mono',monospace;white-space:nowrap}
 .senha-mask{color:#555;letter-spacing:2px}
 .senha-visible{font-family:'Inter',sans-serif;font-weight:400;font-size:14px;letter-spacing:0.04em;color:#f59e0b}
 .copy-btn,.ver-btn,.copy-senha-btn{margin-left:10px;background:transparent;border:1px solid #333;color:#555;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:10px;text-transform:uppercase;transition:all .15s}
 .copy-btn:hover{color:#06b6d4;border-color:#06b6d4}
 .ver-btn:hover{color:#f59e0b;border-color:#f59e0b}
-.copy-btn.copied{color:#22c55e;border-color:#22c55e}
+.copy-btn.copied{color:#f59e0b;border-color:#f59e0b}
 .copy-senha-btn{border-color:#78350f;color:#f59e0b}
 .copy-senha-btn:hover{background:rgba(245,158,11,0.08);border-color:#f59e0b}
-.copy-senha-btn.copied{color:#22c55e;border-color:#22c55e}
+.copy-senha-btn.copied{color:#f59e0b;border-color:#f59e0b}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:#141414;border:1px solid #06b6d4;color:#06b6d4;padding:10px 22px;border-radius:20px;font-family:'Share Tech Mono',monospace;font-size:12px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:1000}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -906,6 +912,12 @@ td{padding:11px 14px;font-size:14px;vertical-align:middle}
 <div id="toast" class="toast"></div>
 <script>
 function toast(m,c){const t=document.getElementById('toast');t.textContent=m;t.style.borderColor=c||'#06b6d4';t.style.color=c||'#06b6d4';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
+function copiarLoginEAbrir(e,el){
+  e.preventDefault();
+  const login=el.dataset.login;
+  const ok=()=>{toast('Login copiado! Abrindo Plurall...','#f59e0b');window.open('https://login.plurall.net/','_blank');};
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(login).then(ok).catch(()=>fb(login,ok));}else{fb(login,ok);}
+}
 function copiar(texto,btn){
   const ok=()=>{toast('Copiado!');if(btn){btn.textContent='✓ Ok';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copiar';btn.classList.remove('copied')},1500)}};
   if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(texto).then(ok).catch(()=>fb(texto,ok));}else{fb(texto,ok);}
