@@ -3,16 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comic Web Reader - v5.0</title>
+<title>Comic Web Reader - v5.1</title>
     <link rel="icon" href="/apweb/favcwr.png" type="image/png">
     <link rel="icon" href="/apweb/favcwr.png" type="image/png" sizes="64x64">
     <link rel="icon" href="/apweb/favcwr.ico" type="image/x-icon" sizes="16x16 32x32">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<!-- PDF.js para suporte a PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 <script>
-  // FIX #10: workerSrc configurado uma única vez aqui; loadPDFLib() removida pois é redundante
   if (typeof pdfjsLib !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
@@ -82,7 +80,6 @@ body {
 }
 .history-item:hover .history-thumb { border-color: var(--accent-color); }
 
-/* Botão de remover: some por padrão, aparece suavemente no hover do item */
 .history-delete-btn {
     position: absolute;
     top: 4px;
@@ -125,8 +122,6 @@ body {
     text-overflow: ellipsis;
 }
 
-/* FIX #4 (adaptado): drop-zone agora usa flex:1 para preencher o espaço restante,
-   já que a altura total da coluna pode variar com a barra de histórico presente */
 #drop-zone {
     flex: 1;
     min-height: 0;
@@ -139,11 +134,9 @@ body {
     justify-content: center;
     cursor: pointer;
     box-sizing: border-box;
-    /* FIX #14: transição suave no feedback visual do drop */
     transition: border-color 0.15s, background 0.15s;
 }
 
-/* FIX #14: feedback visual claro ao arrastar arquivo sobre a zona */
 #drop-zone.drag-over {
     border-color: var(--accent-color);
     background: rgba(39, 174, 96, 0.07);
@@ -184,7 +177,6 @@ body {
     align-items: center;
     opacity: 0.4;
     z-index: 10;
-    /* FIX #13: cursor pointer no page-info para indicar que é clicável */
 }
 #ui-overlay:hover { opacity: 1; }
 
@@ -211,7 +203,6 @@ button.nav-btn {
     background: #444;
 }
 
-/* Mensagem de erro */
 #error-message {
     position: fixed;
     top: 20px;
@@ -226,7 +217,6 @@ button.nav-btn {
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
-/* Dica de atalhos */
 #keyboard-hint {
     position: fixed;
     top: 20px;
@@ -241,7 +231,6 @@ button.nav-btn {
     max-width: 200px;
 }
 
-/* Loader de carregamento */
 #loading-indicator {
     position: fixed;
     top: 50%;
@@ -256,7 +245,6 @@ button.nav-btn {
     font-size: 14px;
 }
 
-/* FIX #13: page-info clicável para navegação direta */
 #page-info {
     cursor: pointer;
     padding: 2px 6px;
@@ -267,7 +255,6 @@ button.nav-btn {
 }
 #page-info:hover { background: rgba(255,255,255,0.1); }
 
-/* Modal de navegação direta */
 #goto-overlay {
     position: fixed;
     inset: 0;
@@ -317,12 +304,10 @@ button.nav-btn {
     <h2>Comic Web Reader</h2>
     <p>Arraste o arquivo ou clique</p>
     <p style="font-size: 0.8em; color: #aaa;">(CBZ ou PDF)</p>
-    <!-- FIX #5: box-sizing correto já cobre drop-zone -->
     <input type="file" id="file-input" accept=".cbz,.pdf" hidden>
 </div>
 
 <div id="viewer-container">
-    <!-- FIX #5: atributo alt adicionado -->
     <img id="comic-img" alt="Página do quadrinho">
     <div id="ui-overlay">
         <button onclick="zoomOut()" title="Reduzir zoom">－</button>
@@ -330,16 +315,15 @@ button.nav-btn {
         <button onclick="resetZoom()" title="Resetar zoom">回</button>
         <div class="divider"></div>
         <button class="nav-btn" onclick="prevPage()" title="Página anterior">◀</button>
-        <!-- FIX #13: page-info clicável -->
         <span id="page-info" title="Clique para ir a uma página">---</span>
         <button class="nav-btn" onclick="nextPage()" title="Próxima página">▶</button>
         <div class="divider"></div>
+        <button onclick="cycleSpread()" title="Página dupla (D)">📖</button>
         <button onclick="toggleFullScreen()" title="Tela cheia">⛶</button>
         <button onclick="closeBook()" title="Fechar">✕</button>
     </div>
 </div>
 
-<!-- FIX #13: modal de navegação direta -->
 <div id="goto-overlay">
     <div id="goto-box">
         <label id="goto-label">Ir para a página:</label>
@@ -360,6 +344,7 @@ button.nav-btn {
     Ctrl+Scroll: Zoom<br>
     F: Tela Cheia<br>
     G: Ir para página<br>
+    D: Página dupla<br>
     Esc: Sair / Fechar
 </div>
 <div id="loading-indicator">Carregando página...</div>
@@ -412,16 +397,13 @@ class CBZReader extends ComicBookReader {
 }
 
 // ---------------------------------------------------------------------------
-// Leitor PDF
-// FIX #6: cache com limite LRU para evitar vazamento de memória
-// FIX #9: scale dinâmica baseada em devicePixelRatio
+// Leitor PDF (cache LRU de 10 páginas; escala baseada em devicePixelRatio)
 // ---------------------------------------------------------------------------
 class PDFReader extends ComicBookReader {
   constructor(file) {
     super();
     this.file = file;
     this.pdfDoc = null;
-    // FIX #6: LRU cache com limite de 10 páginas
     this.canvasCache = new Map();
     this.CACHE_LIMIT = 10;
   }
@@ -436,7 +418,6 @@ class PDFReader extends ComicBookReader {
 
   async getPage(index) {
     if (this.canvasCache.has(index)) {
-      // Renova posição no LRU
       const cached = this.canvasCache.get(index);
       this.canvasCache.delete(index);
       this.canvasCache.set(index, cached);
@@ -444,7 +425,6 @@ class PDFReader extends ComicBookReader {
     }
 
     const page = await this.pdfDoc.getPage(index + 1);
-    // FIX #9: escala baseada em devicePixelRatio (máx 3x para não explodir memória)
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
     const scale = dpr * 1.5;
     const viewport = page.getViewport({ scale });
@@ -454,7 +434,6 @@ class PDFReader extends ComicBookReader {
     canvas.width  = viewport.width;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
-    // FIX #6: remove entrada mais antiga quando ultrapassa o limite
     if (this.canvasCache.size >= this.CACHE_LIMIT) {
       const oldestKey = this.canvasCache.keys().next().value;
       this.canvasCache.delete(oldestKey);
@@ -472,27 +451,28 @@ class PDFReader extends ComicBookReader {
 
 // ---------------------------------------------------------------------------
 // Estado global
-// FIX #3: isPDFLoading removida (nunca foi usada)
 // ---------------------------------------------------------------------------
 let currentReader    = null;
 let currentObjectURL = null;
 let currentFileName  = "";
 let currentIndex     = 0;
 
-// Handle persistente (File System Access API) do arquivo atualmente aberto,
-// usado para permitir reabertura em 1 clique a partir do histórico. Pode ser
-// null quando o arquivo foi aberto via <input type="file"> ou drag&drop sem
-// suporte à API (ex: Firefox), ou quando o navegador não suporta a API.
+// Handle persistente (File System Access API) do arquivo aberto, usado para
+// reabrir em 1 clique a partir do histórico. Pode ser null (Firefox, input
+// file comum, drag&drop sem suporte à API).
 let currentFileHandle = null;
 const supportsFileHandle = typeof window.showOpenFilePicker === "function";
 
-// Thumbnail da capa (página 0) do arquivo atualmente aberto, gerada uma
-// única vez em loadFile(). Usada pelo histórico em toda troca de página,
-// sem regenerar a imagem a cada navegação.
+// Thumbnail da capa (página 0), gerada uma única vez em loadFile().
 let currentCoverThumbnail = null;
 
-// FIX #2: token de render para cancelar chamadas concorrentes
+// Token de render para cancelar chamadas concorrentes
 let renderToken = 0;
+
+// Visualização: 0 = simples (padrão), 1 = dupla par-ímpar (ex.: 2-3),
+// 2 = dupla ímpar-par (ex.: 3-4). Em dupla, currentIndex = página da esquerda.
+let viewMode = 0;
+let spreadAnchor = 0; // página simples de onde o ciclo da dupla começou
 
 /* Zoom */
 let zoomLevel      = 1.0;
@@ -514,7 +494,7 @@ const historyBar      = document.getElementById("history-bar");
 const historyItemsEl  = document.getElementById("history-items");
 
 // ---------------------------------------------------------------------------
-// Drag / Panning (mouse)
+// Drag / Panning (mouse e touch)
 // ---------------------------------------------------------------------------
 let isDragging = false, startX, startY, scrollLeft, scrollTop;
 
@@ -530,7 +510,6 @@ container.addEventListener("mousemove", e => {
     container.scrollTop  = scrollTop  - (e.pageY - startY);
 });
 
-// FIX #8: suporte a touch (panning em celulares/tablets)
 let touchStartX, touchStartY, touchScrollLeft, touchScrollTop;
 container.addEventListener("touchstart", e => {
     if (e.touches.length !== 1) return;
@@ -545,7 +524,7 @@ container.addEventListener("touchmove", e => {
     container.scrollTop  = touchScrollTop  - (e.touches[0].pageY - touchStartY);
 }, { passive: true });
 
-// FIX #12: zoom com Ctrl + scroll do mouse
+// Zoom com Ctrl + scroll do mouse
 container.addEventListener("wheel", e => {
     if (!e.ctrlKey) return;
     e.preventDefault();
@@ -555,9 +534,8 @@ container.addEventListener("wheel", e => {
 // ---------------------------------------------------------------------------
 // Upload / Drop
 // ---------------------------------------------------------------------------
-// Abre o seletor de arquivo. Em Chrome/Edge usa showOpenFilePicker() para
-// obter um handle persistente (permite reabertura em 1 clique via
-// histórico); em navegadores sem suporte, cai no <input type="file"> normal.
+// Chrome/Edge: showOpenFilePicker() dá um handle persistente (reabertura em
+// 1 clique via histórico). Outros navegadores: <input type="file"> normal.
 async function handleDropZoneClick() {
     if (!supportsFileHandle) {
         fileInput.click();
@@ -576,7 +554,6 @@ async function handleDropZoneClick() {
         currentFileHandle = handle;
         await loadFile(file);
     } catch (err) {
-        // AbortError ocorre quando o usuário cancela o seletor; ignoramos.
         if (err.name !== "AbortError") console.error("Erro ao abrir arquivo:", err);
     }
 }
@@ -589,8 +566,7 @@ fileInput.onchange = e => {
     }
 };
 
-// FIX #7: usar dragenter/dragleave no próprio drop-zone com contador de profundidade
-// evita "piscar" ao mover sobre filhos
+// Contador de profundidade evita "piscar" ao mover sobre filhos
 let dragDepth = 0;
 document.addEventListener('dragover', e => e.preventDefault());
 dropZone.addEventListener('dragenter', () => { dragDepth++; dropZone.classList.add('drag-over'); });
@@ -602,7 +578,6 @@ document.addEventListener('drop', async e => {
     if (e.dataTransfer.files.length === 0) return;
 
     // Tenta obter um handle persistente também no drag&drop (Chrome/Edge).
-    // Se não suportado ou falhar, segue sem handle (comportamento original).
     let handle = null;
     try {
         const item = e.dataTransfer.items && e.dataTransfer.items[0];
@@ -638,11 +613,11 @@ function updateTabTitle(filename) {
         let name = filename.replace(/\.(cbz|pdf|zip)$/i, '').replace(/_/g, ' ');
         document.title = `${name} - Comic Web Reader`;
     } else {
-        document.title = 'Comic Web Reader - V4.5';
+        document.title = 'Comic Web Reader - v5.1';
     }
 }
 
-// FIX #1: wrapper seguro para localStorage
+// Wrapper seguro para localStorage
 const Storage = {
     get(key) {
         try { return localStorage.getItem(key); } catch { return null; }
@@ -654,10 +629,9 @@ const Storage = {
 
 // ---------------------------------------------------------------------------
 // Histórico de leitura (IndexedDB)
-// Guarda até N entradas com: nome do arquivo, handle persistente (quando
+// Guarda até N entradas: nome do arquivo, handle persistente (quando
 // disponível), progresso, contagem de páginas, thumbnail e timestamp.
-// Totalmente isolado do wrapper "Storage" (localStorage) usado para o
-// progresso simples por nome de arquivo — nenhum dos dois depende do outro.
+// Independente do wrapper "Storage" (localStorage) usado para o progresso.
 // ---------------------------------------------------------------------------
 const HISTORY_DB_NAME    = "ComicReaderHistoryDB";
 const HISTORY_DB_VERSION = 1;
@@ -706,7 +680,7 @@ async function historyPut(entry) {
             tx.oncomplete = () => resolve();
             tx.onerror    = () => reject(tx.error);
         });
-    } catch { /* histórico é best-effort; falha aqui não deve afetar a leitura */ }
+    } catch { /* best-effort: falha aqui não afeta a leitura */ }
 }
 
 async function historyDelete(fileName) {
@@ -721,10 +695,7 @@ async function historyDelete(fileName) {
     } catch { /* best-effort */ }
 }
 
-// Mantém no máximo HISTORY_MAX_ITEMS entradas no IndexedDB, apagando as mais
-// antigas (por timestamp) quando o limite é ultrapassado. Chamada uma única
-// vez por arquivo aberto (em loadFile), não a cada página — reler uma HQ já
-// existente no histórico não cria entrada nova, então não há o que podar.
+// Mantém no máximo HISTORY_MAX_ITEMS entradas, apagando as mais antigas.
 async function pruneHistory() {
     const items = (await historyGetAll()).sort((a, b) => b.timestamp - a.timestamp);
     if (items.length <= HISTORY_MAX_ITEMS) return;
@@ -734,10 +705,8 @@ async function pruneHistory() {
     }
 }
 
-// Gera a miniatura da CAPA (página 0), direto do reader — independente de
-// qual página o usuário está lendo. Chamada uma única vez por arquivo aberto
-// (em loadFile), nunca durante a navegação entre páginas. Retorna null em
-// caso de falha, para nunca interromper o fluxo de leitura.
+// Miniatura da CAPA (página 0), gerada uma vez por arquivo aberto.
+// Retorna null em caso de falha, para nunca interromper a leitura.
 async function generateCoverThumbnail(reader) {
     try {
         const blob = await reader.getPage(0);
@@ -750,20 +719,15 @@ async function generateCoverThumbnail(reader) {
                 temp.src = url;
             });
 
-            // Quadro 100x156 (~1,56:1) — meio-termo entre o comic americano
-            // (~1,548:1) e o formatinho brasileiro (~1,55–1,62:1).
+            // Quadro 100x156 (~1,56:1), encaixe "contain" sem cortar a capa
             const w = 100, h = 156;
             const canvas = document.createElement("canvas");
             canvas.width = w; canvas.height = h;
             const ctx = canvas.getContext("2d");
 
-            // Fundo escuro preenche a margem que sobrar (letterbox), igual
-            // ao placeholder .history-thumb, para o "encaixe" ficar discreto
             ctx.fillStyle = "#111";
             ctx.fillRect(0, 0, w, h);
 
-            // "contain": encaixa a capa inteira dentro do quadro, sem cortar
-            // nada, ainda que sobre margem vazia nas bordas
             const iw = coverImg.naturalWidth, ih = coverImg.naturalHeight;
             const scale = Math.min(w / iw, h / ih);
             const dw = iw * scale, dh = ih * scale;
@@ -780,10 +744,7 @@ async function generateCoverThumbnail(reader) {
     }
 }
 
-// Atualiza (ou cria) a entrada de histórico da HQ atual. Chamada de forma
-// "fire-and-forget" a cada renderização de página — não bloqueia a UI.
-// A thumbnail usada é sempre a da capa (gerada uma vez em loadFile);
-// aqui só o progresso (currentIndex/pageCount) é atualizado a cada página.
+// Atualiza (ou cria) a entrada de histórico da HQ atual (fire-and-forget).
 async function updateHistoryEntry() {
     if (!currentReader || !currentFileName) return;
     const entry = {
@@ -797,8 +758,7 @@ async function updateHistoryEntry() {
     await historyPut(entry);
 }
 
-// Renderiza a barra de histórico com as últimas HISTORY_MAX_ITEMS HQs lidas.
-// Some automaticamente quando não há itens.
+// Barra de histórico com as últimas HQs lidas; some quando não há itens.
 async function renderHistoryBar() {
     const items = (await historyGetAll())
         .sort((a, b) => b.timestamp - a.timestamp)
@@ -858,10 +818,9 @@ async function renderHistoryBar() {
     }
 }
 
-// Tenta reabrir a HQ a partir de um handle persistente (Chrome/Edge). Se não
-// houver handle válido (ou a permissão for negada / handle obsoleto), cai
-// no fluxo normal de seleção de arquivo — o progresso salvo (Storage) já
-// garante que, ao reabrir o mesmo arquivo por nome, a leitura retoma sozinha.
+// Reabre a HQ a partir de um handle persistente (Chrome/Edge). Sem handle
+// válido, cai no seletor de arquivo; o progresso salvo (Storage) retoma
+// a leitura sozinho ao reabrir o mesmo arquivo por nome.
 async function resumeFromHistory(entry) {
     if (entry.fileHandle) {
         try {
@@ -879,7 +838,6 @@ async function resumeFromHistory(entry) {
             console.error("Falha ao reabrir handle do histórico:", err);
         }
     }
-    // Fallback: sem handle utilizável neste navegador/sessão.
     showError(`Selecione o arquivo "${entry.fileName}" para retomar a leitura.`);
     handleDropZoneClick();
 }
@@ -899,26 +857,21 @@ async function loadFile(file) {
         showLoading(true);
         currentFileName = file.name;
 
-        // FIX #10: PDF.js já está carregado no <head>; bloco de fallback removido
         currentReader = await ComicBookReader.loadFile(file);
         await currentReader.load();
 
-        // Captura a thumbnail da capa uma única vez aqui — independe de
-        // qual página o usuário vai visualizar primeiro (ex: resume no meio do livro)
+        // Capa capturada uma única vez, independe da página inicial (resume)
         currentCoverThumbnail = await generateCoverThumbnail(currentReader);
 
-        // FIX #1: uso do wrapper seguro
         const saved = parseInt(Storage.get("prog_" + file.name)) || 0;
         currentIndex = Math.max(0, Math.min(saved, currentReader.pageCount - 1));
 
-        // Registra a entrada de histórico já na abertura (garante a capa salva
-        // mesmo se o usuário fechar antes de virar qualquer página), e então
-        // remove entradas excedentes além do limite de HISTORY_MAX_ITEMS.
+        // Registra o histórico já na abertura e poda o excedente
         await updateHistoryEntry();
         await pruneHistory();
 
-        // FIX #15: zoom resetado ao abrir novo arquivo
         zoomLevel = 1.0;
+        viewMode = 0;
 
         dropZone.style.display = "none";
         container.style.display = "block";
@@ -937,8 +890,7 @@ async function loadFile(file) {
 }
 
 // ---------------------------------------------------------------------------
-// Renderização de página
-// FIX #2: token evita renders concorrentes (troca rápida de páginas)
+// Renderização de página (token evita renders concorrentes)
 // ---------------------------------------------------------------------------
 async function renderPage() {
     const myToken = ++renderToken;
@@ -946,10 +898,8 @@ async function renderPage() {
     img.style.opacity = 0;
     showLoading(true);
 
-    // Aguarda o fade-out
     await new Promise(r => setTimeout(r, 50));
 
-    // Se outro render foi iniciado enquanto aguardávamos, abortamos
     if (myToken !== renderToken) return;
 
     try {
@@ -958,9 +908,11 @@ async function renderPage() {
             currentObjectURL = null;
         }
 
-        const blob = await currentReader.getPage(currentIndex);
+        const blob = viewMode === 0
+            ? await currentReader.getPage(currentIndex)
+            : await buildSpreadBlob(currentIndex);
 
-        if (myToken !== renderToken) return; // checagem pós-await
+        if (myToken !== renderToken) return;
 
         currentObjectURL = URL.createObjectURL(blob);
 
@@ -976,17 +928,16 @@ async function renderPage() {
         container.scrollTop  = 0;
         container.scrollLeft = 0;
 
-        pageInfoEl.textContent = `${currentIndex + 1} / ${currentReader.pageCount}`;
-        // FIX #1: uso do wrapper seguro
+        pageInfoEl.textContent = viewMode === 0
+            ? `${currentIndex + 1} / ${currentReader.pageCount}`
+            : `${currentIndex + 1}-${currentIndex + 2} / ${currentReader.pageCount}`;
         Storage.set("prog_" + currentFileName, currentIndex);
 
-        // Histórico: best-effort, não bloqueia a renderização
         updateHistoryEntry();
 
         applyZoom();
 
-        // FIX #11: pré-carrega próxima página em background
-        prefetchPage(currentIndex + 1);
+        prefetchPage(currentIndex + (viewMode === 0 ? 1 : 2));
 
     } catch (error) {
         if (myToken !== renderToken) return;
@@ -998,11 +949,68 @@ async function renderPage() {
     }
 }
 
-// FIX #11: pré-carregamento silencioso da próxima página
+// Pré-carregamento silencioso da próxima página
 function prefetchPage(index) {
     if (!currentReader || index < 0 || index >= currentReader.pageCount) return;
-    // Dispara em background; erros são silenciosos
     currentReader.getPage(index).catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
+// Página dupla
+// ---------------------------------------------------------------------------
+// Índice (0-based) da página da esquerda do par que contém idx, ou -1 se o
+// par não existe (antes da 1ª ou depois da última página).
+// modo 1 = par-ímpar (páginas 2-3, 4-5...) | modo 2 = ímpar-par (1-2, 3-4...)
+function pairLeft(mode, idx) {
+    const wantOddIndex = (mode === 1);
+    const left = ((idx % 2 === 1) === wantOddIndex) ? idx : idx - 1;
+    return (left >= 0 && left + 1 < currentReader.pageCount) ? left : -1;
+}
+
+// Junta duas páginas lado a lado numa única imagem (mesma altura)
+async function buildSpreadBlob(index) {
+    const [b1, b2] = await Promise.all([
+        currentReader.getPage(index),
+        currentReader.getPage(index + 1)
+    ]);
+    const urls = [URL.createObjectURL(b1), URL.createObjectURL(b2)];
+    try {
+        const imgs = await Promise.all(urls.map(u => new Promise((resolve, reject) => {
+            const im = new Image();
+            im.onload  = () => resolve(im);
+            im.onerror = () => reject(new Error("Erro ao montar a página dupla"));
+            im.src = u;
+        })));
+        const h  = Math.max(imgs[0].naturalHeight, imgs[1].naturalHeight);
+        const w0 = Math.round(imgs[0].naturalWidth * h / imgs[0].naturalHeight);
+        const w1 = Math.round(imgs[1].naturalWidth * h / imgs[1].naturalHeight);
+        const canvas = document.createElement("canvas");
+        canvas.width = w0 + w1;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(imgs[0], 0, 0, w0, h);
+        ctx.drawImage(imgs[1], w0, 0, w1, h);
+        return await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    } finally {
+        urls.forEach(u => URL.revokeObjectURL(u));
+    }
+}
+
+// Ciclo: simples → par-ímpar → ímpar-par → simples (pula estados impossíveis)
+function cycleSpread() {
+    if (!currentReader) return;
+    if (viewMode === 0) spreadAnchor = currentIndex;
+    let next = viewMode + 1;
+    while (next <= 2 && pairLeft(next, spreadAnchor) === -1) next++;
+    if (next > 2) {
+        if (viewMode === 0) return;      // nenhum par possível (ex.: 1 página)
+        currentIndex = currentIndex + 1; // sai na última página do par, em simples
+        viewMode = 0;
+    } else {
+        viewMode = next;
+        currentIndex = pairLeft(next, spreadAnchor);
+    }
+    renderPage();
 }
 
 // ---------------------------------------------------------------------------
@@ -1025,22 +1033,33 @@ function resetZoom() {
 }
 
 // ---------------------------------------------------------------------------
-// Navegação
+// Navegação (em dupla, sai para a simples seguinte/anterior ao par)
 // ---------------------------------------------------------------------------
 function nextPage() {
-    if (currentReader && currentIndex < currentReader.pageCount - 1) {
+    if (!currentReader) return;
+    const last = currentReader.pageCount - 1;
+    if (viewMode !== 0) {
+        viewMode = 0;
+        currentIndex = Math.min(currentIndex + 2, last);
+        renderPage();
+    } else if (currentIndex < last) {
         currentIndex++;
         renderPage();
     }
 }
 function prevPage() {
-    if (currentReader && currentIndex > 0) {
+    if (!currentReader) return;
+    if (viewMode !== 0) {
+        viewMode = 0;
+        currentIndex = Math.max(currentIndex - 1, 0);
+        renderPage();
+    } else if (currentIndex > 0) {
         currentIndex--;
         renderPage();
     }
 }
 
-// FIX #13: navegação direta por página
+// Navegação direta por página
 pageInfoEl.addEventListener("click", () => {
     if (!currentReader) return;
     gotoInput.max   = currentReader.pageCount;
@@ -1058,6 +1077,7 @@ function confirmGoto() {
     const val = parseInt(gotoInput.value);
     if (!isNaN(val) && val >= 1 && val <= currentReader.pageCount) {
         currentIndex = val - 1;
+        viewMode = 0;
         renderPage();
     }
     closeGoto();
@@ -1096,6 +1116,7 @@ function closeBook() {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 
     currentIndex     = 0;
+    viewMode         = 0;
     currentFileName  = "";
     currentFileHandle = null;
     currentCoverThumbnail = null;
@@ -1113,7 +1134,6 @@ function closeBook() {
 // Atalhos de teclado
 // ---------------------------------------------------------------------------
 document.addEventListener("keydown", e => {
-    // FIX #13: atalho G abre goto (mesmo sem currentReader, encerra precocemente se não há livro)
     if (e.key === "g" || e.key === "G") {
         if (!currentReader) return;
         e.preventDefault();
@@ -1146,6 +1166,9 @@ document.addEventListener("keydown", e => {
 
         case "-":
             e.preventDefault(); zoomOut(); break;
+
+        case "d": case "D":
+            e.preventDefault(); cycleSpread(); break;
 
         case "Escape":
             if (document.fullscreenElement) document.exitFullscreen();
