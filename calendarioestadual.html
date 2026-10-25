@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendário Estadual 2027</title>
+<style>
+:root{--bg:#f4f6f9;--surf:#fff;--ink:#1b2430;--mut:#8a95a5;--line:#dde3ea;
+--plan:#cfe3ff;--plan-tx:#12335f;--rec:#ffd166;--rec-tx:#5a3b00;--stripe:rgba(0,0,0,.07);
+--fer:#b3121d;--fer-bg:#d3d8df;--bim:#1d5fd1;--acc:#14503d;color-scheme:light}
+:root[data-theme=dark]{--bg:#11161c;--surf:#1a212a;--ink:#e6ebf1;--mut:#7d8a9b;--line:#2b3541;
+--plan:#27456f;--plan-tx:#d3e5ff;--rec:#5a420f;--rec-tx:#ffe29a;--stripe:rgba(255,255,255,.07);
+--fer:#ff8a80;--fer-bg:#3b4553;--bim:#8dbbff;--acc:#7fd1b4;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;margin-bottom:12px}
+h1{margin:0;font:600 26px/1.1 "Iowan Old Style","Palatino Linotype",Georgia,serif}
+.ctl{display:flex;gap:8px;align-items:center}
+button{font:inherit;color:inherit;cursor:pointer}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surf)}
+.seg button,.btn{border:0;background:transparent;padding:6px 14px}
+.seg button[aria-pressed=true]{background:var(--acc);color:var(--bg);font-weight:600}
+.btn{border:1px solid var(--line);border-radius:8px;background:var(--surf)}
+button:focus-visible{outline:2px solid var(--bim);outline-offset:2px}
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:8px}
+.chip{background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:left}
+.chip b{display:block}.chip span{color:var(--mut);font-size:13px}
+.note{font-size:13px;color:var(--mut);margin:0 0 10px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;margin-bottom:14px}
+.lg{display:inline-block;min-width:26px;height:22px;line-height:20px;text-align:center;border-radius:4px;border:1px solid var(--line);background:var(--surf);font-size:12px;margin-right:6px;vertical-align:middle}
+.legend span{display:flex;align-items:center}
+
+/* ===== visão anual ===== */
+.year{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.mon{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:10px}
+.mon h3{margin:0 0 6px;font:600 17px "Iowan Old Style","Palatino Linotype",Georgia,serif}
+.mon h3 button{border:0;background:none;padding:0;font:inherit}
+.mon h3 button:hover{text-decoration:underline}
+.mini{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.mini .wd{font-size:11px;color:var(--mut)}
+.mini .d{aspect-ratio:1;border:0;border-radius:4px;font-size:12px;padding:0}
+:where(.mini .d){background:transparent;color:var(--ink)}
+
+/* ===== visão mensal ===== */
+.nav{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.nav h2{margin:0;font:600 24px "Iowan Old Style","Palatino Linotype",Georgia,serif;min-width:170px;text-align:center}
+.big{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.big .wd{font-weight:600;text-align:center;color:var(--mut);padding:4px 0}
+.c{min-height:100px;border-radius:6px;padding:5px;background:var(--surf);border:1px solid var(--line);overflow:hidden;color:var(--ink)}
+.c .n{font-weight:600}
+.ev{display:block;font-size:11px;line-height:1.25;margin-top:3px;padding:1px 4px;border-left:3px solid var(--tc,var(--mut));background:rgba(127,127,127,.16);border-radius:2px}
+.blank{min-height:0}
+
+/* ===== estados dos dias: período = fundo; data pontual = texto ===== */
+.fds,.fora{color:var(--mut)}
+.c.fds .n,.c.fora .n{color:var(--mut)}
+.plan{background:var(--plan);color:var(--plan-tx)}
+.recesso{background-color:var(--rec);color:var(--rec-tx);
+  background-image:repeating-linear-gradient(135deg,transparent 0 6px,var(--stripe) 6px 12px)}
+.fer{background:var(--fer-bg);color:var(--ink)}
+.c.plan,.c.recesso,.c.fer{border-color:transparent}
+.mini .d.fer,.c.fer .n,.lg.fer{color:var(--fer);font-weight:800}
+.mini .d.bm,.c.bm .n,.lg.bm{color:var(--bim);font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.ev.t-fer{color:var(--fer);font-weight:700;--tc:var(--fer)}
+.ev.t-bim{color:var(--bim);font-weight:700;--tc:var(--bim)}
+.ev.t-plan{--tc:var(--plan-tx)}
+.ev.t-rec{--tc:var(--rec-tx)}
+.hoje{box-shadow:inset 0 0 0 2px var(--ink)}
+
+/* ===== listas ===== */
+ul.list{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:6px}
+ul.list li{display:flex;gap:8px;align-items:baseline;background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+ul.list b{font-weight:600}
+ul.list .i-fer b,ul.list .i-fer span.l{color:var(--fer);font-weight:700}
+ul.list .i-bim b,ul.list .i-bim span.l{color:var(--bim);font-weight:700}
+.sw{flex:none;width:12px;height:12px;border-radius:3px;border:1px solid var(--line)}
+.sw.s-plan{background:var(--plan)}.sw.s-rec{background:var(--rec)}
+.sw.s-fer{background:var(--fer-bg);border-color:var(--fer)}.sw.s-bim{background:var(--bim);border-color:var(--bim)}
+details{margin-top:16px}
+summary{cursor:pointer;font-weight:600}
+footer{margin-top:20px;font-size:12px;color:var(--mut)}
+@media(max-width:640px){.c{min-height:54px}.c .ev{display:none}.big{gap:2px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Calendário Estadual 2027</h1>
+    <div class="ctl">
+      <div class="seg" role="group" aria-label="Visualização">
+        <button id="vAno" aria-pressed="true">Ano</button>
+        <button id="vMes" aria-pressed="false">Mês</button>
+      </div>
+      <button class="btn" id="tema" aria-label="Alternar tema claro e escuro">Tema</button>
+    </div>
+  </header>
+  <div class="chips" id="chips"></div>
+  <p class="note" id="sab"></p>
+  <div class="legend" id="legend"></div>
+  <main id="app"></main>
+  <footer>Fonte das datas escolares: Resolução SEDUC nº 80/2026. Feriados nacionais, estaduais (SP) e municipais (São Paulo capital), incluindo pontos facultativos.</footer>
+</div>
+
+<script>
+/* ===== Configuração ===== */
+const ANO = 2027;
+// Informe o número de sábados letivos previstos (ex.: 4). Deixe null para exibir o aviso padrão.
+const SABADOS_LETIVOS = null;
+
+// Datas no formato 'MM-DD'
+const BIMESTRES = [
+  [1,'02-11','04-23'], [2,'04-26','07-06'], [3,'07-26','10-05'], [4,'10-06','12-22']
+];
+const MARCOS = [
+  ['02-11','Início do ano letivo · 1º bimestre'], ['04-23','Fim do 1º bimestre'],
+  ['04-26','Início do 2º bimestre'], ['07-06','Fim do 2º bimestre · 1º semestre'],
+  ['07-26','Início do 3º bimestre · 2º semestre'], ['10-05','Fim do 3º bimestre'],
+  ['10-06','Início do 4º bimestre'], ['12-22','Fim do 4º bimestre · ano letivo']
+];
+const PLANEJAMENTO = [
+  ['02-04','02-05','Planejamento escolar'],
+  ['07-22','07-23','Replanejamento escolar']
+];
+const RECESSO = [ // [início, fim, nome, observação]
+  ['01-04','01-18','Férias docentes'],
+  ['01-19','02-03','Recesso escolar'],
+  ['07-07','07-25','Recesso escolar','férias docentes de 07/07 a 21/07'],
+  ['12-23','12-31','Recesso escolar']
+];
+// Feriados nacionais, estaduais (SP), municipais (São Paulo) e pontos facultativos: todos sem aula
+const FERIADOS = [
+  ['01-01','Confraternização Universal'],
+  ['01-25','Aniversário da cidade de São Paulo'],
+  ['02-08','Carnaval'],
+  ['02-09','Carnaval'],
+  ['02-10','Quarta-feira de Cinzas (até 14h)'],
+  ['03-26','Sexta-feira Santa'],
+  ['04-21','Tiradentes'],
+  ['05-01','Dia do Trabalho'],
+  ['05-27','Corpus Christi'],
+  ['07-09','Revolução Constitucionalista'],
+  ['09-07','Independência do Brasil'],
+  ['10-12','Nossa Senhora Aparecida'],
+  ['10-28','Dia do Servidor Público'],
+  ['11-02','Finados'],
+  ['11-15','Proclamação da República'],
+  ['11-20','Consciência Negra'],
+  ['12-25','Natal']
+];
+
+/* ===== Dados derivados ===== */
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const pad = n => String(n).padStart(2,'0');
+const key = (m,d) => pad(m+1)+'-'+pad(d);
+const fmt = s => s.slice(3)+'/'+s.slice(0,2);
+const inR = (k,a,b) => k>=a && k<=b;
+
+const ITEMS = [];
+FERIADOS.forEach(([k,l]) => ITEMS.push({a:k,b:k,t:'fer',l}));
+MARCOS.forEach(([k,l]) => ITEMS.push({a:k,b:k,t:'bim',l}));
+PLANEJAMENTO.forEach(([a,b,l]) => ITEMS.push({a,b,t:'plan',l}));
+RECESSO.forEach(([a,b,l,o]) => ITEMS.push({a,b,t:'rec',l:l+(o?' ('+o+')':''),nome:l}));
+ITEMS.sort((x,y) => x.a<y.a ? -1 : x.a>y.a ? 1 : 0);
+
+const EV = {};
+const addEv = (k,e) => (EV[k] = EV[k] || []).push(e);
+ITEMS.forEach(i => {
+  if (i.t === 'plan') {
+    const mm = i.a.slice(0,2);
+    for (let d = +i.a.slice(3); d <= +i.b.slice(3); d++) addEv(mm+'-'+pad(d), {t:'plan',l:i.l});
+  } else if (i.t === 'rec') {
+    addEv(i.a, {t:'rec',l:i.nome+' (início)'});
+  } else addEv(i.a, i);
+});
+
+function info(m,d){
+  const k = key(m,d), dow = new Date(ANO,m,d).getDay(), fds = dow===0 || dow===6;
+  const ev = EV[k] || [];
+  let base = 'fora';
+  if (BIMESTRES.some(b => inR(k,b[1],b[2]))) base = fds ? 'fds' : 'letivo';
+  else if (fds) base = 'fds';
+  if (RECESSO.some(r => inR(k,r[0],r[1]))) base = 'recesso';
+  if (ev.some(e => e.t==='plan')) base = 'plan';
+  return {k,ev,base,fer:ev.some(e => e.t==='fer'),bm:ev.some(e => e.t==='bim')};
+}
+function cls(x,m,d){
+  let c = x.base;
+  if (x.fer) c += ' fer';
+  if (x.bm) c += ' bm';
+  const h = new Date();
+  if (h.getFullYear()===ANO && h.getMonth()===m && h.getDate()===d) c += ' hoje';
+  return c;
+}
+const tip = (x,d,m) => `${d}/${m+1}${x.ev.length ? ': '+x.ev.map(e => e.l).join('; ') : ''}`;
+
+/* ===== Estado e renderização ===== */
+const st = { view:'ano', m:0 };
+const app = document.getElementById('app');
+
+function miniMonth(m){
+  const first = new Date(ANO,m,1).getDay(), n = new Date(ANO,m+1,0).getDate();
+  let h = `<section class="mon"><h3><button data-go="${m}">${MESES[m]}</button></h3><div class="mini">`;
+  h += DIAS.map(d => `<span class="wd">${d[0]}</span>`).join('');
+  for (let i=0;i<first;i++) h += '<span></span>';
+  for (let d=1; d<=n; d++){
+    const x = info(m,d);
+    h += `<button class="d ${cls(x,m,d)}" data-go="${m}" title="${tip(x,d,m)}">${d}</button>`;
+  }
+  return h + '</div></section>';
+}
+function listHtml(items){
+  if (!items.length) return '';
+  return '<ul class="list">' + items.map(i =>
+    `<li class="i-${i.t}"><span class="sw s-${i.t}"></span><span><b>${i.a===i.b ? fmt(i.a) : fmt(i.a)+' a '+fmt(i.b)}</b> · <span class="l">${i.l}</span></span></li>`
+  ).join('') + '</ul>';
+}
+function renderAno(){
+  let h = '<div class="year">';
+  for (let m=0;m<12;m++) h += miniMonth(m);
+  h += '</div><details><summary>Todas as datas do ano</summary>' + listHtml(ITEMS) + '</details>';
+  app.innerHTML = h;
+}
+function renderMes(){
+  const m = st.m, first = new Date(ANO,m,1).getDay(), n = new Date(ANO,m+1,0).getDate(), mm = pad(m+1);
+  let h = `<div class="nav"><button class="btn" data-nav="-1" aria-label="Mês anterior"${m===0?' disabled':''}>‹</button>
+    <h2>${MESES[m]} ${ANO}</h2>
+    <button class="btn" data-nav="1" aria-label="Próximo mês"${m===11?' disabled':''}>›</button></div><div class="big">`;
+  h += DIAS.map(d => `<div class="wd">${d}</div>`).join('');
+  for (let i=0;i<first;i++) h += '<div class="blank"></div>';
+  for (let d=1; d<=n; d++){
+    const x = info(m,d);
+    h += `<div class="c ${cls(x,m,d)}" title="${tip(x,d,m)}"><span class="n">${d}</span>` +
+      x.ev.map(e => `<span class="ev t-${e.t}">${e.l}</span>`).join('') + '</div>';
+  }
+  h += '</div>' + listHtml(ITEMS.filter(i => i.a.slice(0,2) <= mm && i.b.slice(0,2) >= mm));
+  app.innerHTML = h;
+}
+function render(){
+  document.getElementById('vAno').setAttribute('aria-pressed', st.view==='ano');
+  document.getElementById('vMes').setAttribute('aria-pressed', st.view==='mes');
+  st.view==='ano' ? renderAno() : renderMes();
+}
+
+/* ===== Cabeçalho, legenda e eventos ===== */
+document.getElementById('chips').innerHTML = BIMESTRES.map(b =>
+  `<button class="chip" data-go="${+b[1].slice(0,2)-1}"><b>${b[0]}º bimestre</b><span>${fmt(b[1])} a ${fmt(b[2])}</span></button>`).join('');
+document.getElementById('sab').textContent = SABADOS_LETIVOS == null
+  ? 'Sábados letivos: definidos por cada escola, conforme a Resolução SEDUC nº 80/2026.'
+  : `Haverá ${SABADOS_LETIVOS} sábados letivos previstos.`;
+document.getElementById('legend').innerHTML = [
+  ['letivo','Dia letivo'],['fds','Fim de semana'],['fer','Feriado'],
+  ['bm','Início / fim de bimestre'],['plan','Planejamento / replanejamento'],
+  ['recesso','Recesso escolar / férias docentes']
+].map(([c,t]) => `<span><i class="lg ${c}">15</i>${t}</span>`).join('');
+
+document.addEventListener('click', e => {
+  const go = e.target.closest('[data-go]'), nav = e.target.closest('[data-nav]');
+  if (go){ st.view='mes'; st.m=+go.dataset.go; render(); window.scrollTo({top:0}); }
+  else if (nav){ st.m = Math.min(11,Math.max(0,st.m+ +nav.dataset.nav)); render(); }
+});
+document.getElementById('vAno').onclick = () => { st.view='ano'; render(); };
+document.getElementById('vMes').onclick = () => { st.view='mes'; render(); };
+
+/* ===== Tema claro/escuro ===== */
+const root = document.documentElement;
+let tema;
+try { tema = localStorage.getItem('cal2027-tema'); } catch(e) {}
+if (!tema) tema = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+root.dataset.theme = tema;
+document.getElementById('tema').onclick = () => {
+  tema = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  root.dataset.theme = tema;
+  try { localStorage.setItem('cal2027-tema', tema); } catch(e) {}
+};
+
+// Abre direto no mês atual se hoje estiver em 2027
+const hj = new Date();
+if (hj.getFullYear()===ANO){ st.view='mes'; st.m=hj.getMonth(); }
+render();
+</script>
+</body>
+</html>
